@@ -2,7 +2,7 @@
   "name": "Château Combo - Calculateur de Score",
   "short_name": "Château Combo",
   "description": "Prenez une photo de votre partie de Château Combo pour calculer automatiquement le score",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#FFF8DC",
   "theme_color": "#8B4513",
@@ -65,7 +65,7 @@
       "name": "Nouvelle analyse",
       "short_name": "Analyser",
       "description": "Prendre une nouvelle photo pour analyse",
-      "url": "/?action=capture",
+      "url": "./?action=capture",
       "icons": [{ "src": "icons/icon-96.png", "sizes": "96x96" }]
     }
   ]

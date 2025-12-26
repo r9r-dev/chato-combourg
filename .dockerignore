@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build tools
+scripts/
+generate-icons.html
+
+# Documentation
+*.md
+LICENSE
+
+# Local development
+.env
+.env.local
+*.log
+
+# Package files (not needed in production)
+package*.json
