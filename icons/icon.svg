@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8B4513"/>
+      <stop offset="100%" style="stop-color:#5D2E0C"/>
+    </linearGradient>
+    <linearGradient id="castleGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#D4A574"/>
+      <stop offset="100%" style="stop-color:#C49A6C"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="80" fill="url(#bgGrad)"/>
+
+  <!-- Castle base -->
+  <rect x="120" y="280" width="272" height="160" fill="url(#castleGrad)"/>
+
+  <!-- Castle towers -->
+  <rect x="100" y="200" width="60" height="240" fill="url(#castleGrad)"/>
+  <rect x="352" y="200" width="60" height="240" fill="url(#castleGrad)"/>
+
+  <!-- Tower tops (crenellations) -->
+  <rect x="95" y="180" width="20" height="30" fill="url(#castleGrad)"/>
+  <rect x="120" y="180" width="20" height="30" fill="url(#castleGrad)"/>
+  <rect x="145" y="180" width="20" height="30" fill="url(#castleGrad)"/>
+
+  <rect x="347" y="180" width="20" height="30" fill="url(#castleGrad)"/>
+  <rect x="372" y="180" width="20" height="30" fill="url(#castleGrad)"/>
+  <rect x="397" y="180" width="20" height="30" fill="url(#castleGrad)"/>
+
+  <!-- Main tower -->
+  <rect x="206" y="140" width="100" height="300" fill="url(#castleGrad)"/>
+
+  <!-- Main tower crenellations -->
+  <rect x="196" y="115" width="25" height="35" fill="url(#castleGrad)"/>
+  <rect x="226" y="115" width="25" height="35" fill="url(#castleGrad)"/>
+  <rect x="256" y="115" width="25" height="35" fill="url(#castleGrad)"/>
+  <rect x="286" y="115" width="25" height="35" fill="url(#castleGrad)"/>
+
+  <!-- Windows -->
+  <rect x="236" y="200" width="40" height="50" rx="20" fill="#5D2E0C"/>
+  <rect x="236" y="280" width="40" height="50" rx="20" fill="#5D2E0C"/>
+
+  <rect x="115" y="250" width="30" height="40" rx="15" fill="#5D2E0C"/>
+  <rect x="367" y="250" width="30" height="40" rx="15" fill="#5D2E0C"/>
+
+  <!-- Door -->
+  <rect x="220" y="370" width="72" height="70" rx="36" fill="#5D2E0C"/>
+  <rect x="220" y="400" width="72" height="40" fill="#5D2E0C"/>
+
+  <!-- Flag -->
+  <rect x="254" y="70" width="4" height="55" fill="#8B4513"/>
+  <polygon points="258,70 258,100 290,85" fill="#DC3545"/>
+
+  <!-- Score indicator -->
+  <circle cx="410" cy="410" r="60" fill="#FFD700"/>
+  <text x="410" y="425" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#5D2E0C" text-anchor="middle">42</text>
+</svg>

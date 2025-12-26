@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Générateur d'icônes</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        canvas { border: 1px solid #ccc; margin: 10px; }
+        .icons { display: flex; flex-wrap: wrap; gap: 20px; }
+        .icon-container { text-align: center; }
+        a { display: block; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Générateur d'icônes Château Combo</h1>
+    <p>Cliquez sur les liens pour télécharger chaque icône.</p>
+    <div class="icons" id="icons"></div>
+
+    <script>
+        const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+
+        function drawIcon(ctx, size) {
+            // Fond dégradé
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#8B4513');
+            gradient.addColorStop(1, '#5D2E0C');
+
+            // Arrondi du fond
+            const radius = size * 0.15;
+            ctx.beginPath();
+            ctx.moveTo(radius, 0);
+            ctx.lineTo(size - radius, 0);
+            ctx.quadraticCurveTo(size, 0, size, radius);
+            ctx.lineTo(size, size - radius);
+            ctx.quadraticCurveTo(size, size, size - radius, size);
+            ctx.lineTo(radius, size);
+            ctx.quadraticCurveTo(0, size, 0, size - radius);
+            ctx.lineTo(0, radius);
+            ctx.quadraticCurveTo(0, 0, radius, 0);
+            ctx.closePath();
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Échelle
+            const s = size / 512;
+
+            // Couleur château
+            const castleGradient = ctx.createLinearGradient(0, 0, 0, size);
+            castleGradient.addColorStop(0, '#D4A574');
+            castleGradient.addColorStop(1, '#C49A6C');
+
+            ctx.fillStyle = castleGradient;
+
+            // Base du château
+            ctx.fillRect(120 * s, 280 * s, 272 * s, 160 * s);
+
+            // Tours latérales
+            ctx.fillRect(100 * s, 200 * s, 60 * s, 240 * s);
+            ctx.fillRect(352 * s, 200 * s, 60 * s, 240 * s);
+
+            // Créneaux tour gauche
+            ctx.fillRect(95 * s, 180 * s, 20 * s, 30 * s);
+            ctx.fillRect(120 * s, 180 * s, 20 * s, 30 * s);
+            ctx.fillRect(145 * s, 180 * s, 20 * s, 30 * s);
+
+            // Créneaux tour droite
+            ctx.fillRect(347 * s, 180 * s, 20 * s, 30 * s);
+            ctx.fillRect(372 * s, 180 * s, 20 * s, 30 * s);
+            ctx.fillRect(397 * s, 180 * s, 20 * s, 30 * s);
+
+            // Tour principale
+            ctx.fillRect(206 * s, 140 * s, 100 * s, 300 * s);
+
+            // Créneaux tour principale
+            ctx.fillRect(196 * s, 115 * s, 25 * s, 35 * s);
+            ctx.fillRect(226 * s, 115 * s, 25 * s, 35 * s);
+            ctx.fillRect(256 * s, 115 * s, 25 * s, 35 * s);
+            ctx.fillRect(286 * s, 115 * s, 25 * s, 35 * s);
+
+            // Fenêtres (marron foncé)
+            ctx.fillStyle = '#5D2E0C';
+
+            // Fenêtre principale haute
+            ctx.beginPath();
+            ctx.roundRect(236 * s, 200 * s, 40 * s, 50 * s, 20 * s);
+            ctx.fill();
+
+            // Fenêtre principale basse
+            ctx.beginPath();
+            ctx.roundRect(236 * s, 280 * s, 40 * s, 50 * s, 20 * s);
+            ctx.fill();
+
+            // Fenêtres tours
+            ctx.beginPath();
+            ctx.roundRect(115 * s, 250 * s, 30 * s, 40 * s, 15 * s);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.roundRect(367 * s, 250 * s, 30 * s, 40 * s, 15 * s);
+            ctx.fill();
+
+            // Porte
+            ctx.beginPath();
+            ctx.roundRect(220 * s, 370 * s, 72 * s, 70 * s, [36 * s, 36 * s, 0, 0]);
+            ctx.fill();
+
+            // Mât du drapeau
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(254 * s, 70 * s, 4 * s, 55 * s);
+
+            // Drapeau
+            ctx.fillStyle = '#DC3545';
+            ctx.beginPath();
+            ctx.moveTo(258 * s, 70 * s);
+            ctx.lineTo(258 * s, 100 * s);
+            ctx.lineTo(290 * s, 85 * s);
+            ctx.closePath();
+            ctx.fill();
+
+            // Score badge
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.arc(410 * s, 410 * s, 60 * s, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Texte score
+            ctx.fillStyle = '#5D2E0C';
+            ctx.font = `bold ${48 * s}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('42', 410 * s, 415 * s);
+        }
+
+        const container = document.getElementById('icons');
+
+        sizes.forEach(size => {
+            const div = document.createElement('div');
+            div.className = 'icon-container';
+
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+
+            const ctx = canvas.getContext('2d');
+            drawIcon(ctx, size);
+
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = `icon-${size}.png`;
+            link.textContent = `Télécharger ${size}x${size}`;
+
+            div.appendChild(canvas);
+            div.appendChild(link);
+            container.appendChild(div);
+        });
+    </script>
+</body>
+</html>
