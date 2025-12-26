@@ -1,0 +1,25 @@
+services:
+  chateau-combo:
+    build: .
+    container_name: chateau-combo
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  # Future: Add API service for Claude Vision analysis
+  # api:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.api
+  #   container_name: chateau-combo-api
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+  #   restart: unless-stopped
