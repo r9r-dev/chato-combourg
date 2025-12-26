@@ -1,14 +1,14 @@
 const CACHE_NAME = 'chateau-combo-v1';
 const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/css/style.css',
-  '/js/app.js',
-  '/js/camera.js',
-  '/js/scoring.js',
-  '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png'
+  './',
+  './index.html',
+  './css/style.css',
+  './js/app.js',
+  './js/camera.js',
+  './js/scoring.js',
+  './manifest.json',
+  './icons/icon-192.png',
+  './icons/icon-512.png'
 ];
 
 // Installation du Service Worker
@@ -88,7 +88,7 @@ self.addEventListener('fetch', (event) => {
           .catch(() => {
             // Si hors-ligne et pas en cache, retourner une page d'erreur
             if (event.request.destination === 'document') {
-              return caches.match('/index.html');
+              return caches.match('./index.html');
             }
             return new Response('Contenu non disponible hors-ligne', {
               status: 503,
