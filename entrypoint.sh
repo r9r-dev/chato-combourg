@@ -23,12 +23,13 @@ else
     echo "Dependencies installed successfully!"
 fi
 
-# Add deps to Python path
+# Add deps to Python path and bin to PATH
 export PYTHONPATH="/app/deps:$PYTHONPATH"
+export PATH="/app/deps/bin:$PATH"
 
 # Download CLIP model if not cached
 echo "Checking CLIP model cache..."
 python -c "import clip; clip.load('ViT-B/32', device='cpu')" 2>/dev/null || true
 
 echo "Starting server..."
-exec uvicorn app.main:app --host 0.0.0.0 --port 8080
+exec python -m uvicorn app.main:app --host 0.0.0.0 --port 8080
