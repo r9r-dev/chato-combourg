@@ -1,9 +1,28 @@
-# Dependencies
-node_modules/
-
 # Git
 .git/
 .gitignore
+
+# Documentation
+docs/
+CARD_RULES.md
+CLAUDE.md
+README.md
+
+# Python
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+backend/venv/
+backend/tests/
+backend/models/
+backend/embeddings/
+**/*.pkl
+**/*.pt
+**/*.pth
+
+# Node
+frontend/node_modules/
+frontend/dist/
 
 # IDE
 .vscode/
@@ -11,18 +30,16 @@ node_modules/
 *.swp
 *.swo
 
-# Build tools
-scripts/
-generate-icons.html
+# OS
+.DS_Store
 
-# Documentation
-*.md
-LICENSE
+# Test data
+tests/
+
+# CI/CD
+.github/
 
 # Local development
 .env
 .env.local
 *.log
-
-# Package files (not needed in production)
-package*.json

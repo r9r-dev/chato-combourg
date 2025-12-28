@@ -15,7 +15,10 @@ from app.services.clip_matcher import clip_matcher
 # Paths
 BASE_DIR = Path(__file__).parent.parent
 CARDS_DIR = BASE_DIR / "cards"
-FRONTEND_DIR = BASE_DIR.parent / "frontend" / "dist"
+# Frontend dist can be at sibling level (dev) or inside BASE_DIR (Docker)
+FRONTEND_DIR = BASE_DIR / "frontend" / "dist"
+if not FRONTEND_DIR.exists():
+    FRONTEND_DIR = BASE_DIR.parent / "frontend" / "dist"
 
 # Configure logging
 logging.basicConfig(
