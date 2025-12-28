@@ -91,7 +91,7 @@ export function CardSelector({
         {/* Score explanation */}
         {scoreDetail && (
           <div className="p-4 bg-dark-card border-b border-gold/20">
-            <p className="text-white/80 text-sm">{scoreDetail.explanation}</p>
+            <p className="text-white/80 text-sm whitespace-pre-line">{scoreDetail.explanation}</p>
           </div>
         )}
 
