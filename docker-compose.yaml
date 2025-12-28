@@ -1,0 +1,28 @@
+services:
+  chato-combourg:
+    image: ghcr.io/r9r-dev/chato-combourg:latest
+    # Or build locally:
+    # build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    volumes:
+      # Required: trained YOLO model weights
+      - ./backend/models:/app/models:ro
+
+      # Required: Python dependencies cache (installed at first startup)
+      # First run takes ~5-10 minutes, subsequent starts are instant
+      - deps-cache:/app/deps
+
+      # Recommended: CLIP model cache (~350MB, downloaded at first startup)
+      - clip-cache:/root/.cache/clip
+
+      # Recommended: computed card embeddings
+      - embeddings:/app/embeddings
+    restart: unless-stopped
+
+volumes:
+  deps-cache:
+  clip-cache:
+  embeddings:
