@@ -1,6 +1,10 @@
+import logging
+
 from fastapi import APIRouter, File, UploadFile, HTTPException
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 from app.models import AnalyzeResponse, CardResult, CardMatch, ErrorResponse
 from app.services.image_processor import load_image_from_bytes
 from app.services.grid_detector import detect_cards_yolo
@@ -24,14 +28,19 @@ async def analyze_photo(
 
     Returns identification results for each card position with confidence scores.
     """
+    logger.info(f"Received analyze request: {photo.filename}, content_type={photo.content_type}")
+
     # Validate file type
     if not photo.content_type or not photo.content_type.startswith("image/"):
+        logger.warning(f"Invalid content type: {photo.content_type}")
         raise HTTPException(status_code=400, detail="File must be an image")
 
     # Read and process image
     try:
         content = await photo.read()
+        logger.info(f"Image size: {len(content)} bytes")
         if len(content) > settings.max_upload_size:
+            logger.warning(f"File too large: {len(content)} > {settings.max_upload_size}")
             raise HTTPException(
                 status_code=400,
                 detail=f"File too large. Max size: {settings.max_upload_size // (1024*1024)}MB",
@@ -39,14 +48,21 @@ async def analyze_photo(
 
         # Load image with EXIF correction
         image = load_image_from_bytes(content)
+        logger.info(f"Image loaded: {image.size}")
 
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"Failed to process image: {e}", exc_info=True)
         raise HTTPException(status_code=400, detail=f"Failed to process image: {str(e)}")
 
     # Detect cards in grid using YOLOv8
     try:
+        logger.info("Detecting cards with YOLO...")
         detected_cards = detect_cards_yolo(image)
+        logger.info(f"Detected {len(detected_cards)} cards")
     except Exception as e:
+        logger.error(f"Failed to detect cards: {e}", exc_info=True)
         raise HTTPException(status_code=400, detail=f"Failed to detect cards: {str(e)}")
 
     # Identify each card

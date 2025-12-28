@@ -28,11 +28,54 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def check_required_files():
+    """Check that all required files are present at startup."""
+    issues = []
+
+    # Check YOLO model
+    models_dir = BASE_DIR / "models"
+    yolo_model = models_dir / "card_detector" / "weights" / "best.pt"
+    if not yolo_model.exists():
+        issues.append(f"YOLO model not found: {yolo_model}")
+        issues.append("  -> Mount ./backend/models:/app/models in docker-compose.yaml")
+
+    # Check cards directory
+    if not CARDS_DIR.exists():
+        issues.append(f"Cards directory not found: {CARDS_DIR}")
+    else:
+        card_count = len(list(CARDS_DIR.glob("*.png")))
+        if card_count == 0:
+            issues.append(f"No card images found in {CARDS_DIR}")
+        else:
+            logger.info(f"Found {card_count} card images")
+
+    # Check card attributes JSON
+    card_attrs = CARDS_DIR / "card_attributes.json"
+    if not card_attrs.exists():
+        issues.append(f"Card attributes not found: {card_attrs}")
+
+    return issues
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan handler for startup/shutdown."""
     # Startup
     logger.info("Starting Card Recognition API...")
+    logger.info(f"Base directory: {BASE_DIR}")
+
+    # Check required files
+    logger.info("Checking required files...")
+    issues = check_required_files()
+    if issues:
+        logger.error("=" * 60)
+        logger.error("STARTUP CHECK FAILED - Missing required files:")
+        for issue in issues:
+            logger.error(f"  {issue}")
+        logger.error("=" * 60)
+        # Continue anyway to allow health checks, but log clearly
+    else:
+        logger.info("All required files present")
 
     # Load card database
     logger.info("Loading card database...")
