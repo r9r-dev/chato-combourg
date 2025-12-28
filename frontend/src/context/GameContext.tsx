@@ -82,13 +82,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const score = await calculateScore({
         cards: cardIds,
         keys: state.keys,
-        coins_on_cards: {}, // Global coins, no per-card assignment
+        total_coins: state.coins,
       });
       setState((prev) => ({ ...prev, score }));
     } catch (error) {
       console.error('Failed to calculate score:', error);
     }
-  }, [state.cards, state.keys]);
+  }, [state.cards, state.keys, state.coins]);
 
   const reset = useCallback(() => {
     setState(initialState);

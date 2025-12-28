@@ -15,6 +15,11 @@ class CalculateRequest(BaseModel):
         default_factory=dict,
         description="Coins placed on cards: {card_id: count}",
     )
+    total_coins: int | None = Field(
+        default=None,
+        ge=0,
+        description="Total coins to auto-distribute to cards with purses (overrides coins_on_cards)",
+    )
 
 
 class CardScoreDetail(BaseModel):

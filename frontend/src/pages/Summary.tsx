@@ -17,12 +17,12 @@ export function Summary() {
 
   const [selectedPosition, setSelectedPosition] = useState<number | null>(null);
 
-  // Calculate score on mount and when cards/keys change
+  // Calculate score on mount and when cards/keys/coins change
   useEffect(() => {
     if (state.cards.length === 9) {
       recalculateScore();
     }
-  }, [state.cards, state.keys, recalculateScore]);
+  }, [state.cards, state.keys, state.coins, recalculateScore]);
 
   // Handle card selection
   const handleCardClick = useCallback((position: number) => {
@@ -61,7 +61,7 @@ export function Summary() {
       />
 
       {/* Card grid */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 min-h-0">
         <CardGrid
           cards={state.cards}
           scoreDetails={state.score?.details ?? null}
@@ -77,10 +77,10 @@ export function Summary() {
       />
 
       {/* Restart button */}
-      <div className="p-4 bg-dark-lighter">
+      <div className="p-3 bg-dark-lighter">
         <button
           onClick={reset}
-          className="w-full py-3 px-6 bg-dark-card text-white/70 rounded-xl
+          className="w-full py-2.5 px-6 bg-dark-card text-white/70 rounded-xl
                      hover:bg-dark hover:text-white transition-colors
                      border border-gold/20 hover:border-gold/50"
         >

@@ -30,6 +30,57 @@ class YOLOCardDetector:
         self.model = YOLO(str(model_path))
         self._initialized = True
 
+    def _sort_by_grid_position(self, detections: list[dict]) -> list[dict]:
+        """Sort detections into grid order using coordinate clustering.
+
+        Groups cards by Y-coordinate proximity (rows), then sorts each row by X.
+        This is more robust than simple sorting when cards aren't perfectly aligned.
+        """
+        if len(detections) <= 1:
+            return detections
+
+        # Extract Y coordinates
+        y_coords = [d["center"][1] for d in detections]
+
+        # Find row boundaries using gaps in Y coordinates
+        sorted_y = sorted(set(y_coords))
+        if len(sorted_y) >= 3:
+            # Calculate gaps between consecutive Y values
+            gaps = [(sorted_y[i + 1] - sorted_y[i], i) for i in range(len(sorted_y) - 1)]
+            # Find the 2 largest gaps to split into 3 rows
+            gaps.sort(reverse=True)
+            split_indices = sorted([gaps[0][1], gaps[1][1]] if len(gaps) >= 2 else [gaps[0][1]])
+
+            # Calculate thresholds as midpoints of the gaps
+            thresholds = []
+            for idx in split_indices:
+                threshold = (sorted_y[idx] + sorted_y[idx + 1]) / 2
+                thresholds.append(threshold)
+            thresholds.sort()
+        else:
+            # Fallback: divide Y range into 3 equal parts
+            min_y, max_y = min(y_coords), max(y_coords)
+            range_y = max_y - min_y
+            thresholds = [min_y + range_y / 3, min_y + 2 * range_y / 3]
+
+        # Assign each detection to a row
+        rows: list[list[dict]] = [[], [], []]
+        for det in detections:
+            y = det["center"][1]
+            if y < thresholds[0]:
+                rows[0].append(det)
+            elif y < thresholds[1]:
+                rows[1].append(det)
+            else:
+                rows[2].append(det)
+
+        # Sort each row by X coordinate
+        for row in rows:
+            row.sort(key=lambda d: d["center"][0])
+
+        # Flatten back
+        return [d for row in rows for d in row]
+
     def detect_cards(
         self, image: Image.Image, confidence: float = 0.05
     ) -> list[dict]:
@@ -73,29 +124,15 @@ class YOLOCardDetector:
             })
 
         # Sort by position: top-to-bottom, then left-to-right
-        # Group into rows based on y-coordinate
+        # Group into rows based on y-coordinate clustering
         if detections:
-            # Sort by y first to identify rows
-            detections.sort(key=lambda d: d["center"][1])
-
-            # Group into 3 rows
-            row_size = len(detections) // 3 if len(detections) >= 3 else len(detections)
-            rows = []
-            for i in range(0, len(detections), max(1, row_size)):
-                row = detections[i:i + row_size]
-                # Sort each row by x
-                row.sort(key=lambda d: d["center"][0])
-                rows.append(row)
-
-            # Flatten back
-            detections = [d for row in rows for d in row]
+            detections = self._sort_by_grid_position(detections)
 
         # Take top 9 by confidence if more than 9 detected
         if len(detections) > 9:
             # Re-sort by confidence, take top 9, then re-sort by position
             by_conf = sorted(detections, key=lambda d: d["confidence"], reverse=True)[:9]
-            by_conf.sort(key=lambda d: (d["center"][1], d["center"][0]))
-            detections = by_conf
+            detections = self._sort_by_grid_position(by_conf)
 
         # Assign grid positions
         for i, det in enumerate(detections):

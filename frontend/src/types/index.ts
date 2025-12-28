@@ -27,7 +27,7 @@ export interface CardScoreDetail {
 export interface CalculateRequest {
   cards: string[];
   keys: number;
-  coins_on_cards: Record<string, number>;
+  total_coins: number;
 }
 
 export interface CalculateResponse {

@@ -3,6 +3,18 @@
 from .grid import Grid
 
 
+def pluriel(n: int, singular: str, plural: str = None) -> str:
+    """Return singular or plural form based on count."""
+    if plural is None:
+        plural = singular + "s"
+    return singular if n <= 1 else plural
+
+
+def boucliers(n: int, color: str) -> str:
+    """Format shield count with color (handles plural)."""
+    return f"{n} {pluriel(n, 'bouclier')} {color}"
+
+
 def rule_001(grid: Grid, position: int) -> tuple[int, str]:
     """4 points for each blue shield on the same column."""
     count = grid.count_shields_in_col(position, "blue")
@@ -54,12 +66,16 @@ def rule_007(grid: Grid, position: int) -> tuple[int, str]:
 
 
 def rule_008(grid: Grid, position: int) -> tuple[int, str]:
-    """4 points for each shield with the lowest quantity between pink and orange."""
-    pink = grid.count_shields_on_board("pink")
+    """4 points for each pair of pink/orange shields."""
+    violet = grid.count_shields_on_board("pink")
     orange = grid.count_shields_on_board("orange")
-    count = min(pink, orange)
-    score = count * 4
-    return score, f"{score} points (min({pink} rose, {orange} orange) = {count} x 4)"
+    pairs = min(violet, orange)
+    score = pairs * 4
+    explanation = f"""- {boucliers(violet, 'violet')}
+- {boucliers(orange, 'orange')}
+Tu as {pairs} {pluriel(pairs, 'paire')} de boucliers violet/orange.
+{pairs} x 4 = {score} points"""
+    return score, explanation
 
 
 def rule_009(grid: Grid, position: int) -> tuple[int, str]:
@@ -115,12 +131,16 @@ def rule_015(grid: Grid, position: int) -> tuple[int, str]:
 
 
 def rule_016(grid: Grid, position: int) -> tuple[int, str]:
-    """3 points for each card with the lowest quantity between castle and village."""
-    castle = grid.count_castle_cards()
+    """3 points for each pair of castle/village cards."""
+    chateau = grid.count_castle_cards()
     village = grid.count_village_cards()
-    count = min(castle, village)
-    score = count * 3
-    return score, f"{score} points (min({castle} château, {village} village) = {count} x 3)"
+    paires = min(chateau, village)
+    score = paires * 3
+    explanation = f"""- {chateau} {pluriel(chateau, 'carte')} château
+- {village} {pluriel(village, 'carte')} village
+Tu as {paires} {pluriel(paires, 'paire')} de cartes château/village.
+{paires} x 3 = {score} points"""
+    return score, explanation
 
 
 def rule_017(grid: Grid, position: int, keys: int) -> tuple[int, str]:
@@ -130,13 +150,18 @@ def rule_017(grid: Grid, position: int, keys: int) -> tuple[int, str]:
 
 
 def rule_018(grid: Grid, position: int) -> tuple[int, str]:
-    """10 points for each shield with the lowest quantity between blue, green and orange."""
-    blue = grid.count_shields_on_board("blue")
-    green = grid.count_shields_on_board("green")
+    """10 points for each trio of blue/green/orange shields."""
+    bleu = grid.count_shields_on_board("blue")
+    vert = grid.count_shields_on_board("green")
     orange = grid.count_shields_on_board("orange")
-    count = min(blue, green, orange)
-    score = count * 10
-    return score, f"{score} points (min({blue} bleu, {green} vert, {orange} orange) = {count} x 10)"
+    trios = min(bleu, vert, orange)
+    score = trios * 10
+    explanation = f"""- {boucliers(bleu, 'bleu')}
+- {boucliers(vert, 'vert')}
+- {boucliers(orange, 'orange')}
+Tu as {trios} {pluriel(trios, 'trio')} de boucliers bleu/vert/orange.
+{trios} x 10 = {score} points"""
+    return score, explanation
 
 
 def rule_019(grid: Grid, position: int) -> tuple[int, str]:
@@ -161,12 +186,16 @@ def rule_021(grid: Grid, position: int) -> tuple[int, str]:
 
 
 def rule_022(grid: Grid, position: int) -> tuple[int, str]:
-    """4 points for each shield with the lowest quantity between blue and red."""
-    blue = grid.count_shields_on_board("blue")
-    red = grid.count_shields_on_board("red")
-    count = min(blue, red)
-    score = count * 4
-    return score, f"{score} points (min({blue} bleu, {red} rouge) = {count} x 4)"
+    """4 points for each pair of blue/red shields."""
+    bleu = grid.count_shields_on_board("blue")
+    rouge = grid.count_shields_on_board("red")
+    paires = min(bleu, rouge)
+    score = paires * 4
+    explanation = f"""- {boucliers(bleu, 'bleu')}
+- {boucliers(rouge, 'rouge')}
+Tu as {paires} {pluriel(paires, 'paire')} de boucliers bleu/rouge.
+{paires} x 4 = {score} points"""
+    return score, explanation
 
 
 def rule_023(grid: Grid, position: int) -> tuple[int, str]:
@@ -261,8 +290,8 @@ def rule_034(grid: Grid, position: int) -> tuple[int, str]:
 def rule_035(grid: Grid, position: int) -> tuple[int, str]:
     """5 points if at least one shield is pink on the same row."""
     if grid.has_color_in_row(position, "pink"):
-        return 5, "5 points (au moins un bouclier rose sur la rangée)"
-    return 0, "0 point (aucun bouclier rose sur la rangée)"
+        return 5, "5 points (au moins un bouclier violet sur la rangée)"
+    return 0, "0 point (aucun bouclier violet sur la rangée)"
 
 
 def rule_036(grid: Grid, position: int) -> tuple[int, str]:
@@ -277,7 +306,7 @@ def rule_037(grid: Grid, position: int) -> tuple[int, str]:
     """3 points for each pink shield on the same column."""
     count = grid.count_shields_in_col(position, "pink")
     score = count * 3
-    return score, f"{score} points ({count} bouclier(s) rose(s) sur la colonne x 3)"
+    return score, f"{score} points ({count} bouclier(s) violet(s) sur la colonne x 3)"
 
 
 def rule_038(grid: Grid, position: int) -> tuple[int, str]:
@@ -356,7 +385,7 @@ def rule_048(grid: Grid, position: int) -> tuple[int, str]:
     """3 points for each pink shield on the same row."""
     count = grid.count_shields_in_row(position, "pink")
     score = count * 3
-    return score, f"{score} points ({count} bouclier(s) rose(s) sur la rangée x 3)"
+    return score, f"{score} points ({count} bouclier(s) violet(s) sur la rangée x 3)"
 
 
 def rule_049(grid: Grid, position: int) -> tuple[int, str]:
@@ -398,13 +427,18 @@ def rule_053(grid: Grid, position: int) -> tuple[int, str]:
 
 
 def rule_054(grid: Grid, position: int) -> tuple[int, str]:
-    """7 points for each shield with the lowest quantity between pink, red and yellow."""
-    pink = grid.count_shields_on_board("pink")
-    red = grid.count_shields_on_board("red")
-    yellow = grid.count_shields_on_board("yellow")
-    count = min(pink, red, yellow)
-    score = count * 7
-    return score, f"{score} points (min({pink} rose, {red} rouge, {yellow} jaune) = {count} x 7)"
+    """7 points for each trio of pink/red/yellow shields."""
+    violet = grid.count_shields_on_board("pink")
+    rouge = grid.count_shields_on_board("red")
+    jaune = grid.count_shields_on_board("yellow")
+    trios = min(violet, rouge, jaune)
+    score = trios * 7
+    explanation = f"""- {boucliers(violet, 'violet')}
+- {boucliers(rouge, 'rouge')}
+- {boucliers(jaune, 'jaune')}
+Tu as {trios} {pluriel(trios, 'trio')} de boucliers violet/rouge/jaune.
+{trios} x 7 = {score} points"""
+    return score, explanation
 
 
 def rule_055(grid: Grid, position: int) -> tuple[int, str]:
@@ -465,7 +499,7 @@ def rule_062(grid: Grid, position: int) -> tuple[int, str]:
     """2 points for each pink shield on the same row and the same column."""
     count = grid.count_shields_in_row_and_col(position, "pink")
     score = count * 2
-    return score, f"{score} points ({count} bouclier(s) rose(s) sur rangée et colonne x 2)"
+    return score, f"{score} points ({count} bouclier(s) violet(s) sur rangée et colonne x 2)"
 
 
 def rule_063(grid: Grid, position: int) -> tuple[int, str]:
@@ -478,8 +512,8 @@ def rule_063(grid: Grid, position: int) -> tuple[int, str]:
 def rule_064(grid: Grid, position: int) -> tuple[int, str]:
     """9 points if there is no pink shield on the board."""
     if not grid.has_color_on_board("pink"):
-        return 9, "9 points (aucun bouclier rose sur le plateau)"
-    return 0, "0 point (il y a des boucliers roses)"
+        return 9, "9 points (aucun bouclier violet sur le plateau)"
+    return 0, "0 point (il y a des boucliers violets)"
 
 
 def rule_065(grid: Grid, position: int) -> tuple[int, str]:
@@ -503,12 +537,16 @@ def rule_067(grid: Grid, position: int) -> tuple[int, str]:
 
 
 def rule_068(grid: Grid, position: int) -> tuple[int, str]:
-    """4 points for each shield with the lowest quantity between green and yellow."""
-    green = grid.count_shields_on_board("green")
-    yellow = grid.count_shields_on_board("yellow")
-    count = min(green, yellow)
-    score = count * 4
-    return score, f"{score} points (min({green} vert, {yellow} jaune) = {count} x 4)"
+    """4 points for each pair of green/yellow shields."""
+    vert = grid.count_shields_on_board("green")
+    jaune = grid.count_shields_on_board("yellow")
+    paires = min(vert, jaune)
+    score = paires * 4
+    explanation = f"""- {boucliers(vert, 'vert')}
+- {boucliers(jaune, 'jaune')}
+Tu as {paires} {pluriel(paires, 'paire')} de boucliers vert/jaune.
+{paires} x 4 = {score} points"""
+    return score, explanation
 
 
 def rule_069(grid: Grid, position: int) -> tuple[int, str]:
