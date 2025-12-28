@@ -48,7 +48,8 @@ export async function getCards(): Promise<Card[]> {
     throw new Error(`Get cards failed: ${response.statusText}`);
   }
 
-  return response.json();
+  const data = await response.json();
+  return data.cards;
 }
 
 export function getCardImageUrl(cardId: string): string {
