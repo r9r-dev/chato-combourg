@@ -9,7 +9,7 @@ const API_BASE = '/api';
 
 export async function analyzeImage(imageBlob: Blob): Promise<AnalyzeResponse> {
   const formData = new FormData();
-  formData.append('file', imageBlob, 'capture.jpg');
+  formData.append('photo', imageBlob, 'capture.jpg');
 
   const response = await fetch(`${API_BASE}/analyze`, {
     method: 'POST',

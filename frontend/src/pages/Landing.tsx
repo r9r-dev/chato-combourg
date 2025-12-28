@@ -4,7 +4,7 @@ export function Landing() {
   const { setStep } = useGame();
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center">
+    <div className="flex flex-col items-center justify-center h-dvh p-6 text-center overflow-hidden">
       <div className="max-w-md">
         <h1 className="text-4xl font-bold text-gold mb-8">Chato Combourg</h1>
 

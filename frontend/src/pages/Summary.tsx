@@ -51,7 +51,7 @@ export function Summary() {
     : null;
 
   return (
-    <div className="flex flex-col min-h-screen bg-dark">
+    <div className="flex flex-col h-dvh bg-dark overflow-hidden">
       {/* Keys and coins picker */}
       <KeysCoinsPicker
         keys={state.keys}

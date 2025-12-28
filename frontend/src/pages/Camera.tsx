@@ -145,7 +145,7 @@ export function Camera() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center">
+      <div className="flex flex-col items-center justify-center h-dvh p-6 text-center overflow-hidden">
         <div className="bg-red-900/50 text-red-200 p-6 rounded-xl mb-6">
           <p className="text-lg font-semibold mb-2">Erreur caméra</p>
           <p>{error}</p>
@@ -161,10 +161,10 @@ export function Camera() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-dark">
+    <div className="flex flex-col h-dvh bg-dark overflow-hidden">
       {/* Camera view */}
       <div className="relative flex-1 flex items-center justify-center overflow-hidden">
-        <div className="relative w-full max-w-lg aspect-square">
+        <div className="relative w-full max-w-sm aspect-[3/4]">
           {/* iOS requires playsInline and webkit-playsinline for inline video */}
           <video
             ref={videoRef}

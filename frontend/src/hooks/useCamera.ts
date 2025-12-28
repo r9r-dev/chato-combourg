@@ -16,11 +16,12 @@ export function useCamera(options: UseCameraOptions = {}) {
       setError(null);
 
       // iOS Safari requires specific constraints
+      // Portrait aspect ratio 3:4 for card grids
       const constraints: MediaStreamConstraints = {
         video: {
           facingMode: { ideal: facingMode },
-          width: { ideal: 1280 },
-          height: { ideal: 1280 },
+          width: { ideal: 1080 },
+          height: { ideal: 1440 },
         },
         audio: false,
       };
@@ -108,19 +109,14 @@ export function useCamera(options: UseCameraOptions = {}) {
     const video = videoRef.current;
     const canvas = document.createElement('canvas');
 
-    // Use square crop from center
-    const size = Math.min(video.videoWidth, video.videoHeight);
-    canvas.width = size;
-    canvas.height = size;
+    // Capture full frame (portrait orientation)
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
 
-    // Calculate crop offset to center
-    const offsetX = (video.videoWidth - size) / 2;
-    const offsetY = (video.videoHeight - size) / 2;
-
-    ctx.drawImage(video, offsetX, offsetY, size, size, 0, 0, size, size);
+    ctx.drawImage(video, 0, 0);
 
     return new Promise<Blob | null>((resolve) => {
       canvas.toBlob(
