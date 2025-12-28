@@ -1,0 +1,127 @@
+import logging
+from contextlib import asynccontextmanager
+from pathlib import Path
+
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+
+from app.config import settings
+from app.routers import analyze, calculator
+from app.services.card_database import card_database
+from app.services.clip_matcher import clip_matcher
+
+# Paths
+BASE_DIR = Path(__file__).parent.parent
+CARDS_DIR = BASE_DIR / "cards"
+FRONTEND_DIR = BASE_DIR.parent / "frontend" / "dist"
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan handler for startup/shutdown."""
+    # Startup
+    logger.info("Starting Card Recognition API...")
+
+    # Load card database
+    logger.info("Loading card database...")
+    card_database.load()
+    logger.info(f"Loaded {len(card_database)} cards")
+
+    # Initialize CLIP matcher (pre-compute embeddings)
+    logger.info("Initializing CLIP matcher...")
+    clip_matcher.initialize()
+    logger.info("CLIP matcher ready")
+
+    yield
+
+    # Shutdown
+    logger.info("Shutting down...")
+
+
+app = FastAPI(
+    title="Card Recognition API",
+    description="API for identifying cards from photos of 3x3 grids",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include routers
+app.include_router(analyze.router)
+app.include_router(calculator.router)
+
+# Mount static files for card images
+app.mount("/cards", StaticFiles(directory=str(CARDS_DIR)), name="cards")
+
+# Mount frontend static files if the build exists
+if FRONTEND_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIR / "assets")), name="assets")
+
+
+@app.get("/api")
+async def api_info():
+    """API info endpoint."""
+    return {
+        "name": "Card Recognition API",
+        "version": "1.0.0",
+        "endpoints": {
+            "analyze": "/api/analyze",
+            "calculate": "/api/calculate",
+            "health": "/api/health",
+            "cards": "/api/cards",
+        },
+    }
+
+
+@app.get("/{full_path:path}")
+async def serve_spa(request: Request, full_path: str):
+    """Serve the SPA for all non-API routes."""
+    # Skip API routes
+    if full_path.startswith("api/") or full_path.startswith("cards/"):
+        return {"detail": "Not found"}
+
+    # Serve index.html for SPA routing
+    index_path = FRONTEND_DIR / "index.html"
+    if index_path.exists():
+        return FileResponse(str(index_path))
+
+    # Fallback to API info if frontend not built
+    return {
+        "name": "Card Recognition API",
+        "version": "1.0.0",
+        "message": "Frontend not built. Run 'npm run build' in frontend directory.",
+        "endpoints": {
+            "analyze": "/api/analyze",
+            "calculate": "/api/calculate",
+            "health": "/api/health",
+            "cards": "/api/cards",
+        },
+    }
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "app.main:app",
+        host=settings.api_host,
+        port=settings.api_port,
+        reload=True,
+    )

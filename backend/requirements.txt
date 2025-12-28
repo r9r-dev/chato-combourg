@@ -1,0 +1,28 @@
+# Web framework
+fastapi>=0.115.6
+uvicorn[standard]>=0.34.0
+python-multipart>=0.0.20
+
+# Image processing
+pillow>=11.1.0
+opencv-python-headless>=4.10.0
+rembg>=2.0.50
+onnxruntime>=1.17.0
+
+# Machine Learning
+torch>=2.9.1
+numpy>=2.2.0
+
+# CLIP (OpenAI)
+git+https://github.com/openai/CLIP.git
+
+# Anthropic API
+anthropic>=0.75.0
+
+# Configuration
+pydantic>=2.12.0
+pydantic-settings>=2.7.0
+
+# Development
+pytest>=8.3.0
+httpx>=0.28.0
