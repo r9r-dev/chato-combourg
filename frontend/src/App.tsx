@@ -6,6 +6,7 @@ import { Players } from './pages/Players';
 import { Keys } from './pages/Keys';
 import { Coins } from './pages/Coins';
 import { Camera } from './pages/Camera';
+import { Review } from './pages/Review';
 import { Summary } from './pages/Summary';
 import { Games } from './pages/Games';
 import { Settings } from './pages/Settings';
@@ -30,6 +31,8 @@ function AppContent() {
       return <Coins />;
     case 'camera':
       return <Camera />;
+    case 'review':
+      return <Review />;
     case 'summary':
       return <Summary />;
     case 'games':

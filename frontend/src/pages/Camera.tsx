@@ -12,7 +12,7 @@ const CAPTURE_INTERVAL = 2000; // 2 seconds
 export function Camera() {
   const { videoRef, isReady, error, startCamera, stopCamera, captureFrameAsync } =
     useCamera();
-  const { state, setStep, setCards, reset, getCurrentPlayer, saveCurrentPlayerAndNext } = useGame();
+  const { state, setStep, setCards, reset, getCurrentPlayer } = useGame();
 
   const [identifiedCards, setIdentifiedCards] = useState<GameCard[]>([]);
   const [detectedBboxes, setDetectedBboxes] = useState<Map<number, BoundingBox>>(new Map());
@@ -130,8 +130,8 @@ export function Camera() {
     };
   }, [isReady, captureAndAnalyze]);
 
-  // Validate and proceed to next player or summary
-  const handleValidate = useCallback(async () => {
+  // Validate and proceed to review page
+  const handleValidate = useCallback(() => {
     if (isValidating) return;
     setIsValidating(true);
 
@@ -140,24 +140,13 @@ export function Camera() {
       intervalRef.current = null;
     }
 
-    // Set the cards first
+    // Set the cards and go to review
     setCards(identifiedCards);
-
-    // Save current player and check if there are more
-    const hasMorePlayers = await saveCurrentPlayerAndNext();
-
     stopCamera();
-
-    if (hasMorePlayers) {
-      // Go back to keys for next player
-      setStep('keys');
-    } else {
-      // All players done, go to summary
-      setStep('summary');
-    }
+    setStep('review');
 
     setIsValidating(false);
-  }, [identifiedCards, setCards, saveCurrentPlayerAndNext, stopCamera, setStep, isValidating]);
+  }, [identifiedCards, setCards, stopCamera, setStep, isValidating]);
 
   // Handle back button - show confirmation
   const handleBack = useCallback(() => {
