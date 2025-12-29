@@ -62,7 +62,9 @@ def check_required_files():
 async def lifespan(app: FastAPI):
     """Application lifespan handler for startup/shutdown."""
     # Startup
-    logger.info("Starting Card Recognition API...")
+    logger.info("=" * 50)
+    logger.info(f"  Chato Combourg v{settings.app_version}")
+    logger.info("=" * 50)
     logger.info(f"Base directory: {BASE_DIR}")
 
     # Initialize database
@@ -100,9 +102,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Card Recognition API",
+    title="Chato Combourg API",
     description="API for identifying cards from photos of 3x3 grids",
-    version="1.0.0",
+    version=settings.app_version,
     lifespan=lifespan,
 )
 
@@ -134,8 +136,8 @@ if FRONTEND_DIR.exists():
 async def api_info():
     """API info endpoint."""
     return {
-        "name": "Card Recognition API",
-        "version": "1.0.0",
+        "name": "Chato Combourg API",
+        "version": settings.app_version,
         "endpoints": {
             "analyze": "/api/analyze",
             "calculate": "/api/calculate",
@@ -159,8 +161,8 @@ async def serve_spa(request: Request, full_path: str):
 
     # Fallback to API info if frontend not built
     return {
-        "name": "Card Recognition API",
-        "version": "1.0.0",
+        "name": "Chato Combourg API",
+        "version": settings.app_version,
         "message": "Frontend not built. Run 'npm run build' in frontend directory.",
         "endpoints": {
             "analyze": "/api/analyze",

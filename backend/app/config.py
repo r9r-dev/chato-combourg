@@ -3,6 +3,9 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    # App version
+    app_version: str = "1.4.1"
+
     # Paths
     base_dir: Path = Path(__file__).parent.parent
     cards_dir: Path = base_dir / "cards"

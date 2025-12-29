@@ -10,6 +10,7 @@ import { Review } from './pages/Review';
 import { Summary } from './pages/Summary';
 import { Games } from './pages/Games';
 import { Settings } from './pages/Settings';
+import { InstallPrompt } from './components/InstallPrompt';
 import { preloadCardImages } from './services/api';
 
 function AppContent() {
@@ -49,6 +50,7 @@ function App() {
     <AuthProvider>
       <GameProvider>
         <AppContent />
+        <InstallPrompt />
       </GameProvider>
     </AuthProvider>
   );
