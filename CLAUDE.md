@@ -34,8 +34,10 @@ container run -p 8080:8080 -e ANTHROPIC_API_KEY=sk-... card-api
 #### Identification Pipeline
 1. **YOLO** (`yolo_detector.py`) detects 9 cards in the photo
 2. **CLIP** (`clip_matcher.py`) identifies each card via embedding similarity
-3. If CLIP confidence < 75%: template matching + attribute filtering
-4. If still low confidence: **Claude Vision** fallback
+3. **Attribute detection** (`template_matcher.py`) always detects value + shields
+4. If CLIP hesitates (confidence < 90% OR gap ≤ 2% between top matches): re-rank using attributes
+5. Suggestions always filtered by detected attributes
+6. If still low confidence: **Claude Vision** fallback
 
 #### Calculator Engine (backend/app/services/calculator/)
 - `models.py` - Pydantic models for request/response
