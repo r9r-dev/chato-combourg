@@ -134,6 +134,11 @@ Environment variables in `.env`:
 - `DEV_MODE` - Use fake user for development (default: false)
 - `DEV_USER_ID`, `DEV_USER_EMAIL`, `DEV_USER_NAME` - Fake user details
 
+## Git Rules
+
+- **NEVER delete or modify existing tags** - Tags are immutable once pushed
+- Create a new patch version (e.g., v1.3.1) for fixes instead of modifying v1.3.0
+
 ## Deployment
 
 ### Container Volume
