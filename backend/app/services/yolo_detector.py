@@ -30,56 +30,103 @@ class YOLOCardDetector:
         self.model = YOLO(str(model_path))
         self._initialized = True
 
-    def _sort_by_grid_position(self, detections: list[dict]) -> list[dict]:
-        """Sort detections into grid order using coordinate clustering.
+    def _sort_and_assign_positions(self, detections: list[dict]) -> list[dict]:
+        """Sort detections and assign grid positions based on spatial coordinates.
 
         Groups cards by Y-coordinate proximity (rows), then sorts each row by X.
-        This is more robust than simple sorting when cards aren't perfectly aligned.
+        Assigns (row, col) positions based on actual spatial location, not index.
+        This is robust even when fewer than 9 cards are detected.
         """
-        if len(detections) <= 1:
+        if len(detections) == 0:
+            return detections
+
+        if len(detections) == 1:
+            # Single card: assign based on position in image
+            det = detections[0]
+            det["position"] = (1, 1)  # Default to center
             return detections
 
         # Extract Y coordinates
         y_coords = [d["center"][1] for d in detections]
+        x_coords = [d["center"][0] for d in detections]
 
-        # Find row boundaries using gaps in Y coordinates
-        sorted_y = sorted(set(y_coords))
-        if len(sorted_y) >= 3:
-            # Calculate gaps between consecutive Y values
-            gaps = [(sorted_y[i + 1] - sorted_y[i], i) for i in range(len(sorted_y) - 1)]
-            # Find the 2 largest gaps to split into 3 rows
+        # Calculate Y thresholds for row assignment
+        y_thresholds = self._calculate_thresholds(y_coords)
+
+        # Calculate X thresholds for column assignment
+        x_thresholds = self._calculate_thresholds(x_coords)
+
+        # Assign row and column to each detection based on coordinates
+        for det in detections:
+            y = det["center"][1]
+            x = det["center"][0]
+
+            # Determine row
+            if y < y_thresholds[0]:
+                row = 0
+            elif y < y_thresholds[1]:
+                row = 1
+            else:
+                row = 2
+
+            # Determine column
+            if x < x_thresholds[0]:
+                col = 0
+            elif x < x_thresholds[1]:
+                col = 1
+            else:
+                col = 2
+
+            det["position"] = (row, col)
+
+        # Sort by position for consistent ordering
+        detections.sort(key=lambda d: (d["position"][0], d["position"][1]))
+
+        return detections
+
+    def _calculate_thresholds(self, coords: list[float]) -> tuple[float, float]:
+        """Calculate two thresholds to divide coordinates into 3 groups.
+
+        Uses gap analysis when possible, falls back to equal division.
+        """
+        sorted_coords = sorted(set(coords))
+
+        if len(sorted_coords) >= 3:
+            # Calculate gaps between consecutive values
+            gaps = [
+                (sorted_coords[i + 1] - sorted_coords[i], i)
+                for i in range(len(sorted_coords) - 1)
+            ]
+            # Find the 2 largest gaps to split into 3 groups
             gaps.sort(reverse=True)
-            split_indices = sorted([gaps[0][1], gaps[1][1]] if len(gaps) >= 2 else [gaps[0][1]])
+
+            if len(gaps) >= 2:
+                split_indices = sorted([gaps[0][1], gaps[1][1]])
+            else:
+                split_indices = [gaps[0][1]]
 
             # Calculate thresholds as midpoints of the gaps
             thresholds = []
             for idx in split_indices:
-                threshold = (sorted_y[idx] + sorted_y[idx + 1]) / 2
+                threshold = (sorted_coords[idx] + sorted_coords[idx + 1]) / 2
                 thresholds.append(threshold)
             thresholds.sort()
+
+            # Ensure we have 2 thresholds
+            if len(thresholds) == 1:
+                # Add a second threshold
+                min_c, max_c = min(coords), max(coords)
+                if thresholds[0] < (min_c + max_c) / 2:
+                    thresholds.append(thresholds[0] + (max_c - thresholds[0]) / 2)
+                else:
+                    thresholds.insert(0, min_c + (thresholds[0] - min_c) / 2)
+
+            return (thresholds[0], thresholds[1])
         else:
-            # Fallback: divide Y range into 3 equal parts
-            min_y, max_y = min(y_coords), max(y_coords)
-            range_y = max_y - min_y
-            thresholds = [min_y + range_y / 3, min_y + 2 * range_y / 3]
-
-        # Assign each detection to a row
-        rows: list[list[dict]] = [[], [], []]
-        for det in detections:
-            y = det["center"][1]
-            if y < thresholds[0]:
-                rows[0].append(det)
-            elif y < thresholds[1]:
-                rows[1].append(det)
-            else:
-                rows[2].append(det)
-
-        # Sort each row by X coordinate
-        for row in rows:
-            row.sort(key=lambda d: d["center"][0])
-
-        # Flatten back
-        return [d for row in rows for d in row]
+            # Fallback: divide range into 3 equal parts
+            min_c, max_c = min(coords), max(coords)
+            range_c = max_c - min_c if max_c > min_c else 100  # Avoid division issues
+            return (min_c + range_c / 3, min_c + 2 * range_c / 3)
 
     def detect_cards(
         self, image: Image.Image, confidence: float = 0.05
@@ -123,22 +170,16 @@ class YOLOCardDetector:
                 "center": (cx, cy),
             })
 
-        # Sort by position: top-to-bottom, then left-to-right
-        # Group into rows based on y-coordinate clustering
-        if detections:
-            detections = self._sort_by_grid_position(detections)
-
         # Take top 9 by confidence if more than 9 detected
         if len(detections) > 9:
-            # Re-sort by confidence, take top 9, then re-sort by position
-            by_conf = sorted(detections, key=lambda d: d["confidence"], reverse=True)[:9]
-            detections = self._sort_by_grid_position(by_conf)
+            detections = sorted(
+                detections, key=lambda d: d["confidence"], reverse=True
+            )[:9]
 
-        # Assign grid positions
-        for i, det in enumerate(detections):
-            row = i // 3
-            col = i % 3
-            det["position"] = (row, col)
+        # Sort and assign grid positions based on spatial coordinates
+        # This works correctly even when fewer than 9 cards are detected
+        if detections:
+            detections = self._sort_and_assign_positions(detections)
 
         return detections
 
