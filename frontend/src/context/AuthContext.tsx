@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setError(null);
       } catch (err) {
         console.error('Failed to load user data:', err);
-        setError('Impossible de charger les donnees utilisateur');
+        setError('Impossible de charger les données utilisateur');
       } finally {
         setLoading(false);
       }

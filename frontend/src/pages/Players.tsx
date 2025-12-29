@@ -72,7 +72,7 @@ export function Players() {
       {/* Content */}
       <div className="flex-1 overflow-auto p-4">
         <p className="text-center text-white/60 mb-4">
-          Selectionnez 2 a 5 joueurs ({selected.length}/5)
+          Sélectionnez 2 à 5 joueurs ({selected.length}/5)
         </p>
 
         {/* Players list */}
@@ -193,7 +193,7 @@ export function Players() {
       <ConfirmDialog
         isOpen={showQuitConfirm}
         title="Quitter ?"
-        message="Voulez-vous vraiment quitter ? La selection sera perdue."
+        message="Voulez-vous vraiment quitter ? La sélection sera perdue."
         confirmLabel="Quitter"
         cancelLabel="Annuler"
         onConfirm={confirmQuit}

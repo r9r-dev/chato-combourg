@@ -39,8 +39,8 @@ export function Coins() {
             <span className="text-white/40 text-sm">({playerIndex}/{totalPlayers})</span>
           </div>
         )}
-        <h1 className="text-3xl font-bold text-gold mb-2">Pieces</h1>
-        <p className="text-white/60">Combien de pieces avez-vous ?</p>
+        <h1 className="text-3xl font-bold text-gold mb-2">Pièces</h1>
+        <p className="text-white/60">Combien de pièces avez-vous ?</p>
       </div>
 
       {/* NumberPad - centered */}

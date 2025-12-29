@@ -17,7 +17,7 @@ export function Camera() {
   const [identifiedCards, setIdentifiedCards] = useState<GameCard[]>([]);
   const [detectedBboxes, setDetectedBboxes] = useState<Map<number, BoundingBox>>(new Map());
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('Initialisation de la camera...');
+  const [statusMessage, setStatusMessage] = useState('Initialisation de la caméra...');
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const intervalRef = useRef<number | null>(null);
@@ -86,12 +86,12 @@ export function Camera() {
 
         const highConfPositions = getHighConfidencePositions(newCards);
         if (highConfPositions.size === 9) {
-          setStatusMessage('Toutes les cartes identifiees !');
+          setStatusMessage('Toutes les cartes identifiées !');
         } else {
           setStatusMessage('Placez les 9 cartes dans le cadre');
         }
       } else {
-        setStatusMessage('Aucune carte detectee');
+        setStatusMessage('Aucune carte détectée');
       }
     } catch (err) {
       console.error('Analysis error:', err);
@@ -174,7 +174,7 @@ export function Camera() {
     return (
       <div className="flex flex-col items-center justify-center h-dvh p-6 text-center overflow-hidden">
         <div className="bg-red-900/50 text-red-200 p-6 rounded-xl mb-6">
-          <p className="text-lg font-semibold mb-2">Erreur camera</p>
+          <p className="text-lg font-semibold mb-2">Erreur caméra</p>
           <p>{error}</p>
         </div>
         <button

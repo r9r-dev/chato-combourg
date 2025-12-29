@@ -42,14 +42,14 @@ export function Landing() {
               className="w-full py-4 px-8 bg-dark-lighter text-white/40 font-semibold text-lg rounded-xl
                          cursor-not-allowed border border-white/10"
             >
-              Parametres
+              Paramètres
             </button>
           </div>
 
           {/* User info */}
           {user && (
             <div className="mt-8 text-white/40 text-sm">
-              Connecte en tant que {user.name || user.email || user.id}
+              Connecté en tant que {user.name || user.email || user.id}
             </div>
           )}
         </div>

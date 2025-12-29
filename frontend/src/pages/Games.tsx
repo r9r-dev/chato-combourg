@@ -77,7 +77,7 @@ export function Games() {
             </svg>
             <p className="text-white/40 text-lg mb-2">Aucune partie</p>
             <p className="text-white/30 text-sm">
-              Vos parties sauvegardees apparaitront ici
+              Vos parties sauvegardées apparaîtront ici
             </p>
           </div>
         ) : (

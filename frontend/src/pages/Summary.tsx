@@ -72,11 +72,11 @@ export function Summary() {
         {/* Keys and coins display */}
         <div className="flex justify-center gap-8 py-3 bg-dark-lighter border-b border-gold/20">
           <div className="flex items-center gap-2">
-            <span className="text-white/60">Cles</span>
+            <span className="text-white/60">Clés</span>
             <span className="text-xl font-bold text-gold">{viewingPlayer.keys}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-white/60">Pieces</span>
+            <span className="text-white/60">Pièces</span>
             <span className="text-xl font-bold text-gold">{viewingPlayer.coins}</span>
           </div>
         </div>
@@ -97,7 +97,7 @@ export function Summary() {
               {viewingPlayer.score?.total_score ?? 0} pts
             </div>
             <div className="text-white/40 text-sm mt-1">
-              Cartes: {viewingPlayer.score?.cards_score ?? 0} + Cles: {viewingPlayer.score?.keys_bonus ?? 0}
+              Cartes: {viewingPlayer.score?.cards_score ?? 0} + Clés: {viewingPlayer.score?.keys_bonus ?? 0}
             </div>
           </div>
         </div>
@@ -122,7 +122,7 @@ export function Summary() {
     <div className="flex flex-col h-dvh bg-dark overflow-hidden">
       {/* Header */}
       <div className="p-4 bg-dark-lighter border-b border-white/10">
-        <h1 className="text-2xl font-bold text-gold text-center">Resultats</h1>
+        <h1 className="text-2xl font-bold text-gold text-center">Résultats</h1>
       </div>
 
       {/* Rankings */}

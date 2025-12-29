@@ -39,8 +39,8 @@ export function Keys() {
             <span className="text-white/40 text-sm">({playerIndex}/{totalPlayers})</span>
           </div>
         )}
-        <h1 className="text-3xl font-bold text-gold mb-2">Cles</h1>
-        <p className="text-white/60">Combien de cles avez-vous ?</p>
+        <h1 className="text-3xl font-bold text-gold mb-2">Clés</h1>
+        <p className="text-white/60">Combien de clés avez-vous ?</p>
       </div>
 
       {/* NumberPad - centered */}
