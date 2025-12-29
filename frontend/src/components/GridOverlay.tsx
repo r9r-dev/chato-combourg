@@ -11,16 +11,16 @@ export function GridOverlay({ identifiedPositions }: GridOverlayProps) {
         {Array.from({ length: 9 }).map((_, i) => {
           const isIdentified = identifiedPositions.has(i);
           return (
-            <div key={i} className="relative border border-gold/50">
+            <div key={i} className="relative border border-gold/50 flex items-center justify-center">
               {/* Numbered badge */}
               <div
                 className={`
-                  absolute top-1 left-1 w-6 h-6 rounded-full
+                  w-12 h-12 rounded-full
                   flex items-center justify-center
-                  text-sm font-bold transition-colors
+                  text-xl font-bold transition-colors
                   ${isIdentified
-                    ? 'bg-green-500 text-white'
-                    : 'bg-dark/70 text-white/50 border border-white/30'
+                    ? 'bg-green-500/80 text-white'
+                    : 'bg-dark/50 text-white/40 border-2 border-white/20'
                   }
                 `}
               >
