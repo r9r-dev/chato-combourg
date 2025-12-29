@@ -36,9 +36,13 @@ export function Camera() {
     []
   );
 
-  // Count cards with high confidence
-  const getHighConfidenceCount = useCallback((cards: GameCard[]): number => {
-    return cards.filter((c) => c.confidence >= CONFIDENCE_THRESHOLD).length;
+  // Get positions of cards with high confidence
+  const getHighConfidencePositions = useCallback((cards: GameCard[]): Set<number> => {
+    return new Set(
+      cards
+        .filter((c) => c.confidence >= CONFIDENCE_THRESHOLD)
+        .map((c) => c.position)
+    );
   }, []);
 
   // Capture and analyze
@@ -61,8 +65,8 @@ export function Camera() {
         const newCards = processResults(response.cards);
         setIdentifiedCards(newCards);
 
-        const highConfCount = getHighConfidenceCount(newCards);
-        if (highConfCount === 9) {
+        const highConfPositions = getHighConfidencePositions(newCards);
+        if (highConfPositions.size === 9) {
           // All cards identified with high confidence
           setStatusMessage('Toutes les cartes identifiées !');
           if (intervalRef.current) {
@@ -76,7 +80,7 @@ export function Camera() {
             setStep('summary');
           }, 500);
         } else {
-          setStatusMessage(`${highConfCount}/9 cartes identifiées`);
+          setStatusMessage('Placez les 9 cartes dans le cadre');
         }
       } else {
         setStatusMessage('Aucune carte détectée');
@@ -92,7 +96,7 @@ export function Camera() {
     isReady,
     captureFrameAsync,
     processResults,
-    getHighConfidenceCount,
+    getHighConfidencePositions,
     stopCamera,
     setCards,
     setStep,
@@ -174,7 +178,7 @@ export function Camera() {
             muted
             className="absolute inset-0 w-full h-full object-cover rounded-lg"
           />
-          <GridOverlay identifiedCount={getHighConfidenceCount(identifiedCards)} />
+          <GridOverlay identifiedPositions={getHighConfidencePositions(identifiedCards)} />
 
           {/* Analyzing indicator */}
           {isAnalyzing && (
