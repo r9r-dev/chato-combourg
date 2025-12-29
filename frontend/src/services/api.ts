@@ -53,5 +53,23 @@ export async function getCards(): Promise<Card[]> {
 }
 
 export function getCardImageUrl(cardId: string): string {
-  return `/cards/carte_${cardId}.png`;
+  return `/cards/thumbs/carte_${cardId}.webp`;
+}
+
+export function preloadCardImages(): Promise<void[]> {
+  // Preload all 92 card thumbnails (~1.4 MB total)
+  const promises: Promise<void>[] = [];
+  for (let i = 1; i <= 92; i++) {
+    const cardId = i.toString().padStart(3, '0');
+    const url = getCardImageUrl(cardId);
+    promises.push(
+      new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve();
+        img.onerror = () => resolve(); // Don't fail on missing images
+        img.src = url;
+      })
+    );
+  }
+  return Promise.all(promises);
 }

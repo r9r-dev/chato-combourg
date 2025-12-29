@@ -120,7 +120,6 @@ export function CardSelector({
                         src={getCardImageUrl(alt.id)}
                         alt={`Carte ${alt.id}`}
                         className="w-full h-full object-cover"
-                        loading="lazy"
                       />
                     </button>
                   ))}
@@ -172,7 +171,6 @@ export function CardSelector({
                           src={getCardImageUrl(card.id)}
                           alt={card.name}
                           className="w-full h-full object-cover"
-                          loading="lazy"
                         />
                       </button>
                     ))}

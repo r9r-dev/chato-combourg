@@ -41,7 +41,6 @@ export function CardGrid({ cards, scoreDetails, onCardClick }: CardGridProps) {
                   src={getCardImageUrl(card.cardId)}
                   alt={`Carte ${card.cardId}`}
                   className="w-full h-full object-cover"
-                  loading="lazy"
                 />
               ) : (
                 <div className="w-full h-full bg-dark-card flex items-center justify-center">
