@@ -12,7 +12,7 @@ export function Landing() {
         <div className="max-w-md w-full text-center">
           {/* Title */}
           <h1 className="text-4xl font-bold text-gold mb-2">Chato Combourg</h1>
-          <p className="text-lg text-white/60 mb-12">Calculateur de score</p>
+          <p className="text-lg text-white/60 mb-12">Calculateur de score pour le jeu Château Combo</p>
 
           {/* Menu buttons */}
           <div className="space-y-4">
