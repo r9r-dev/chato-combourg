@@ -1,31 +1,49 @@
 #!/bin/sh
 set -e
 
-DEPS_MARKER="/app/deps/.installed"
+DEPS_DIR="/app/deps"
+DEPS_MARKER="$DEPS_DIR/.installed"
 REQUIREMENTS="/app/requirements.txt"
+REQUIREMENTS_HASH="$DEPS_DIR/.requirements_hash"
 
 echo "=== Chato Combourg Startup ==="
 
-# Check if dependencies are already installed
-if [ -f "$DEPS_MARKER" ]; then
-    echo "Dependencies already installed (cached)"
+# Compute hash of requirements.txt
+CURRENT_HASH=$(md5sum "$REQUIREMENTS" | cut -d' ' -f1)
+
+# Check if dependencies need to be installed/updated
+NEEDS_INSTALL=false
+if [ ! -f "$DEPS_MARKER" ]; then
+    echo "First run: dependencies not installed"
+    NEEDS_INSTALL=true
+elif [ ! -f "$REQUIREMENTS_HASH" ]; then
+    echo "No requirements hash found, checking dependencies..."
+    NEEDS_INSTALL=true
+elif [ "$CURRENT_HASH" != "$(cat $REQUIREMENTS_HASH)" ]; then
+    echo "requirements.txt changed, updating dependencies..."
+    NEEDS_INSTALL=true
 else
-    echo "First run: Installing dependencies..."
+    echo "Dependencies up to date (cached)"
+fi
+
+if [ "$NEEDS_INSTALL" = true ]; then
+    echo "Installing dependencies..."
     echo "This may take 5-10 minutes. Subsequent starts will be fast."
     echo ""
 
     # Install dependencies to persistent location
-    pip install --no-cache-dir --target=/app/deps -r "$REQUIREMENTS"
+    pip install --no-cache-dir --target="$DEPS_DIR" -r "$REQUIREMENTS"
 
-    # Mark as installed
+    # Save hash and mark as installed
+    echo "$CURRENT_HASH" > "$REQUIREMENTS_HASH"
     touch "$DEPS_MARKER"
     echo ""
     echo "Dependencies installed successfully!"
 fi
 
 # Add deps to Python path and bin to PATH
-export PYTHONPATH="/app/deps:$PYTHONPATH"
-export PATH="/app/deps/bin:$PATH"
+export PYTHONPATH="$DEPS_DIR:$PYTHONPATH"
+export PATH="$DEPS_DIR/bin:$PATH"
 
 # Download CLIP model if not cached
 echo "Checking CLIP model cache..."
