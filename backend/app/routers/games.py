@@ -1,5 +1,9 @@
+import csv
+import io
+import json
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 
@@ -83,6 +87,28 @@ class GameListItem(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ManualGamePlayerCreate(BaseModel):
+    """Player data for manual game creation (simplified)."""
+
+    player_id: int
+    score: int
+
+
+class ManualGameCreate(BaseModel):
+    """Request to create a manual game (scores only, no cards)."""
+
+    players: list[ManualGamePlayerCreate]  # 2-5 players
+    notes: str | None = None
+    played_at: datetime | None = None
+
+    @field_validator("players")
+    @classmethod
+    def validate_players(cls, v):
+        if len(v) < 2 or len(v) > 5:
+            raise ValueError("A game must have between 2 and 5 players")
+        return v
 
 
 def compute_ranks(players: list[GamePlayerCreate]) -> list[int]:
@@ -177,6 +203,157 @@ def create_game(
             keys=player_data.keys,
             coins=player_data.coins,
             cards=player_data.cards,
+            score=player_data.score,
+            rank=rank,
+        )
+        db.add(gp)
+        game_players.append(gp)
+
+    db.commit()
+    db.refresh(game)
+
+    # Build response
+    return GameResponse(
+        id=game.id,
+        played_at=game.played_at,
+        notes=game.notes,
+        players=[
+            GamePlayerResponse(
+                id=gp.id,
+                player_id=gp.player_id,
+                player_name=player_lookup[gp.player_id].name,
+                player_color=player_lookup[gp.player_id].color,
+                position=gp.position,
+                keys=gp.keys,
+                coins=gp.coins,
+                cards=gp.cards,
+                score=gp.score,
+                rank=gp.rank,
+            )
+            for gp in game_players
+        ],
+    )
+
+
+@router.get("/export")
+def export_games(
+    format: str = Query("json", pattern="^(json|csv)$"),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Export all games for the current user."""
+    games = (
+        db.query(Game)
+        .filter(Game.user_id == user.id)
+        .order_by(Game.played_at.desc())
+        .all()
+    )
+
+    # Build export data
+    export_data = []
+    for game in games:
+        game_data = {
+            "id": game.id,
+            "played_at": game.played_at.isoformat(),
+            "notes": game.notes,
+            "players": [],
+        }
+        for gp in game.game_players:
+            game_data["players"].append({
+                "player_name": gp.player.name,
+                "position": gp.position,
+                "keys": gp.keys,
+                "coins": gp.coins,
+                "cards": gp.cards,
+                "score": gp.score,
+                "rank": gp.rank,
+            })
+        export_data.append(game_data)
+
+    if format == "json":
+        content = json.dumps(export_data, indent=2, ensure_ascii=False)
+        return StreamingResponse(
+            io.StringIO(content),
+            media_type="application/json",
+            headers={"Content-Disposition": "attachment; filename=games.json"},
+        )
+    else:
+        # CSV format - flatten players into separate rows
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow([
+            "game_id", "played_at", "notes",
+            "player_name", "position", "keys", "coins", "score", "rank", "cards"
+        ])
+        for game_data in export_data:
+            for player in game_data["players"]:
+                writer.writerow([
+                    game_data["id"],
+                    game_data["played_at"],
+                    game_data["notes"] or "",
+                    player["player_name"],
+                    player["position"],
+                    player["keys"],
+                    player["coins"],
+                    player["score"],
+                    player["rank"],
+                    ";".join(player["cards"]) if player["cards"] else "",
+                ])
+        output.seek(0)
+        return StreamingResponse(
+            output,
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=games.csv"},
+        )
+
+
+@router.post("/manual", response_model=GameResponse, status_code=201)
+def create_manual_game(
+    data: ManualGameCreate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Create a manual game (scores only, no cards/keys/coins)."""
+    # Validate all players belong to the user
+    player_ids = [p.player_id for p in data.players]
+    players = (
+        db.query(Player)
+        .filter(Player.id.in_(player_ids), Player.user_id == user.id)
+        .all()
+    )
+    if len(players) != len(player_ids):
+        raise HTTPException(status_code=400, detail="Invalid player IDs")
+
+    # Create player lookup for response
+    player_lookup = {p.id: p for p in players}
+
+    # Compute ranks based on scores
+    sorted_indices = sorted(
+        range(len(data.players)), key=lambda i: data.players[i].score, reverse=True
+    )
+    ranks = [0] * len(data.players)
+    for rank, idx in enumerate(sorted_indices, start=1):
+        ranks[idx] = rank
+
+    # Create game
+    game = Game(
+        user_id=user.id,
+        played_at=data.played_at or datetime.utcnow(),
+        notes=data.notes,
+    )
+    db.add(game)
+    db.flush()  # Get game.id
+
+    # Create game players (with empty cards, 0 keys/coins)
+    game_players = []
+    for position, (player_data, rank) in enumerate(zip(data.players, ranks), start=1):
+        gp = GamePlayer(
+            game_id=game.id,
+            player_id=player_data.player_id,
+            position=position,
+            keys=0,
+            coins=0,
+            cards=[],  # Empty cards for manual games
             score=player_data.score,
             rank=rank,
         )

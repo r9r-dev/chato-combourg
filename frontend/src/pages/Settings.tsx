@@ -1,0 +1,498 @@
+import { useState, useEffect } from 'react';
+import { useGame } from '../context/GameContext';
+import { useAuth } from '../context/AuthContext';
+import {
+  getPlayersWithStats,
+  updatePlayer,
+  deletePlayer,
+  getSettings,
+  updateSettings,
+  exportGames,
+  createManualGame,
+} from '../services/api';
+import { ConfirmDialog } from '../components/ConfirmDialog';
+import type { PlayerWithStats, PlayerOrderMode } from '../types';
+
+const PLAYER_COLORS = [
+  '#E53935', '#1E88E5', '#43A047', '#FB8C00', '#8E24AA',
+  '#00ACC1', '#FFB300', '#6D4C41', '#EC407A', '#5C6BC0',
+];
+
+const ORDER_OPTIONS: { value: PlayerOrderMode; label: string }[] = [
+  { value: 'alphabetical', label: 'Alphabétique' },
+  { value: 'manual', label: 'Manuel' },
+  { value: 'most_played', label: 'Les plus fréquents' },
+  { value: 'last_played', label: 'Derniers à avoir joué' },
+];
+
+export function Settings() {
+  const { setStep } = useGame();
+  const { refreshPlayers } = useAuth();
+
+  const [players, setPlayers] = useState<PlayerWithStats[]>([]);
+  const [playerOrder, setPlayerOrder] = useState<PlayerOrderMode>('alphabetical');
+  const [manualOrder, setManualOrder] = useState<number[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Edit player state
+  const [editingPlayer, setEditingPlayer] = useState<PlayerWithStats | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editColor, setEditColor] = useState('');
+
+  // Delete confirmation
+  const [deletingPlayer, setDeletingPlayer] = useState<PlayerWithStats | null>(null);
+
+  // Manual game state
+  const [showManualGame, setShowManualGame] = useState(false);
+  const [manualGameDate, setManualGameDate] = useState(new Date().toISOString().split('T')[0]);
+  const [manualGameScores, setManualGameScores] = useState<Record<number, string>>({});
+  const [manualGamePlayers, setManualGamePlayers] = useState<number[]>([]);
+
+  // Export state
+  const [exporting, setExporting] = useState(false);
+
+  // Load data
+  useEffect(() => {
+    async function load() {
+      try {
+        const [playersData, settingsData] = await Promise.all([
+          getPlayersWithStats(),
+          getSettings(),
+        ]);
+        setPlayers(playersData);
+        if (settingsData.player_order) {
+          setPlayerOrder(settingsData.player_order as PlayerOrderMode);
+        }
+        if (settingsData.manual_player_order) {
+          setManualOrder(JSON.parse(settingsData.manual_player_order));
+        }
+      } catch (err) {
+        console.error('Failed to load settings:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  // Save player order setting
+  const handleOrderChange = async (order: PlayerOrderMode) => {
+    setPlayerOrder(order);
+    await updateSettings({ player_order: order });
+  };
+
+  // Edit player
+  const startEditPlayer = (player: PlayerWithStats) => {
+    setEditingPlayer(player);
+    setEditName(player.name);
+    setEditColor(player.color);
+  };
+
+  const savePlayer = async () => {
+    if (!editingPlayer) return;
+    try {
+      await updatePlayer(editingPlayer.id, { name: editName, color: editColor });
+      setPlayers(players.map(p =>
+        p.id === editingPlayer.id ? { ...p, name: editName, color: editColor } : p
+      ));
+      setEditingPlayer(null);
+      refreshPlayers();
+    } catch (err) {
+      console.error('Failed to update player:', err);
+    }
+  };
+
+  // Delete player
+  const confirmDeletePlayer = async () => {
+    if (!deletingPlayer) return;
+    try {
+      await deletePlayer(deletingPlayer.id);
+      setPlayers(players.filter(p => p.id !== deletingPlayer.id));
+      setDeletingPlayer(null);
+      refreshPlayers();
+    } catch (err) {
+      console.error('Failed to delete player:', err);
+    }
+  };
+
+  // Manual order (drag would be better, but simple arrows for now)
+  const movePlayer = async (playerId: number, direction: 'up' | 'down') => {
+    const currentOrder = manualOrder.length > 0 ? manualOrder : players.map(p => p.id);
+    const idx = currentOrder.indexOf(playerId);
+    if (idx === -1) return;
+    const newIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (newIdx < 0 || newIdx >= currentOrder.length) return;
+
+    const newOrder = [...currentOrder];
+    [newOrder[idx], newOrder[newIdx]] = [newOrder[newIdx], newOrder[idx]];
+    setManualOrder(newOrder);
+    await updateSettings({ manual_player_order: JSON.stringify(newOrder) });
+  };
+
+  // Export
+  const handleExport = async (format: 'json' | 'csv') => {
+    setExporting(true);
+    try {
+      const blob = await exportGames(format);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `chato-parties-${new Date().toISOString().split('T')[0]}.${format}`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export failed:', err);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // Manual game
+  const toggleManualGamePlayer = (playerId: number) => {
+    if (manualGamePlayers.includes(playerId)) {
+      setManualGamePlayers(manualGamePlayers.filter(id => id !== playerId));
+      const newScores = { ...manualGameScores };
+      delete newScores[playerId];
+      setManualGameScores(newScores);
+    } else if (manualGamePlayers.length < 5) {
+      setManualGamePlayers([...manualGamePlayers, playerId]);
+    }
+  };
+
+  const saveManualGame = async () => {
+    if (manualGamePlayers.length < 2) return;
+    try {
+      await createManualGame({
+        players: manualGamePlayers.map(id => ({
+          player_id: id,
+          score: parseInt(manualGameScores[id] || '0', 10),
+        })),
+        played_at: new Date(manualGameDate).toISOString(),
+      });
+      setShowManualGame(false);
+      setManualGamePlayers([]);
+      setManualGameScores({});
+    } catch (err) {
+      console.error('Failed to create manual game:', err);
+    }
+  };
+
+  // Force update PWA
+  const forceUpdate = () => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        registrations.forEach(r => r.unregister());
+      });
+      caches.keys().then(names => {
+        names.forEach(name => caches.delete(name));
+      });
+      window.location.reload();
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-dvh">
+        <div className="text-white/60">Chargement...</div>
+      </div>
+    );
+  }
+
+  // Sort players for display
+  const sortedPlayers = [...players].sort((a, b) => {
+    switch (playerOrder) {
+      case 'alphabetical':
+        return a.name.localeCompare(b.name);
+      case 'most_played':
+        return b.games_count - a.games_count;
+      case 'last_played':
+        if (!a.last_played_at) return 1;
+        if (!b.last_played_at) return -1;
+        return new Date(b.last_played_at).getTime() - new Date(a.last_played_at).getTime();
+      case 'manual':
+        const orderMap = new Map(manualOrder.map((id, i) => [id, i]));
+        return (orderMap.get(a.id) ?? 999) - (orderMap.get(b.id) ?? 999);
+      default:
+        return 0;
+    }
+  });
+
+  return (
+    <div className="flex flex-col h-dvh bg-dark">
+      {/* Header */}
+      <header className="flex items-center justify-between p-4 border-b border-white/10">
+        <button onClick={() => setStep('landing')} className="text-white/60 hover:text-white">
+          Retour
+        </button>
+        <h1 className="text-lg font-semibold text-white">Paramètres</h1>
+        <div className="w-16" />
+      </header>
+
+      {/* Content */}
+      <div className="flex-1 overflow-auto">
+        {/* Section: Joueurs */}
+        <section className="p-4 border-b border-white/10">
+          <h2 className="text-gold font-semibold mb-3">Joueurs</h2>
+          <div className="space-y-2">
+            {sortedPlayers.map((player, idx) => (
+              <div
+                key={player.id}
+                className="flex items-center gap-3 p-3 bg-dark-lighter rounded-xl"
+              >
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                  style={{ backgroundColor: player.color }}
+                >
+                  {player.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1">
+                  <div className="text-white font-medium">{player.name}</div>
+                  <div className="text-white/40 text-xs">
+                    {player.games_count} partie{player.games_count !== 1 ? 's' : ''}
+                  </div>
+                </div>
+                {playerOrder === 'manual' && (
+                  <div className="flex flex-col gap-1">
+                    <button
+                      onClick={() => movePlayer(player.id, 'up')}
+                      disabled={idx === 0}
+                      className="text-white/40 hover:text-white disabled:opacity-20"
+                    >
+                      ▲
+                    </button>
+                    <button
+                      onClick={() => movePlayer(player.id, 'down')}
+                      disabled={idx === sortedPlayers.length - 1}
+                      className="text-white/40 hover:text-white disabled:opacity-20"
+                    >
+                      ▼
+                    </button>
+                  </div>
+                )}
+                <button
+                  onClick={() => startEditPlayer(player)}
+                  className="p-2 text-white/40 hover:text-white"
+                >
+                  ✏️
+                </button>
+                <button
+                  onClick={() => setDeletingPlayer(player)}
+                  className="p-2 text-white/40 hover:text-red-400"
+                >
+                  🗑️
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Section: Jeu */}
+        <section className="p-4 border-b border-white/10">
+          <h2 className="text-gold font-semibold mb-3">Jeu</h2>
+          <div className="mb-2 text-white/60 text-sm">Ordre des joueurs</div>
+          <div className="grid grid-cols-2 gap-2">
+            {ORDER_OPTIONS.map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => handleOrderChange(opt.value)}
+                className={`p-3 rounded-xl text-sm font-medium transition-all ${
+                  playerOrder === opt.value
+                    ? 'bg-gold text-dark'
+                    : 'bg-dark-lighter text-white/70 hover:bg-dark-card'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Section: Données */}
+        <section className="p-4 border-b border-white/10">
+          <h2 className="text-gold font-semibold mb-3">Données</h2>
+          <div className="space-y-2">
+            <button
+              onClick={() => setShowManualGame(true)}
+              className="w-full p-3 bg-dark-lighter rounded-xl text-white/70 hover:bg-dark-card text-left"
+            >
+              Ajouter une partie manuellement
+            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleExport('json')}
+                disabled={exporting}
+                className="flex-1 p-3 bg-dark-lighter rounded-xl text-white/70 hover:bg-dark-card disabled:opacity-50"
+              >
+                Exporter JSON
+              </button>
+              <button
+                onClick={() => handleExport('csv')}
+                disabled={exporting}
+                className="flex-1 p-3 bg-dark-lighter rounded-xl text-white/70 hover:bg-dark-card disabled:opacity-50"
+              >
+                Exporter CSV
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Section: À propos */}
+        <section className="p-4">
+          <h2 className="text-gold font-semibold mb-3">À propos</h2>
+          <div className="space-y-2">
+            <div className="p-3 bg-dark-lighter rounded-xl">
+              <div className="text-white/40 text-xs">Version</div>
+              <div className="text-white">v{__APP_VERSION__}</div>
+            </div>
+            <button
+              onClick={forceUpdate}
+              className="w-full p-3 bg-dark-lighter rounded-xl text-white/70 hover:bg-dark-card text-left"
+            >
+              Forcer la mise à jour
+            </button>
+          </div>
+        </section>
+      </div>
+
+      {/* Edit Player Modal */}
+      {editingPlayer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70" onClick={() => setEditingPlayer(null)} />
+          <div className="relative w-full max-w-sm bg-dark-lighter rounded-2xl p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Modifier le joueur</h3>
+
+            <div className="mb-4">
+              <label className="text-white/60 text-sm mb-1 block">Nom</label>
+              <input
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="w-full p-3 bg-dark-card rounded-xl text-white border border-white/10 focus:border-gold focus:outline-none"
+              />
+            </div>
+
+            <div className="mb-6">
+              <label className="text-white/60 text-sm mb-2 block">Couleur</label>
+              <div className="grid grid-cols-5 gap-2">
+                {PLAYER_COLORS.map(color => (
+                  <button
+                    key={color}
+                    onClick={() => setEditColor(color)}
+                    className={`w-10 h-10 rounded-full ${editColor === color ? 'ring-2 ring-white ring-offset-2 ring-offset-dark-lighter' : ''}`}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setEditingPlayer(null)}
+                className="flex-1 p-3 bg-dark-card rounded-xl text-white/70"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={savePlayer}
+                className="flex-1 p-3 bg-gold rounded-xl text-dark font-semibold"
+              >
+                Enregistrer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Manual Game Modal */}
+      {showManualGame && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70" onClick={() => setShowManualGame(false)} />
+          <div className="relative w-full max-w-sm bg-dark-lighter rounded-2xl p-6 max-h-[80vh] overflow-auto">
+            <h3 className="text-lg font-semibold text-white mb-4">Ajouter une partie</h3>
+
+            <div className="mb-4">
+              <label className="text-white/60 text-sm mb-1 block">Date</label>
+              <input
+                type="date"
+                value={manualGameDate}
+                onChange={(e) => setManualGameDate(e.target.value)}
+                className="w-full p-3 bg-dark-card rounded-xl text-white border border-white/10 focus:border-gold focus:outline-none"
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="text-white/60 text-sm mb-2 block">
+                Joueurs et scores ({manualGamePlayers.length}/5)
+              </label>
+              <div className="space-y-2">
+                {players.map(player => {
+                  const isSelected = manualGamePlayers.includes(player.id);
+                  return (
+                    <div
+                      key={player.id}
+                      className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
+                        isSelected ? 'bg-gold/20 border border-gold' : 'bg-dark-card border border-transparent'
+                      }`}
+                    >
+                      <button
+                        onClick={() => toggleManualGamePlayer(player.id)}
+                        className="flex items-center gap-2 flex-1"
+                      >
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                          style={{ backgroundColor: player.color }}
+                        >
+                          {player.name.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="text-white">{player.name}</span>
+                      </button>
+                      {isSelected && (
+                        <input
+                          type="number"
+                          placeholder="Score"
+                          value={manualGameScores[player.id] || ''}
+                          onChange={(e) => setManualGameScores({
+                            ...manualGameScores,
+                            [player.id]: e.target.value,
+                          })}
+                          className="w-20 p-2 bg-dark rounded-lg text-white text-center border border-white/10 focus:border-gold focus:outline-none"
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowManualGame(false)}
+                className="flex-1 p-3 bg-dark-card rounded-xl text-white/70"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={saveManualGame}
+                disabled={manualGamePlayers.length < 2}
+                className="flex-1 p-3 bg-gold rounded-xl text-dark font-semibold disabled:opacity-50"
+              >
+                Enregistrer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={!!deletingPlayer}
+        title="Supprimer le joueur ?"
+        message={`${deletingPlayer?.name} sera supprimé définitivement.`}
+        confirmLabel="Supprimer"
+        cancelLabel="Annuler"
+        onConfirm={confirmDeletePlayer}
+        onCancel={() => setDeletingPlayer(null)}
+      />
+    </div>
+  );
+}

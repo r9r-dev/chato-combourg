@@ -76,7 +76,7 @@ export interface GameCard {
 }
 
 export interface GameState {
-  step: 'landing' | 'players' | 'keys' | 'coins' | 'camera' | 'summary' | 'games';
+  step: 'landing' | 'players' | 'keys' | 'coins' | 'camera' | 'summary' | 'games' | 'settings';
   cards: GameCard[];
   keys: number;
   coins: number;
@@ -146,4 +146,18 @@ export interface GamePlayerCreate {
 export interface GameCreate {
   players: GamePlayerCreate[];
   notes?: string;
+}
+
+// Settings
+export type PlayerOrderMode = 'alphabetical' | 'manual' | 'most_played' | 'last_played';
+
+export interface UserSettings {
+  player_order: PlayerOrderMode;
+  manual_player_order?: number[]; // Player IDs in custom order
+}
+
+// Player with stats (for settings)
+export interface PlayerWithStats extends Player {
+  games_count: number;
+  last_played_at: string | null;
 }

@@ -8,6 +8,7 @@ import type {
   GameListItem,
   GameDetail,
   GameCreate,
+  PlayerWithStats,
 } from '../types';
 
 const API_BASE = '/api';
@@ -154,4 +155,81 @@ export async function deleteGame(gameId: number): Promise<void> {
   if (!response.ok) {
     throw new Error(`Delete game failed: ${response.statusText}`);
   }
+}
+
+// Players with stats
+export async function getPlayersWithStats(): Promise<PlayerWithStats[]> {
+  const response = await fetch(`${API_BASE}/players?with_stats=true`);
+  if (!response.ok) {
+    throw new Error(`Get players failed: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function updatePlayer(playerId: number, data: { name?: string; color?: string }): Promise<Player> {
+  const response = await fetch(`${API_BASE}/players/${playerId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    throw new Error(`Update player failed: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+// Settings
+export async function getSettings(): Promise<Record<string, string>> {
+  const response = await fetch(`${API_BASE}/settings`);
+  if (!response.ok) {
+    throw new Error(`Get settings failed: ${response.statusText}`);
+  }
+  const data = await response.json();
+  return data.settings;
+}
+
+export async function updateSettings(settings: Record<string, string | null>): Promise<Record<string, string>> {
+  const response = await fetch(`${API_BASE}/settings`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ settings }),
+  });
+  if (!response.ok) {
+    throw new Error(`Update settings failed: ${response.statusText}`);
+  }
+  const data = await response.json();
+  return data.settings;
+}
+
+// Export games
+export async function exportGames(format: 'json' | 'csv'): Promise<Blob> {
+  const response = await fetch(`${API_BASE}/games/export?format=${format}`);
+  if (!response.ok) {
+    throw new Error(`Export games failed: ${response.statusText}`);
+  }
+  return response.blob();
+}
+
+// Manual game creation (simplified)
+export interface ManualGamePlayer {
+  player_id: number;
+  score: number;
+}
+
+export interface ManualGameCreate {
+  players: ManualGamePlayer[];
+  played_at?: string;
+  notes?: string;
+}
+
+export async function createManualGame(data: ManualGameCreate): Promise<GameDetail> {
+  const response = await fetch(`${API_BASE}/games/manual`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    throw new Error(`Create manual game failed: ${response.statusText}`);
+  }
+  return response.json();
 }

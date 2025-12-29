@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app.auth import get_current_user
-from app.database import get_db, User, Player
+from app.database import get_db, User, Player, GamePlayer, Game
 
 router = APIRouter(prefix="/api/players", tags=["players"])
 
@@ -32,13 +33,61 @@ class PlayerResponse(BaseModel):
         from_attributes = True
 
 
-@router.get("", response_model=list[PlayerResponse])
+class PlayerWithStatsResponse(BaseModel):
+    """Player response with statistics."""
+
+    id: int
+    name: str
+    color: str
+    games_count: int
+    last_played_at: str | None
+
+    class Config:
+        from_attributes = True
+
+
+@router.get("")
 def list_players(
+    with_stats: bool = Query(False),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """List all players for the current user."""
-    return db.query(Player).filter(Player.user_id == user.id).all()
+    players = db.query(Player).filter(Player.user_id == user.id).all()
+
+    if not with_stats:
+        return players
+
+    # Get stats for each player
+    result = []
+    for player in players:
+        # Count games
+        games_count = (
+            db.query(func.count(GamePlayer.id))
+            .filter(GamePlayer.player_id == player.id)
+            .scalar()
+        )
+
+        # Get last played date
+        last_game = (
+            db.query(Game.played_at)
+            .join(GamePlayer, GamePlayer.game_id == Game.id)
+            .filter(GamePlayer.player_id == player.id)
+            .order_by(Game.played_at.desc())
+            .first()
+        )
+
+        result.append(
+            PlayerWithStatsResponse(
+                id=player.id,
+                name=player.name,
+                color=player.color,
+                games_count=games_count or 0,
+                last_played_at=last_game[0].isoformat() if last_game else None,
+            )
+        )
+
+    return result
 
 
 @router.post("", response_model=PlayerResponse, status_code=201)

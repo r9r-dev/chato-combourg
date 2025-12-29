@@ -38,9 +38,11 @@ export function Landing() {
             </button>
 
             <button
-              disabled
-              className="w-full py-4 px-8 bg-dark-lighter text-white/40 font-semibold text-lg rounded-xl
-                         cursor-not-allowed border border-white/10"
+              onClick={() => setStep('settings')}
+              disabled={loading}
+              className="w-full py-4 px-8 bg-dark-lighter text-white font-semibold text-lg rounded-xl
+                         hover:bg-dark-card transition-colors border border-white/10
+                         disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Paramètres
             </button>

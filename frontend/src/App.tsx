@@ -8,6 +8,7 @@ import { Coins } from './pages/Coins';
 import { Camera } from './pages/Camera';
 import { Summary } from './pages/Summary';
 import { Games } from './pages/Games';
+import { Settings } from './pages/Settings';
 import { preloadCardImages } from './services/api';
 
 function AppContent() {
@@ -33,6 +34,8 @@ function AppContent() {
       return <Summary />;
     case 'games':
       return <Games />;
+    case 'settings':
+      return <Settings />;
     default:
       return <Landing />;
   }
