@@ -32,7 +32,7 @@ container run -p 8080:8080 -e ANTHROPIC_API_KEY=sk-... card-api
 ### Backend (backend/)
 
 #### Identification Pipeline
-1. **YOLO** (`yolo_detector.py`) detects 9 cards in the photo
+1. **YOLO** (`yolo_detector.py`) detects cards in the photo and assigns grid positions using coordinate-based thresholds (robust to partial detections with fewer than 9 cards)
 2. **CLIP** (`clip_matcher.py`) identifies each card via embedding similarity
 3. **Attribute detection** (`template_matcher.py`) always detects value + shields
 4. If CLIP hesitates (confidence < 90% OR gap ≤ 2% between top matches): re-rank using attributes
