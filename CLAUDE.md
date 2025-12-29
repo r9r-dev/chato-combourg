@@ -51,6 +51,11 @@ container run -p 8080:8080 -e ANTHROPIC_API_KEY=sk-... card-api
 - `category` - "village" | "castle" | null
 - `has_price_reduction`, `has_lock`, `has_coin_purse`, `max_coins`
 
+#### Card Images
+- **PNG originals** (`backend/cards/`) - 630x880px, used for CLIP/YOLO recognition
+- **WebP thumbnails** (`backend/cards/thumbs/`) - 200x280px, used for frontend display
+- Frontend preloads all thumbnails on app startup for faster rendering
+
 ### Frontend (frontend/)
 
 React + Vite + TypeScript + Tailwind CSS PWA.
