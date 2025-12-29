@@ -112,6 +112,11 @@ class Grid:
         card_ids = [self.cards[p] for p in all_positions]
         return self.count_shields_in_cards(card_ids, color)
 
+    def count_shields_on_card(self, position: int, color: str) -> int:
+        """Count shields of a color on a specific card at position."""
+        card_id = self.cards[position]
+        return self.count_shields_in_cards([card_id], color)
+
     def get_unique_colors_in_cards(self, card_ids: list[str]) -> set[str]:
         """Get set of unique shield colors in a list of cards."""
         colors = set()

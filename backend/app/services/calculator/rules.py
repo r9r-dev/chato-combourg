@@ -232,7 +232,8 @@ def rule_019(grid: Grid, position: int) -> tuple[int, str]:
     """2 points for each blue shield on the same row and the same column."""
     row_count = grid.count_shields_in_row(position, "blue")
     col_count = grid.count_shields_in_col(position, "blue")
-    count = row_count + col_count
+    self_count = grid.count_shields_on_card(position, "blue")
+    count = row_count + col_count - self_count  # Avoid counting card twice
     score = count * 2
     if count == 0:
         explanation = "Tu n'as aucun bouclier bleu. Ni sur cette rangée, ni sur cette colonne."
@@ -286,7 +287,8 @@ def rule_023(grid: Grid, position: int) -> tuple[int, str]:
     """3 points for each blue shield on the same row and the same column."""
     row_count = grid.count_shields_in_row(position, "blue")
     col_count = grid.count_shields_in_col(position, "blue")
-    count = row_count + col_count
+    self_count = grid.count_shields_on_card(position, "blue")
+    count = row_count + col_count - self_count  # Avoid counting card twice
     score = count * 3
     if count == 0:
         explanation = "Tu n'as aucun bouclier bleu. Ni sur cette rangée, ni sur cette colonne."
@@ -545,7 +547,8 @@ def rule_042(grid: Grid, position: int) -> tuple[int, str]:
     """3 points for each green shield on the same row and same column."""
     row_count = grid.count_shields_in_row(position, "green")
     col_count = grid.count_shields_in_col(position, "green")
-    count = row_count + col_count
+    self_count = grid.count_shields_on_card(position, "green")
+    count = row_count + col_count - self_count  # Avoid counting card twice
     score = count * 3
     if count == 0:
         explanation = "Tu n'as aucun bouclier vert. Ni sur cette rangée, ni sur cette colonne."
@@ -779,7 +782,8 @@ def rule_062(grid: Grid, position: int) -> tuple[int, str]:
     """2 points for each pink shield on the same row and the same column."""
     row_count = grid.count_shields_in_row(position, "pink")
     col_count = grid.count_shields_in_col(position, "pink")
-    count = row_count + col_count
+    self_count = grid.count_shields_on_card(position, "pink")
+    count = row_count + col_count - self_count  # Avoid counting card twice
     score = count * 2
     if count == 0:
         explanation = "Tu n'as aucun bouclier violet. Ni sur cette rangée, ni sur cette colonne."
@@ -811,7 +815,8 @@ def rule_065(grid: Grid, position: int) -> tuple[int, str]:
     """3 points for each red shield on the same row and the same column."""
     row_count = grid.count_shields_in_row(position, "red")
     col_count = grid.count_shields_in_col(position, "red")
-    count = row_count + col_count
+    self_count = grid.count_shields_on_card(position, "red")
+    count = row_count + col_count - self_count  # Avoid counting card twice
     score = count * 3
     if count == 0:
         explanation = "Tu n'as aucun bouclier rouge. Ni sur cette rangée, ni sur cette colonne."
@@ -991,7 +996,8 @@ def rule_080(grid: Grid, position: int) -> tuple[int, str]:
     """2 points for each orange shield on the same row and the same column."""
     row_count = grid.count_shields_in_row(position, "orange")
     col_count = grid.count_shields_in_col(position, "orange")
-    count = row_count + col_count
+    self_count = grid.count_shields_on_card(position, "orange")
+    count = row_count + col_count - self_count  # Avoid counting card twice
     score = count * 2
     if count == 0:
         explanation = "Tu n'as aucun bouclier orange. Ni sur cette rangée, ni sur cette colonne."
@@ -1111,7 +1117,8 @@ def rule_092(grid: Grid, position: int) -> tuple[int, str]:
     """2 points for each yellow shield on the same row and the same column."""
     row_count = grid.count_shields_in_row(position, "yellow")
     col_count = grid.count_shields_in_col(position, "yellow")
-    count = row_count + col_count
+    self_count = grid.count_shields_on_card(position, "yellow")
+    count = row_count + col_count - self_count  # Avoid counting card twice
     score = count * 2
     if count == 0:
         explanation = "Tu n'as aucun bouclier jaune. Ni sur cette rangée, ni sur cette colonne."
