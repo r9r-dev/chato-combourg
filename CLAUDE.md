@@ -58,17 +58,23 @@ container run -p 8080:8080 -e ANTHROPIC_API_KEY=sk-... card-api
 
 ### Frontend (frontend/)
 
-React + Vite + TypeScript + Tailwind CSS PWA.
+React + Vite + TypeScript + Tailwind CSS PWA (v1.2.0).
+
+#### User Flow
+`Landing` -> `Keys` -> `Coins` -> `Camera` -> `Summary`
 
 #### Pages
-- `Landing.tsx` - Instructions screen
+- `Landing.tsx` - Home screen with menu (Nouvelle partie, Mes parties, Paramètres)
+- `Keys.tsx` - Keys input with number pad
+- `Coins.tsx` - Coins input with number pad
 - `Camera.tsx` - Camera with 3x3 grid overlay, auto-capture every 2s
-- `Summary.tsx` - Card grid, keys/coins input, score display
+- `Summary.tsx` - Card grid with fixed keys/coins display, score display
 
 #### Components
 - `CardGrid.tsx` - 3x3 card display with scores
 - `CardSelector.tsx` - Modal to replace card (6 suggestions + search)
-- `KeysCoinsPicker.tsx` - +/- inputs for keys and coins
+- `NumberPad.tsx` - Numeric keypad (1-9, -10/0/+10) for keys/coins input
+- `ConfirmDialog.tsx` - Confirmation modal (used for quit confirmation)
 - `GridOverlay.tsx` - Camera grid overlay
 
 ## API Endpoints
