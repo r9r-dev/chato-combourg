@@ -4,13 +4,13 @@ import { registerSW } from 'virtual:pwa-register'
 import './index.css'
 import App from './App.tsx'
 
-// Register service worker with update prompt
-const updateSW = registerSW({
-  onNeedRefresh() {
-    // New version available - prompt user to reload
-    if (confirm('Nouvelle version disponible. Recharger maintenant ?')) {
-      updateSW(true)
-    }
+// Register service worker with auto-update
+// Check for updates every hour
+registerSW({
+  onRegisteredSW(_swUrl, r) {
+    r && setInterval(() => {
+      r.update()
+    }, 60 * 60 * 1000) // Check every hour
   },
   onOfflineReady() {
     console.log('App ready for offline use')
