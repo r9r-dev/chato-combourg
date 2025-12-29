@@ -2,11 +2,8 @@ import { useState, useEffect } from 'react';
 import { useGame } from '../context/GameContext';
 import { useAuth } from '../context/AuthContext';
 import {
-  getPlayersWithStats,
   updatePlayer,
   deletePlayer,
-  getSettings,
-  updateSettings,
   exportGames,
   createManualGame,
 } from '../services/api';
@@ -27,10 +24,15 @@ const ORDER_OPTIONS: { value: PlayerOrderMode; label: string }[] = [
 
 export function Settings() {
   const { setStep } = useGame();
-  const { refreshPlayers } = useAuth();
+  const {
+    playersWithStats,
+    playerOrder,
+    manualPlayerOrder,
+    refreshPlayers,
+    setPlayerOrder: setPlayerOrderContext,
+  } = useAuth();
 
   const [players, setPlayers] = useState<PlayerWithStats[]>([]);
-  const [playerOrder, setPlayerOrder] = useState<PlayerOrderMode>('alphabetical');
   const [manualOrder, setManualOrder] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -51,34 +53,16 @@ export function Settings() {
   // Export state
   const [exporting, setExporting] = useState(false);
 
-  // Load data
+  // Sync from context
   useEffect(() => {
-    async function load() {
-      try {
-        const [playersData, settingsData] = await Promise.all([
-          getPlayersWithStats(),
-          getSettings(),
-        ]);
-        setPlayers(playersData);
-        if (settingsData.player_order) {
-          setPlayerOrder(settingsData.player_order as PlayerOrderMode);
-        }
-        if (settingsData.manual_player_order) {
-          setManualOrder(JSON.parse(settingsData.manual_player_order));
-        }
-      } catch (err) {
-        console.error('Failed to load settings:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
+    setPlayers(playersWithStats);
+    setManualOrder(manualPlayerOrder);
+    setLoading(false);
+  }, [playersWithStats, manualPlayerOrder]);
 
   // Save player order setting
   const handleOrderChange = async (order: PlayerOrderMode) => {
-    setPlayerOrder(order);
-    await updateSettings({ player_order: order });
+    await setPlayerOrderContext(order);
   };
 
   // Edit player
@@ -125,8 +109,7 @@ export function Settings() {
 
     const newOrder = [...currentOrder];
     [newOrder[idx], newOrder[newIdx]] = [newOrder[newIdx], newOrder[idx]];
-    setManualOrder(newOrder);
-    await updateSettings({ manual_player_order: JSON.stringify(newOrder) });
+    await setPlayerOrderContext('manual', newOrder);
   };
 
   // Export

@@ -6,7 +6,7 @@ import type { Player } from '../types';
 
 export function Players() {
   const { setStep, setSelectedPlayers } = useGame();
-  const { players, addPlayer, loading } = useAuth();
+  const { sortedPlayers, addPlayer, loading } = useAuth();
   const [selected, setSelected] = useState<Player[]>([]);
   const [newPlayerName, setNewPlayerName] = useState('');
   const [showAddPlayer, setShowAddPlayer] = useState(false);
@@ -77,7 +77,7 @@ export function Players() {
 
         {/* Players list */}
         <div className="space-y-2 mb-4">
-          {players.map((player) => {
+          {sortedPlayers.map((player) => {
             const isSelected = selected.find((p) => p.id === player.id);
             const order = selected.findIndex((p) => p.id === player.id) + 1;
 
