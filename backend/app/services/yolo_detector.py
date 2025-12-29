@@ -31,51 +31,76 @@ class YOLOCardDetector:
         self._initialized = True
 
     def _sort_and_assign_positions(self, detections: list[dict]) -> list[dict]:
-        """Sort detections and assign grid positions based on spatial coordinates.
+        """Sort detections and assign grid positions based on bounding box grid division.
 
-        Groups cards by Y-coordinate proximity (rows), then sorts each row by X.
-        Assigns (row, col) positions based on actual spatial location, not index.
-        This is robust even when fewer than 9 cards are detected.
+        Estimates the full grid area from detected cards, then divides it into
+        a 3x3 grid. Each card is assigned to the cell containing its center.
+        This is robust even when some cards are missing or slightly misaligned.
         """
         if len(detections) == 0:
             return detections
 
         if len(detections) == 1:
-            # Single card: assign based on position in image
             det = detections[0]
             det["position"] = (1, 1)  # Default to center
             return detections
 
-        # Extract Y coordinates
-        y_coords = [d["center"][1] for d in detections]
+        # Calculate average card dimensions
+        avg_width = sum(d["bbox"][2] - d["bbox"][0] for d in detections) / len(detections)
+        avg_height = sum(d["bbox"][3] - d["bbox"][1] for d in detections) / len(detections)
+
+        # Get bounding box of all card centers
         x_coords = [d["center"][0] for d in detections]
+        y_coords = [d["center"][1] for d in detections]
 
-        # Calculate Y thresholds for row assignment
-        y_thresholds = self._calculate_thresholds(y_coords)
+        min_x, max_x = min(x_coords), max(x_coords)
+        min_y, max_y = min(y_coords), max(y_coords)
 
-        # Calculate X thresholds for column assignment
-        x_thresholds = self._calculate_thresholds(x_coords)
+        # Estimate full grid bounds by adding margins for potentially missing edge cards
+        # The margin is half a card width/height (distance from center to edge)
+        # Plus a small gap between cards (estimated at 10% of card size)
+        margin_x = avg_width * 0.6
+        margin_y = avg_height * 0.6
 
-        # Assign row and column to each detection based on coordinates
+        grid_left = min_x - margin_x
+        grid_right = max_x + margin_x
+        grid_top = min_y - margin_y
+        grid_bottom = max_y + margin_y
+
+        # Ensure minimum grid size (at least 3 card widths/heights)
+        grid_width = grid_right - grid_left
+        grid_height = grid_bottom - grid_top
+
+        min_grid_width = avg_width * 2.5
+        min_grid_height = avg_height * 2.5
+
+        if grid_width < min_grid_width:
+            center_x = (grid_left + grid_right) / 2
+            grid_left = center_x - min_grid_width / 2
+            grid_right = center_x + min_grid_width / 2
+            grid_width = min_grid_width
+
+        if grid_height < min_grid_height:
+            center_y = (grid_top + grid_bottom) / 2
+            grid_top = center_y - min_grid_height / 2
+            grid_bottom = center_y + min_grid_height / 2
+            grid_height = min_grid_height
+
+        # Calculate cell boundaries (divide grid into 3x3)
+        cell_width = grid_width / 3
+        cell_height = grid_height / 3
+
+        # Assign each card to its grid cell
         for det in detections:
-            y = det["center"][1]
-            x = det["center"][0]
+            cx, cy = det["center"]
 
-            # Determine row
-            if y < y_thresholds[0]:
-                row = 0
-            elif y < y_thresholds[1]:
-                row = 1
-            else:
-                row = 2
+            # Calculate column (0, 1, or 2)
+            col = int((cx - grid_left) / cell_width)
+            col = max(0, min(2, col))  # Clamp to valid range
 
-            # Determine column
-            if x < x_thresholds[0]:
-                col = 0
-            elif x < x_thresholds[1]:
-                col = 1
-            else:
-                col = 2
+            # Calculate row (0, 1, or 2)
+            row = int((cy - grid_top) / cell_height)
+            row = max(0, min(2, row))  # Clamp to valid range
 
             det["position"] = (row, col)
 
@@ -83,50 +108,6 @@ class YOLOCardDetector:
         detections.sort(key=lambda d: (d["position"][0], d["position"][1]))
 
         return detections
-
-    def _calculate_thresholds(self, coords: list[float]) -> tuple[float, float]:
-        """Calculate two thresholds to divide coordinates into 3 groups.
-
-        Uses gap analysis when possible, falls back to equal division.
-        """
-        sorted_coords = sorted(set(coords))
-
-        if len(sorted_coords) >= 3:
-            # Calculate gaps between consecutive values
-            gaps = [
-                (sorted_coords[i + 1] - sorted_coords[i], i)
-                for i in range(len(sorted_coords) - 1)
-            ]
-            # Find the 2 largest gaps to split into 3 groups
-            gaps.sort(reverse=True)
-
-            if len(gaps) >= 2:
-                split_indices = sorted([gaps[0][1], gaps[1][1]])
-            else:
-                split_indices = [gaps[0][1]]
-
-            # Calculate thresholds as midpoints of the gaps
-            thresholds = []
-            for idx in split_indices:
-                threshold = (sorted_coords[idx] + sorted_coords[idx + 1]) / 2
-                thresholds.append(threshold)
-            thresholds.sort()
-
-            # Ensure we have 2 thresholds
-            if len(thresholds) == 1:
-                # Add a second threshold
-                min_c, max_c = min(coords), max(coords)
-                if thresholds[0] < (min_c + max_c) / 2:
-                    thresholds.append(thresholds[0] + (max_c - thresholds[0]) / 2)
-                else:
-                    thresholds.insert(0, min_c + (thresholds[0] - min_c) / 2)
-
-            return (thresholds[0], thresholds[1])
-        else:
-            # Fallback: divide range into 3 equal parts
-            min_c, max_c = min(coords), max(coords)
-            range_c = max_c - min_c if max_c > min_c else 100  # Avoid division issues
-            return (min_c + range_c / 3, min_c + 2 * range_c / 3)
 
     def detect_cards(
         self, image: Image.Image, confidence: float = 0.05
