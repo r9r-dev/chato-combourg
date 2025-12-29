@@ -1,7 +1,9 @@
 import { useGame } from '../context/GameContext';
+import { useAuth } from '../context/AuthContext';
 
 export function Landing() {
   const { setStep } = useGame();
+  const { user, loading } = useAuth();
 
   return (
     <div className="flex flex-col h-dvh p-6 overflow-hidden">
@@ -15,18 +17,22 @@ export function Landing() {
           {/* Menu buttons */}
           <div className="space-y-4">
             <button
-              onClick={() => setStep('keys')}
+              onClick={() => setStep('players')}
+              disabled={loading}
               className="w-full py-4 px-8 bg-gold text-dark font-semibold text-lg rounded-xl
                          hover:bg-gold-light active:bg-gold-dark transition-colors
-                         shadow-lg shadow-gold/20"
+                         shadow-lg shadow-gold/20
+                         disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Nouvelle partie
             </button>
 
             <button
-              disabled
-              className="w-full py-4 px-8 bg-dark-lighter text-white/40 font-semibold text-lg rounded-xl
-                         cursor-not-allowed border border-white/10"
+              onClick={() => setStep('games')}
+              disabled={loading}
+              className="w-full py-4 px-8 bg-dark-lighter text-white font-semibold text-lg rounded-xl
+                         hover:bg-dark-card transition-colors border border-white/10
+                         disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Mes parties
             </button>
@@ -39,6 +45,13 @@ export function Landing() {
               Parametres
             </button>
           </div>
+
+          {/* User info */}
+          {user && (
+            <div className="mt-8 text-white/40 text-sm">
+              Connecte en tant que {user.name || user.email || user.id}
+            </div>
+          )}
         </div>
       </div>
 

@@ -3,6 +3,11 @@ import type {
   CalculateRequest,
   CalculateResponse,
   Card,
+  User,
+  Player,
+  GameListItem,
+  GameDetail,
+  GameCreate,
 } from '../types';
 
 const API_BASE = '/api';
@@ -72,4 +77,81 @@ export function preloadCardImages(): Promise<void[]> {
     );
   }
   return Promise.all(promises);
+}
+
+// User API
+export async function getCurrentUser(): Promise<User> {
+  const response = await fetch(`${API_BASE}/me`);
+  if (!response.ok) {
+    throw new Error(`Get user failed: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+// Players API
+export async function getPlayers(): Promise<Player[]> {
+  const response = await fetch(`${API_BASE}/players`);
+  if (!response.ok) {
+    throw new Error(`Get players failed: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function createPlayer(name: string): Promise<Player> {
+  const response = await fetch(`${API_BASE}/players`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+  if (!response.ok) {
+    throw new Error(`Create player failed: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function deletePlayer(playerId: number): Promise<void> {
+  const response = await fetch(`${API_BASE}/players/${playerId}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    throw new Error(`Delete player failed: ${response.statusText}`);
+  }
+}
+
+// Games API
+export async function getGames(limit = 20, offset = 0): Promise<GameListItem[]> {
+  const response = await fetch(`${API_BASE}/games?limit=${limit}&offset=${offset}`);
+  if (!response.ok) {
+    throw new Error(`Get games failed: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function getGame(gameId: number): Promise<GameDetail> {
+  const response = await fetch(`${API_BASE}/games/${gameId}`);
+  if (!response.ok) {
+    throw new Error(`Get game failed: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function createGame(data: GameCreate): Promise<GameDetail> {
+  const response = await fetch(`${API_BASE}/games`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    throw new Error(`Create game failed: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function deleteGame(gameId: number): Promise<void> {
+  const response = await fetch(`${API_BASE}/games/${gameId}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    throw new Error(`Delete game failed: ${response.statusText}`);
+  }
 }

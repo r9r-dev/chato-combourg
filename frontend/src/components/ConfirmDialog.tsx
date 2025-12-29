@@ -1,4 +1,5 @@
 interface ConfirmDialogProps {
+  isOpen?: boolean;
   title: string;
   message: string;
   confirmLabel?: string;
@@ -8,6 +9,7 @@ interface ConfirmDialogProps {
 }
 
 export function ConfirmDialog({
+  isOpen = true,
   title,
   message,
   confirmLabel = 'Confirmer',
@@ -15,6 +17,8 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  if (!isOpen) return null;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}

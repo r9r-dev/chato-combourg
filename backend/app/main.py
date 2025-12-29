@@ -8,9 +8,10 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
-from app.routers import analyze, calculator
+from app.routers import analyze, calculator, players, games, users
 from app.services.card_database import card_database
 from app.services.clip_matcher import clip_matcher
+from app.database import init_db
 
 # Paths
 BASE_DIR = Path(__file__).parent.parent
@@ -64,6 +65,11 @@ async def lifespan(app: FastAPI):
     logger.info("Starting Card Recognition API...")
     logger.info(f"Base directory: {BASE_DIR}")
 
+    # Initialize database
+    logger.info("Initializing database...")
+    init_db()
+    logger.info("Database ready")
+
     # Check required files
     logger.info("Checking required files...")
     issues = check_required_files()
@@ -112,6 +118,9 @@ app.add_middleware(
 # Include routers
 app.include_router(analyze.router)
 app.include_router(calculator.router)
+app.include_router(players.router)
+app.include_router(games.router)
+app.include_router(users.router)
 
 # Mount static files for card images
 app.mount("/cards", StaticFiles(directory=str(CARDS_DIR)), name="cards")

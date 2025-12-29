@@ -12,15 +12,20 @@ const CAPTURE_INTERVAL = 2000; // 2 seconds
 export function Camera() {
   const { videoRef, isReady, error, startCamera, stopCamera, captureFrameAsync } =
     useCamera();
-  const { setStep, setCards, reset } = useGame();
+  const { state, setStep, setCards, reset, getCurrentPlayer, saveCurrentPlayerAndNext } = useGame();
 
   const [identifiedCards, setIdentifiedCards] = useState<GameCard[]>([]);
   const [detectedBboxes, setDetectedBboxes] = useState<Map<number, BoundingBox>>(new Map());
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('Initialisation de la caméra...');
+  const [statusMessage, setStatusMessage] = useState('Initialisation de la camera...');
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
   const intervalRef = useRef<number | null>(null);
   const isCapturingRef = useRef(false);
+
+  const currentPlayer = getCurrentPlayer();
+  const playerIndex = state.currentPlayerIndex + 1;
+  const totalPlayers = state.selectedPlayers.length;
 
   // Convert API response to GameCard array and extract bboxes
   const processResults = useCallback(
@@ -81,23 +86,12 @@ export function Camera() {
 
         const highConfPositions = getHighConfidencePositions(newCards);
         if (highConfPositions.size === 9) {
-          // All cards identified with high confidence
-          setStatusMessage('Toutes les cartes identifiées !');
-          if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
-          }
-          // Wait a moment then proceed
-          setTimeout(() => {
-            stopCamera();
-            setCards(newCards);
-            setStep('summary');
-          }, 500);
+          setStatusMessage('Toutes les cartes identifiees !');
         } else {
           setStatusMessage('Placez les 9 cartes dans le cadre');
         }
       } else {
-        setStatusMessage('Aucune carte détectée');
+        setStatusMessage('Aucune carte detectee');
       }
     } catch (err) {
       console.error('Analysis error:', err);
@@ -111,9 +105,6 @@ export function Camera() {
     captureFrameAsync,
     processResults,
     getHighConfidencePositions,
-    stopCamera,
-    setCards,
-    setStep,
   ]);
 
   // Start camera on mount
@@ -139,21 +130,34 @@ export function Camera() {
     };
   }, [isReady, captureAndAnalyze]);
 
-  // Manual capture and proceed
-  const handleManualCapture = useCallback(async () => {
+  // Validate and proceed to next player or summary
+  const handleValidate = useCallback(async () => {
+    if (isValidating) return;
+    setIsValidating(true);
+
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
 
-    // Do one final capture
-    await captureAndAnalyze();
-
-    // Proceed with whatever we have
-    stopCamera();
+    // Set the cards first
     setCards(identifiedCards);
-    setStep('summary');
-  }, [captureAndAnalyze, stopCamera, setCards, setStep, identifiedCards]);
+
+    // Save current player and check if there are more
+    const hasMorePlayers = await saveCurrentPlayerAndNext();
+
+    stopCamera();
+
+    if (hasMorePlayers) {
+      // Go back to keys for next player
+      setStep('keys');
+    } else {
+      // All players done, go to summary
+      setStep('summary');
+    }
+
+    setIsValidating(false);
+  }, [identifiedCards, setCards, saveCurrentPlayerAndNext, stopCamera, setStep, isValidating]);
 
   // Handle back button - show confirmation
   const handleBack = useCallback(() => {
@@ -170,7 +174,7 @@ export function Camera() {
     return (
       <div className="flex flex-col items-center justify-center h-dvh p-6 text-center overflow-hidden">
         <div className="bg-red-900/50 text-red-200 p-6 rounded-xl mb-6">
-          <p className="text-lg font-semibold mb-2">Erreur caméra</p>
+          <p className="text-lg font-semibold mb-2">Erreur camera</p>
           <p>{error}</p>
         </div>
         <button
@@ -185,6 +189,22 @@ export function Camera() {
 
   return (
     <div className="flex flex-col h-dvh bg-dark overflow-hidden">
+      {/* Player indicator */}
+      {currentPlayer && (
+        <div className="p-3 bg-dark-lighter border-b border-white/10">
+          <div className="flex items-center justify-center gap-2">
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
+              style={{ backgroundColor: currentPlayer.color }}
+            >
+              {playerIndex}
+            </div>
+            <span className="text-white font-medium">{currentPlayer.name}</span>
+            <span className="text-white/40 text-sm">({playerIndex}/{totalPlayers})</span>
+          </div>
+        </div>
+      )}
+
       {/* Camera view */}
       <div className="relative flex-1 flex items-center justify-center overflow-hidden">
         <div className="relative w-full max-w-sm aspect-[3/4]">
@@ -224,11 +244,13 @@ export function Camera() {
             Quitter
           </button>
           <button
-            onClick={handleManualCapture}
+            onClick={handleValidate}
+            disabled={identifiedCards.length === 0 || isValidating}
             className="flex-1 py-3 px-6 bg-gold text-dark font-semibold rounded-xl
-                       hover:bg-gold-light active:bg-gold-dark transition-colors"
+                       hover:bg-gold-light active:bg-gold-dark transition-colors
+                       disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Valider
+            {isValidating ? 'Validation...' : 'Valider'}
           </button>
         </div>
       </div>

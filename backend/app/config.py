@@ -23,6 +23,16 @@ class Settings(BaseSettings):
     api_port: int = 8080
     max_upload_size: int = 20 * 1024 * 1024  # 20MB
 
+    # Database settings
+    database_dir: Path = base_dir / "data"
+    database_url: str = ""  # Will be computed if empty
+
+    # Authentication (Pangolin proxy)
+    dev_mode: bool = False  # If True, use fake user for development
+    dev_user_id: str = "dev-user-001"
+    dev_user_email: str = "dev@localhost"
+    dev_user_name: str = "Développeur Local"
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

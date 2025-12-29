@@ -19,8 +19,11 @@ COPY requirements.txt ./requirements.txt
 COPY ../entrypoint.sh ./entrypoint.sh 2>/dev/null || true
 RUN chmod +x ./entrypoint.sh 2>/dev/null || true
 
-# Create directories for runtime caches
-RUN mkdir -p /app/deps /app/embeddings /root/.cache/clip
+# Create directories for runtime caches and data
+RUN mkdir -p /app/deps /app/embeddings /app/data /root/.cache/clip
+
+# SQLite database will be stored in /app/data (mount as volume for persistence)
+VOLUME /app/data
 
 EXPOSE 8080
 

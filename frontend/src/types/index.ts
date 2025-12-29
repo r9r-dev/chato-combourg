@@ -76,9 +76,74 @@ export interface GameCard {
 }
 
 export interface GameState {
-  step: 'landing' | 'keys' | 'coins' | 'camera' | 'summary';
+  step: 'landing' | 'players' | 'keys' | 'coins' | 'camera' | 'summary' | 'games';
   cards: GameCard[];
   keys: number;
   coins: number;
   score: CalculateResponse | null;
+  selectedPlayers: SelectedPlayer[]; // Players for current game
+  currentPlayerIndex: number; // Which player's board we're capturing
+}
+
+// User & Players (from API)
+export interface User {
+  id: string;
+  email: string | null;
+  name: string | null;
+}
+
+export interface Player {
+  id: number;
+  name: string;
+  color: string;
+}
+
+export interface SelectedPlayer extends Player {
+  keys: number;
+  coins: number;
+  cards: GameCard[];
+  score: CalculateResponse | null;
+}
+
+// Games (from API)
+export interface GameListItem {
+  id: number;
+  played_at: string;
+  notes: string | null;
+  player_count: number;
+  winner_name: string | null;
+  winner_score: number | null;
+}
+
+export interface GamePlayerData {
+  id: number;
+  player_id: number;
+  player_name: string;
+  player_color: string;
+  position: number;
+  keys: number;
+  coins: number;
+  cards: string[];
+  score: number;
+  rank: number | null;
+}
+
+export interface GameDetail {
+  id: number;
+  played_at: string;
+  notes: string | null;
+  players: GamePlayerData[];
+}
+
+export interface GamePlayerCreate {
+  player_id: number;
+  keys: number;
+  coins: number;
+  cards: string[];
+  score: number;
+}
+
+export interface GameCreate {
+  players: GamePlayerCreate[];
+  notes?: string;
 }

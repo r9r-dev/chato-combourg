@@ -4,8 +4,12 @@ import { NumberPad } from '../components/NumberPad';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 
 export function Keys() {
-  const { state, setKeys, setStep, reset } = useGame();
+  const { state, setKeys, setStep, reset, getCurrentPlayer } = useGame();
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+
+  const currentPlayer = getCurrentPlayer();
+  const playerIndex = state.currentPlayerIndex + 1;
+  const totalPlayers = state.selectedPlayers.length;
 
   const handleNext = () => {
     setStep('coins');
@@ -23,8 +27,20 @@ export function Keys() {
     <div className="flex flex-col h-dvh p-6 overflow-hidden">
       {/* Header */}
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gold mb-2">Clés</h1>
-        <p className="text-white/60">Combien de clés avez-vous ?</p>
+        {currentPlayer && (
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
+              style={{ backgroundColor: currentPlayer.color }}
+            >
+              {playerIndex}
+            </div>
+            <span className="text-white font-medium">{currentPlayer.name}</span>
+            <span className="text-white/40 text-sm">({playerIndex}/{totalPlayers})</span>
+          </div>
+        )}
+        <h1 className="text-3xl font-bold text-gold mb-2">Cles</h1>
+        <p className="text-white/60">Combien de cles avez-vous ?</p>
       </div>
 
       {/* NumberPad - centered */}
