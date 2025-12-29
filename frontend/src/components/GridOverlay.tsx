@@ -1,11 +1,36 @@
+import type { BoundingBox } from '../types';
+
 interface GridOverlayProps {
   /** Set of identified card positions (0-8) */
   identifiedPositions: Set<number>;
+  /** Detected bounding boxes by position */
+  detectedBboxes: Map<number, BoundingBox>;
 }
 
-export function GridOverlay({ identifiedPositions }: GridOverlayProps) {
+export function GridOverlay({ identifiedPositions, detectedBboxes }: GridOverlayProps) {
   return (
     <div className="absolute inset-0 pointer-events-none">
+      {/* Detection rectangles - cyan overlay for detected cards */}
+      {Array.from(detectedBboxes.entries()).map(([position, bbox]) => {
+        const isIdentified = identifiedPositions.has(position);
+        return (
+          <div
+            key={`bbox-${position}`}
+            className={`absolute border-2 rounded-sm transition-colors ${
+              isIdentified
+                ? 'border-cyan-400 bg-cyan-400/20'
+                : 'border-white/30 bg-white/10'
+            }`}
+            style={{
+              left: `${bbox.x}%`,
+              top: `${bbox.y}%`,
+              width: `${bbox.width}%`,
+              height: `${bbox.height}%`,
+            }}
+          />
+        );
+      })}
+
       {/* Grid with numbered badges */}
       <div className="absolute inset-0 grid grid-cols-3 grid-rows-3">
         {Array.from({ length: 9 }).map((_, i) => {

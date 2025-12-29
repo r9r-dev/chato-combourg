@@ -5,7 +5,7 @@ from fastapi import APIRouter, File, UploadFile, HTTPException
 from app.config import settings
 
 logger = logging.getLogger(__name__)
-from app.models import AnalyzeResponse, CardResult, CardMatch, ErrorResponse
+from app.models import AnalyzeResponse, CardResult, CardMatch, BoundingBox, ErrorResponse
 from app.services.image_processor import load_image_from_bytes
 from app.services.grid_detector import detect_cards_yolo
 from app.services.clip_matcher import clip_matcher
@@ -64,6 +64,9 @@ async def analyze_photo(
     except Exception as e:
         logger.error(f"Failed to detect cards: {e}", exc_info=True)
         raise HTTPException(status_code=400, detail=f"Failed to detect cards: {str(e)}")
+
+    # Get image dimensions for bbox percentage calculation
+    img_width, img_height = image.size
 
     # Identify each card
     results = []
@@ -130,11 +133,21 @@ async def analyze_photo(
             for card_id, prob in final_matches
         ]
 
+        # Convert bbox from pixels to percentages
+        bbox_x, bbox_y, bbox_w, bbox_h = card.bbox
+        bbox = BoundingBox(
+            x=round(bbox_x / img_width * 100, 2),
+            y=round(bbox_y / img_height * 100, 2),
+            width=round(bbox_w / img_width * 100, 2),
+            height=round(bbox_h / img_height * 100, 2),
+        )
+
         results.append(
             CardResult(
                 position=card.position,
                 matches=matches,
                 method=method,
+                bbox=bbox,
             )
         )
 

@@ -4,10 +4,18 @@ export interface CardMatch {
   probability: number;
 }
 
+export interface BoundingBox {
+  x: number;      // Left edge as percentage (0-100)
+  y: number;      // Top edge as percentage (0-100)
+  width: number;  // Width as percentage (0-100)
+  height: number; // Height as percentage (0-100)
+}
+
 export interface CardResult {
   position: [number, number]; // [row, col]
   matches: CardMatch[];
   method: string;
+  bbox?: BoundingBox;
 }
 
 export interface AnalyzeResponse {

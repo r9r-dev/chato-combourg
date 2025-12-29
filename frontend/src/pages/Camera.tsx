@@ -3,7 +3,7 @@ import { useCamera } from '../hooks/useCamera';
 import { useGame } from '../context/GameContext';
 import { GridOverlay } from '../components/GridOverlay';
 import { analyzeImage } from '../services/api';
-import type { GameCard, CardResult } from '../types';
+import type { GameCard, CardResult, BoundingBox } from '../types';
 
 const CONFIDENCE_THRESHOLD = 0.75;
 const CAPTURE_INTERVAL = 2000; // 2 seconds
@@ -14,24 +14,35 @@ export function Camera() {
   const { setStep, setCards } = useGame();
 
   const [identifiedCards, setIdentifiedCards] = useState<GameCard[]>([]);
+  const [detectedBboxes, setDetectedBboxes] = useState<Map<number, BoundingBox>>(new Map());
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [statusMessage, setStatusMessage] = useState('Initialisation de la caméra...');
   const intervalRef = useRef<number | null>(null);
   const isCapturingRef = useRef(false);
 
-  // Convert API response to GameCard array
+  // Convert API response to GameCard array and extract bboxes
   const processResults = useCallback(
-    (results: CardResult[]): GameCard[] => {
-      return results.map((result) => {
+    (results: CardResult[]): { cards: GameCard[]; bboxes: Map<number, BoundingBox> } => {
+      const cards: GameCard[] = [];
+      const bboxes = new Map<number, BoundingBox>();
+
+      for (const result of results) {
         const position = result.position[0] * 3 + result.position[1];
         const topMatch = result.matches[0];
-        return {
+
+        cards.push({
           position,
           cardId: topMatch?.id ?? '',
           confidence: topMatch?.probability ?? 0,
           alternatives: result.matches.slice(0, 6),
-        };
-      });
+        });
+
+        if (result.bbox) {
+          bboxes.set(position, result.bbox);
+        }
+      }
+
+      return { cards, bboxes };
     },
     []
   );
@@ -62,8 +73,9 @@ export function Camera() {
       const response = await analyzeImage(blob);
 
       if (response.success && response.cards.length > 0) {
-        const newCards = processResults(response.cards);
+        const { cards: newCards, bboxes } = processResults(response.cards);
         setIdentifiedCards(newCards);
+        setDetectedBboxes(bboxes);
 
         const highConfPositions = getHighConfidencePositions(newCards);
         if (highConfPositions.size === 9) {
@@ -178,7 +190,10 @@ export function Camera() {
             muted
             className="absolute inset-0 w-full h-full object-cover rounded-lg"
           />
-          <GridOverlay identifiedPositions={getHighConfidencePositions(identifiedCards)} />
+          <GridOverlay
+            identifiedPositions={getHighConfidencePositions(identifiedCards)}
+            detectedBboxes={detectedBboxes}
+          />
 
           {/* Analyzing indicator */}
           {isAnalyzing && (
