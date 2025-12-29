@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useCamera } from '../hooks/useCamera';
 import { useGame } from '../context/GameContext';
 import { GridOverlay } from '../components/GridOverlay';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { analyzeImage } from '../services/api';
 import type { GameCard, CardResult, BoundingBox } from '../types';
 
@@ -11,12 +12,13 @@ const CAPTURE_INTERVAL = 2000; // 2 seconds
 export function Camera() {
   const { videoRef, isReady, error, startCamera, stopCamera, captureFrameAsync } =
     useCamera();
-  const { setStep, setCards } = useGame();
+  const { setStep, setCards, reset } = useGame();
 
   const [identifiedCards, setIdentifiedCards] = useState<GameCard[]>([]);
   const [detectedBboxes, setDetectedBboxes] = useState<Map<number, BoundingBox>>(new Map());
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [statusMessage, setStatusMessage] = useState('Initialisation de la caméra...');
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const intervalRef = useRef<number | null>(null);
   const isCapturingRef = useRef(false);
 
@@ -153,11 +155,16 @@ export function Camera() {
     setStep('summary');
   }, [captureAndAnalyze, stopCamera, setCards, setStep, identifiedCards]);
 
-  // Handle back button
+  // Handle back button - show confirmation
   const handleBack = useCallback(() => {
+    setShowExitConfirm(true);
+  }, []);
+
+  // Confirm exit
+  const confirmExit = useCallback(() => {
     stopCamera();
-    setStep('landing');
-  }, [stopCamera, setStep]);
+    reset();
+  }, [stopCamera, reset]);
 
   if (error) {
     return (
@@ -170,7 +177,7 @@ export function Camera() {
           onClick={handleBack}
           className="py-3 px-6 bg-dark-lighter text-white rounded-xl hover:bg-dark-card transition-colors"
         >
-          Retour
+          Quitter
         </button>
       </div>
     );
@@ -214,7 +221,7 @@ export function Camera() {
             className="flex-1 py-3 px-6 bg-dark-card text-white/70 rounded-xl
                        hover:bg-dark hover:text-white transition-colors"
           >
-            Retour
+            Quitter
           </button>
           <button
             onClick={handleManualCapture}
@@ -225,6 +232,18 @@ export function Camera() {
           </button>
         </div>
       </div>
+
+      {/* Exit confirmation dialog */}
+      {showExitConfirm && (
+        <ConfirmDialog
+          title="Quitter la partie ?"
+          message="La partie en cours sera perdue."
+          confirmLabel="Quitter"
+          cancelLabel="Continuer"
+          onConfirm={confirmExit}
+          onCancel={() => setShowExitConfirm(false)}
+        />
+      )}
     </div>
   );
 }

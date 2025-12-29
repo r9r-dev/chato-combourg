@@ -1,21 +1,20 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useGame } from '../context/GameContext';
-import { KeysCoinsPicker } from '../components/KeysCoinsPicker';
 import { CardGrid } from '../components/CardGrid';
 import { ScoreDisplay } from '../components/ScoreDisplay';
 import { CardSelector } from '../components/CardSelector';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 
 export function Summary() {
   const {
     state,
-    setKeys,
-    setCoins,
     updateCard,
     recalculateScore,
     reset,
   } = useGame();
 
   const [selectedPosition, setSelectedPosition] = useState<number | null>(null);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   // Calculate score on mount and when cards/keys/coins change
   useEffect(() => {
@@ -52,13 +51,17 @@ export function Summary() {
 
   return (
     <div className="flex flex-col h-dvh bg-dark overflow-hidden">
-      {/* Keys and coins picker */}
-      <KeysCoinsPicker
-        keys={state.keys}
-        coins={state.coins}
-        onKeysChange={setKeys}
-        onCoinsChange={setCoins}
-      />
+      {/* Keys and coins display */}
+      <div className="flex justify-center gap-8 py-3 bg-dark-lighter border-b border-gold/20">
+        <div className="flex items-center gap-2">
+          <span className="text-white/60">Clés</span>
+          <span className="text-xl font-bold text-gold">{state.keys}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-white/60">Pièces</span>
+          <span className="text-xl font-bold text-gold">{state.coins}</span>
+        </div>
+      </div>
 
       {/* Card grid */}
       <div className="flex-1 min-h-0">
@@ -79,7 +82,7 @@ export function Summary() {
       {/* Restart button */}
       <div className="p-3 bg-dark-lighter">
         <button
-          onClick={reset}
+          onClick={() => setShowExitConfirm(true)}
           className="w-full py-2.5 px-6 bg-dark-card text-white/70 rounded-xl
                      hover:bg-dark hover:text-white transition-colors
                      border border-gold/20 hover:border-gold/50"
@@ -97,6 +100,18 @@ export function Summary() {
           scoreDetail={selectedScoreDetail ?? null}
           onSelect={handleCardSelect}
           onClose={() => setSelectedPosition(null)}
+        />
+      )}
+
+      {/* Exit confirmation dialog */}
+      {showExitConfirm && (
+        <ConfirmDialog
+          title="Quitter la partie ?"
+          message="La partie en cours sera perdue."
+          confirmLabel="Quitter"
+          cancelLabel="Continuer"
+          onConfirm={reset}
+          onCancel={() => setShowExitConfirm(false)}
         />
       )}
     </div>

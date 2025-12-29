@@ -76,7 +76,7 @@ export interface GameCard {
 }
 
 export interface GameState {
-  step: 'landing' | 'camera' | 'summary';
+  step: 'landing' | 'keys' | 'coins' | 'camera' | 'summary';
   cards: GameCard[];
   keys: number;
   coins: number;
