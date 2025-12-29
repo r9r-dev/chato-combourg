@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useGame } from '../context/GameContext';
 import { CardGrid } from '../components/CardGrid';
 import { CardSelector } from '../components/CardSelector';
+import { ScoreDisplay } from '../components/ScoreDisplay';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 
 export function Review() {
@@ -39,12 +40,11 @@ export function Review() {
   const handleCardSelect = useCallback(
     (cardId: string) => {
       if (selectedPosition !== null) {
-        const card = state.cards.find((c) => c.position === selectedPosition);
-        updateCard(selectedPosition, cardId, card?.alternatives);
+        updateCard(selectedPosition, cardId);
         setSelectedPosition(null);
       }
     },
-    [selectedPosition, state.cards, updateCard]
+    [selectedPosition, updateCard]
   );
 
   // Validate and proceed to next player or summary
@@ -126,18 +126,14 @@ export function Review() {
       </div>
 
       {/* Score display */}
-      <div className="p-4 bg-dark-lighter border-t border-gold/20">
-        <div className="text-center mb-4">
-          <div className="text-3xl font-bold text-gold">
-            {state.score?.total_score ?? '...'} pts
-          </div>
-          {state.score && (
-            <div className="text-white/40 text-sm mt-1">
-              Cartes: {state.score.cards_score} + Clés: {state.score.keys_bonus}
-            </div>
-          )}
-        </div>
+      <ScoreDisplay
+        totalScore={state.score?.total_score ?? null}
+        keysBonus={state.score?.keys_bonus ?? 0}
+        cardsScore={state.score?.cards_score ?? 0}
+      />
 
+      {/* Validate button */}
+      <div className="p-3 bg-dark-lighter">
         <button
           onClick={handleValidate}
           disabled={state.cards.length !== 9 || isValidating}
