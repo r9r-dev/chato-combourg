@@ -18,8 +18,8 @@ export function ScoreDisplay({ totalScore, keysBonus, cardsScore }: ScoreDisplay
       <div className="flex justify-center items-center gap-4">
         <div className="text-4xl font-bold text-gold">{totalScore}</div>
         <div className="flex flex-col text-sm text-white/70">
-          <span>Cartes: <span className="text-white font-semibold">{cardsScore}</span></span>
-          <span>Cles: <span className="text-white font-semibold">+{keysBonus}</span></span>
+          <span>Cartes : <span className="text-white font-semibold">{cardsScore}</span></span>
+          <span>Clés : <span className="text-white font-semibold">+{keysBonus}</span></span>
         </div>
       </div>
     </div>

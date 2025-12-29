@@ -64,7 +64,7 @@ export function CardSelector({
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg max-h-[90vh] bg-dark-lighter rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col">
+      <div className="relative w-full max-w-lg max-h-[85dvh] bg-dark-lighter rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-gold/20 flex items-center justify-between">
           <div>
@@ -99,20 +99,7 @@ export function CardSelector({
         <div className="flex-1 overflow-y-auto p-4">
           {!showSearch ? (
             <>
-              {/* Current card */}
-              <div className="mb-4">
-                <p className="text-white/50 text-xs uppercase mb-2">Carte actuelle</p>
-                <div className="flex items-center gap-3 p-3 bg-dark-card rounded-xl border border-gold/30">
-                  <img
-                    src={getCardImageUrl(currentCardId)}
-                    alt={`Carte ${currentCardId}`}
-                    className="w-16 h-24 object-cover rounded-lg"
-                  />
-                  <span className="text-white font-medium">#{currentCardId}</span>
-                </div>
-              </div>
-
-              {/* Alternatives */}
+              {/* Suggestions */}
               <div className="mb-4">
                 <p className="text-white/50 text-xs uppercase mb-2">Suggestions</p>
                 <div className="grid grid-cols-3 gap-2">
@@ -135,11 +122,6 @@ export function CardSelector({
                         className="w-full h-full object-cover"
                         loading="lazy"
                       />
-                      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-1">
-                        <span className="text-white text-xs">
-                          {Math.round(alt.probability * 100)}%
-                        </span>
-                      </div>
                     </button>
                   ))}
                 </div>
@@ -155,14 +137,14 @@ export function CardSelector({
               </button>
             </>
           ) : (
-            <>
-              {/* Search input */}
-              <div className="mb-4">
+            <div className="flex flex-col h-full -m-4">
+              {/* Search input - sticky at top */}
+              <div className="sticky top-0 z-10 p-4 bg-dark-lighter border-b border-gold/20">
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Rechercher par nom ou numéro..."
+                  placeholder="Rechercher"
                   className="w-full px-4 py-3 bg-dark-card text-white rounded-xl
                              border border-gold/30 focus:border-gold focus:outline-none
                              placeholder:text-white/30"
@@ -170,44 +152,48 @@ export function CardSelector({
                 />
               </div>
 
-              {/* Search results */}
-              {isLoading ? (
-                <div className="text-center text-white/50 py-8">Chargement...</div>
-              ) : (
-                <div className="grid grid-cols-4 gap-2">
-                  {filteredCards.map((card) => (
-                    <button
-                      key={card.id}
-                      onClick={() => {
-                        onSelect(card.id);
-                        setShowSearch(false);
-                      }}
-                      className="relative aspect-[2/3] rounded-lg overflow-hidden border-2
-                                 border-transparent hover:border-gold transition-all hover:scale-105"
-                    >
-                      <img
-                        src={getCardImageUrl(card.id)}
-                        alt={card.name}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                    </button>
-                  ))}
-                </div>
-              )}
+              {/* Search results - scrollable */}
+              <div className="flex-1 overflow-y-auto p-4">
+                {isLoading ? (
+                  <div className="text-center text-white/50 py-8">Chargement...</div>
+                ) : (
+                  <div className="grid grid-cols-4 gap-2">
+                    {filteredCards.map((card) => (
+                      <button
+                        key={card.id}
+                        onClick={() => {
+                          onSelect(card.id);
+                          setShowSearch(false);
+                        }}
+                        className="relative aspect-[2/3] rounded-lg overflow-hidden border-2
+                                   border-transparent hover:border-gold transition-all hover:scale-105"
+                      >
+                        <img
+                          src={getCardImageUrl(card.id)}
+                          alt={card.name}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-              {/* Back button */}
-              <button
-                onClick={() => {
-                  setShowSearch(false);
-                  setSearchQuery('');
-                }}
-                className="w-full mt-4 py-3 px-4 bg-dark-card text-white/70 rounded-xl
-                           hover:bg-dark hover:text-white transition-colors"
-              >
-                Retour aux suggestions
-              </button>
-            </>
+              {/* Back button - sticky at bottom */}
+              <div className="sticky bottom-0 p-4 bg-dark-lighter border-t border-gold/20">
+                <button
+                  onClick={() => {
+                    setShowSearch(false);
+                    setSearchQuery('');
+                  }}
+                  className="w-full py-3 px-4 bg-dark-card text-white/70 rounded-xl
+                             hover:bg-dark hover:text-white transition-colors"
+                >
+                  Retour aux suggestions
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>

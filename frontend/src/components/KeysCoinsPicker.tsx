@@ -87,9 +87,9 @@ export function KeysCoinsPicker({
 }: KeysCoinsPickerProps) {
   return (
     <div className="flex justify-center gap-4 p-3 bg-dark-lighter border-b border-gold/20">
-      <Picker label="Cles" value={keys} onChange={onKeysChange} />
+      <Picker label="Clés" value={keys} onChange={onKeysChange} />
       <Picker
-        label="Pieces"
+        label="Pièces"
         value={coins}
         onChange={onCoinsChange}
         showLargeButtons

@@ -75,23 +75,43 @@ async def analyze_photo(
         method = "clip"
         final_matches = clip_matches
 
-        # If CLIP confidence is low, try template matching to filter candidates
-        if confidence < settings.clip_confidence_threshold:
-            # Detect card value and shields using template matching
-            detected_value = template_matcher.detect_value(card.image, threshold=0.5)
-            detected_shields = template_matcher.detect_shields(card.image, threshold=0.5)
+        # Always detect attributes (value + shields) for filtering suggestions
+        detected_value = template_matcher.detect_value(card.image, threshold=0.5)
+        detected_shields = template_matcher.detect_shields(card.image, threshold=0.5)
 
-            if detected_value is not None or detected_shields:
-                # Filter candidates using strict matching (card shields must be subset of detected)
-                filtered = attribute_matcher.filter_candidates_strict(
-                    clip_matches,
+        # Calculate gap between top 2 matches
+        clip_gap = 1.0  # Default high gap if less than 2 matches
+        if len(clip_matches) >= 2:
+            clip_gap = clip_matches[0][1] - clip_matches[1][1]
+
+        # CLIP hesitates if: low confidence OR small gap between top matches
+        clip_hesitates = confidence < settings.clip_confidence_threshold or clip_gap <= 0.02
+
+        # If CLIP hesitates and we have detected attributes, use them to re-rank
+        if clip_hesitates and (detected_value is not None or detected_shields):
+            # Filter candidates using strict matching (card shields must be subset of detected)
+            filtered = attribute_matcher.filter_candidates_strict(
+                clip_matches,
+                value=detected_value,
+                shield_colors=detected_shields if detected_shields else None,
+            )
+            if filtered:
+                final_matches = filtered
+                method = "clip+attr"
+                confidence = clip_matcher.get_confidence(final_matches)
+
+        # Always filter suggestions (matches 2+) by detected attributes
+        if detected_value is not None or detected_shields:
+            top_match = final_matches[0] if final_matches else None
+            if top_match:
+                # Filter remaining matches by attributes
+                suggestions = attribute_matcher.filter_candidates_strict(
+                    final_matches[1:],
                     value=detected_value,
                     shield_colors=detected_shields if detected_shields else None,
                 )
-                if filtered:
-                    final_matches = filtered
-                    method = "clip+template"
-                    confidence = clip_matcher.get_confidence(final_matches)
+                # Keep top match + filtered suggestions
+                final_matches = [top_match] + suggestions
 
         # Use Claude fallback if still low confidence
         if confidence < settings.clip_confidence_threshold:
