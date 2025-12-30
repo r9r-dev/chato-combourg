@@ -148,6 +148,14 @@ export function Camera() {
     setIsValidating(false);
   }, [identifiedCards, setCards, stopCamera, setStep, isValidating]);
 
+  // Auto-validate when all 9 cards are detected with high confidence
+  useEffect(() => {
+    const highConfPositions = getHighConfidencePositions(identifiedCards);
+    if (highConfPositions.size === 9 && !isValidating) {
+      handleValidate();
+    }
+  }, [identifiedCards, getHighConfidencePositions, isValidating, handleValidate]);
+
   // Handle back button - show confirmation
   const handleBack = useCallback(() => {
     setShowExitConfirm(true);
