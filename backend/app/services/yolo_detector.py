@@ -5,9 +5,10 @@ and identification of 92 card types in a single pass.
 """
 import json
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from ultralytics import YOLO
 
 MODELS_DIR = Path(__file__).parent.parent.parent / "models"
@@ -527,6 +528,98 @@ class YOLOCardDetector:
             ))
 
         return cards
+
+
+    def save_debug_info(
+        self,
+        image: Image.Image,
+        detections: list[dict],
+        debug_dir: Path,
+        extra_info: dict | None = None,
+    ) -> Path:
+        """Save debug information: original image, annotated image, and JSON report.
+
+        Args:
+            image: Original PIL Image
+            detections: List of detection results
+            debug_dir: Directory to save debug files
+            extra_info: Additional info to include in the report
+
+        Returns:
+            Path to the debug folder created
+        """
+        # Create timestamped folder
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        folder = debug_dir / timestamp
+        folder.mkdir(parents=True, exist_ok=True)
+
+        # Save original image
+        original_path = folder / "original.jpg"
+        image.save(original_path, "JPEG", quality=95)
+
+        # Create annotated image
+        annotated = image.copy()
+        draw = ImageDraw.Draw(annotated)
+
+        # Try to load a font, fallback to default
+        try:
+            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
+        except (OSError, IOError):
+            font = ImageFont.load_default()
+
+        colors = ["#FFD700", "#00FF00", "#FF6B6B", "#4ECDC4", "#9B59B6",
+                  "#E74C3C", "#3498DB", "#2ECC71", "#F39C12"]
+
+        for i, det in enumerate(detections):
+            x1, y1, x2, y2 = det["bbox"]
+            color = colors[i % len(colors)]
+
+            # Draw bounding box
+            draw.rectangle([x1, y1, x2, y2], outline=color, width=3)
+
+            # Draw label
+            class_name = det.get("class_name", "?")
+            conf = det.get("confidence", 0)
+            position = det.get("position", (0, 0))
+            label = f"{class_name} ({conf:.2f}) [{position[0]},{position[1]}]"
+
+            # Background for text
+            bbox = draw.textbbox((x1, y1 - 20), label, font=font)
+            draw.rectangle(bbox, fill=color)
+            draw.text((x1, y1 - 20), label, fill="black", font=font)
+
+        # Save annotated image
+        annotated_path = folder / "annotated.jpg"
+        annotated.save(annotated_path, "JPEG", quality=95)
+
+        # Create report
+        report = {
+            "timestamp": timestamp,
+            "image_size": {"width": image.width, "height": image.height},
+            "detections_count": len(detections),
+            "detections": [
+                {
+                    "class_id": det.get("class_id"),
+                    "class_name": det.get("class_name"),
+                    "card_id": class_id_to_card_id(det.get("class_id", 0)),
+                    "confidence": det.get("confidence"),
+                    "position": det.get("position"),
+                    "bbox": det.get("bbox"),
+                    "center": det.get("center"),
+                }
+                for det in detections
+            ],
+        }
+
+        if extra_info:
+            report["extra"] = extra_info
+
+        # Save report
+        report_path = folder / "report.json"
+        with open(report_path, "w", encoding="utf-8") as f:
+            json.dump(report, f, indent=2, ensure_ascii=False)
+
+        return folder
 
 
 # Singleton instance

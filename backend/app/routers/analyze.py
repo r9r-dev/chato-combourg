@@ -56,8 +56,30 @@ async def analyze_photo(
     # Detect and identify cards using YOLO11
     try:
         logger.info("Analyzing cards with YOLO11...")
+
+        # Get raw detections first (needed for debug)
+        detections = yolo_detector.detect_cards(image, confidence=0.3)
+        logger.info(f"Detected {len(detections)} cards")
+
+        # Save capture for future model training
+        try:
+            capture_folder = yolo_detector.save_debug_info(
+                image=image,
+                detections=detections,
+                debug_dir=settings.captures_dir,
+                extra_info={
+                    "filename": photo.filename,
+                    "content_type": photo.content_type,
+                    "file_size": len(content),
+                }
+            )
+            logger.info(f"Capture saved to {capture_folder}")
+        except Exception as e:
+            logger.warning(f"Failed to save capture: {e}")
+
+        # Convert detections to API format
         card_results = yolo_detector.analyze_image(image, confidence=0.3)
-        logger.info(f"Detected {len(card_results)} cards")
+
     except Exception as e:
         logger.error(f"Failed to analyze cards: {e}", exc_info=True)
         raise HTTPException(status_code=400, detail=f"Failed to analyze cards: {str(e)}")

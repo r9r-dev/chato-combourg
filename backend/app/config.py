@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # App version
-    app_version: str = "1.5.3"
+    app_version: str = "1.5.5"
 
     # Paths
     base_dir: Path = Path(__file__).parent.parent
@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     dev_user_id: str = "dev-user-001"
     dev_user_email: str = "dev@localhost"
     dev_user_name: str = "Développeur Local"
+
+    # Analysis captures - saves images and reports to data/captures/
+    captures_dir: Path = database_dir / "captures"
 
     class Config:
         env_file = ".env"
