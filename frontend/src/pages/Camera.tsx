@@ -1,9 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useCamera } from '../hooks/useCamera';
 import { useGame } from '../context/GameContext';
 import { GridOverlay } from '../components/GridOverlay';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import { analyzeImage } from '../services/api';
+import { analyzeImage, finalizeCapture } from '../services/api';
 import type { GameCard, CardResult, BoundingBox } from '../types';
 
 interface DetectionResult {
@@ -27,6 +27,10 @@ export function Camera() {
   const [capturedImageUrl, setCapturedImageUrl] = useState<string | null>(null);
   const [detectionResult, setDetectionResult] = useState<string | null>(null);
   const [detections, setDetections] = useState<DetectionResult[]>([]);
+
+  // Track current capture for finalization
+  const currentCaptureIdRef = useRef<string | undefined>(undefined);
+  const currentDetectionCountRef = useRef<number>(0);
 
   const currentPlayer = getCurrentPlayer();
   const playerIndex = state.currentPlayerIndex + 1;
@@ -118,6 +122,9 @@ export function Camera() {
 
       const response = await analyzeImage(blob);
 
+      // Store capture ID for later finalization
+      currentCaptureIdRef.current = response.capture_id;
+
       if (response.success && response.cards.length > 0) {
         const { cards: newCards, detections: newDetections } = processResults(response.cards);
         setIdentifiedCards(newCards);
@@ -125,6 +132,7 @@ export function Camera() {
 
         const highConfPositions = getHighConfidencePositions(newCards);
         const detectedCount = highConfPositions.size;
+        currentDetectionCountRef.current = detectedCount;
 
         // Update detection result message
         setDetectionResult(formatDetectionMessage(detectedCount));
@@ -132,6 +140,7 @@ export function Camera() {
         setIdentifiedCards([]);
         setDetections([]);
         setDetectionResult('Aucune carte detectee');
+        currentDetectionCountRef.current = 0;
       }
     } catch (err) {
       console.error('Analysis error:', err);
@@ -149,7 +158,17 @@ export function Camera() {
   ]);
 
   // Reset to live view for retake
-  const handleRetake = useCallback(() => {
+  const handleRetake = useCallback(async () => {
+    // Finalize previous capture as failed (user took new capture)
+    if (currentCaptureIdRef.current) {
+      finalizeCapture(currentCaptureIdRef.current, {
+        status: 'failed',
+        detection_count: currentDetectionCountRef.current,
+      });
+      currentCaptureIdRef.current = undefined;
+      currentDetectionCountRef.current = 0;
+    }
+
     // Clean up previous image URL
     if (capturedImageUrl) {
       URL.revokeObjectURL(capturedImageUrl);
@@ -179,8 +198,8 @@ export function Camera() {
     if (isValidating) return;
     setIsValidating(true);
 
-    // Set the cards and go to review
-    setCards(identifiedCards);
+    // Set the cards with capture ID and go to review
+    setCards(identifiedCards, currentCaptureIdRef.current);
     stopCamera();
     setStep('review');
 

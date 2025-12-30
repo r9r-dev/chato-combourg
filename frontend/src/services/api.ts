@@ -9,6 +9,8 @@ import type {
   GameDetail,
   GameCreate,
   PlayerWithStats,
+  FinalizeRequest,
+  FinalizeResponse,
 } from '../types';
 
 const API_BASE = '/api';
@@ -230,6 +232,24 @@ export async function createManualGame(data: ManualGameCreate): Promise<GameDeta
   });
   if (!response.ok) {
     throw new Error(`Create manual game failed: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+// Capture finalization (for training data collection)
+export async function finalizeCapture(
+  captureId: string,
+  request: FinalizeRequest
+): Promise<FinalizeResponse> {
+  const response = await fetch(`${API_BASE}/captures/${captureId}/finalize`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  if (!response.ok) {
+    // Don't throw - capture finalization is non-critical
+    console.warn(`Finalize capture failed: ${response.statusText}`);
+    return { success: false, message: response.statusText };
   }
   return response.json();
 }

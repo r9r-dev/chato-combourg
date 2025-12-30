@@ -4,6 +4,8 @@ import { CardGrid } from '../components/CardGrid';
 import { CardSelector } from '../components/CardSelector';
 import { ScoreDisplay } from '../components/ScoreDisplay';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { finalizeCapture } from '../services/api';
+import type { CardLabel } from '../types';
 
 export function Review() {
   const {
@@ -52,6 +54,34 @@ export function Review() {
     if (isValidating) return;
     setIsValidating(true);
 
+    // Finalize capture for training data
+    if (state.captureId) {
+      // Check if any cards were corrected
+      const hasCorrections = state.originalCards?.some((orig) => {
+        const current = state.cards.find(c => c.position === orig.position);
+        return current?.cardId !== orig.cardId;
+      }) ?? false;
+
+      // Prepare card labels for training
+      const originalLabels: CardLabel[] = (state.originalCards ?? []).map(c => ({
+        position: c.position,
+        card_id: c.cardId,
+      }));
+
+      const finalLabels: CardLabel[] = state.cards.map(c => ({
+        position: c.position,
+        card_id: c.cardId,
+      }));
+
+      // Finalize with appropriate status
+      finalizeCapture(state.captureId, {
+        status: hasCorrections ? 'fixed' : 'success',
+        detection_count: state.originalCards?.filter(c => c.cardId).length ?? 0,
+        original_cards: originalLabels,
+        final_cards: finalLabels,
+      });
+    }
+
     const hasMorePlayers = await saveCurrentPlayerAndNext();
 
     if (hasMorePlayers) {
@@ -61,7 +91,7 @@ export function Review() {
     }
 
     setIsValidating(false);
-  }, [saveCurrentPlayerAndNext, setStep, isValidating]);
+  }, [saveCurrentPlayerAndNext, setStep, isValidating, state.captureId, state.cards, state.originalCards]);
 
   // Get selected card data
   const selectedCard =

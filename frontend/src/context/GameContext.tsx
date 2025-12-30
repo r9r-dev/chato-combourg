@@ -22,10 +22,13 @@ interface GameContextType {
   setSelectedPlayers: (players: Player[]) => void;
   getCurrentPlayer: () => SelectedPlayer | null;
   // Current player's board
-  setCards: (cards: GameCard[]) => void;
+  setCards: (cards: GameCard[], captureId?: string) => void;
   updateCard: (position: number, cardId: string, alternatives?: CardMatch[]) => void;
   setKeys: (keys: number) => void;
   setCoins: (coins: number) => void;
+  // Capture management
+  setCaptureId: (captureId: string) => void;
+  getPreviousCaptureId: () => string | undefined;
   // Flow control
   saveCurrentPlayerAndNext: () => Promise<boolean>; // Returns true if more players
   recalculateCurrentPlayerScore: () => Promise<void>;
@@ -42,6 +45,8 @@ const initialState: GameState = {
   score: null,
   selectedPlayers: [],
   currentPlayerIndex: 0,
+  captureId: undefined,
+  originalCards: undefined,
 };
 
 const GameContext = createContext<GameContextType | null>(null);
@@ -60,6 +65,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       coins: 0,
       cards: [],
       score: null,
+      captureId: undefined,
+      originalCards: undefined,
     }));
     setState((prev) => ({
       ...prev,
@@ -70,6 +77,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       keys: 0,
       coins: 0,
       score: null,
+      captureId: undefined,
+      originalCards: undefined,
     }));
   }, []);
 
@@ -79,9 +88,23 @@ export function GameProvider({ children }: { children: ReactNode }) {
     return state.selectedPlayers[state.currentPlayerIndex];
   }, [state.selectedPlayers, state.currentPlayerIndex]);
 
-  const setCards = useCallback((cards: GameCard[]) => {
-    setState((prev) => ({ ...prev, cards }));
+  const setCards = useCallback((cards: GameCard[], captureId?: string) => {
+    setState((prev) => ({
+      ...prev,
+      cards,
+      captureId: captureId ?? prev.captureId,
+      // Store original cards for comparison later (deep copy)
+      originalCards: cards.map(c => ({ ...c })),
+    }));
   }, []);
+
+  const setCaptureId = useCallback((captureId: string) => {
+    setState((prev) => ({ ...prev, captureId }));
+  }, []);
+
+  const getPreviousCaptureId = useCallback((): string | undefined => {
+    return state.captureId;
+  }, [state.captureId]);
 
   const updateCard = useCallback(
     (position: number, cardId: string, alternatives?: CardMatch[]) => {
@@ -157,6 +180,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       coins: state.coins,
       cards: [...state.cards],
       score,
+      captureId: state.captureId,
+      originalCards: state.originalCards ? [...state.originalCards] : undefined,
     };
 
     const nextIndex = state.currentPlayerIndex + 1;
@@ -171,6 +196,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       keys: 0,
       coins: 0,
       score: null,
+      captureId: undefined,
+      originalCards: undefined,
     }));
 
     return hasMorePlayers;
@@ -220,6 +247,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
         updateCard,
         setKeys,
         setCoins,
+        setCaptureId,
+        getPreviousCaptureId,
         saveCurrentPlayerAndNext,
         recalculateCurrentPlayerScore,
         saveGame,

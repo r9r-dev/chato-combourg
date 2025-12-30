@@ -25,6 +25,7 @@ class AnalyzeResponse(BaseModel):
     success: bool
     message: str | None = None
     cards: list[CardResult] = Field(default_factory=list)
+    capture_id: str | None = Field(None, description="Capture ID for later finalization")
 
 
 class ErrorResponse(BaseModel):

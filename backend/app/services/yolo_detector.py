@@ -536,8 +536,10 @@ class YOLOCardDetector:
         detections: list[dict],
         debug_dir: Path,
         extra_info: dict | None = None,
-    ) -> Path:
+    ) -> tuple[Path, str]:
         """Save debug information: original image, annotated image, and JSON report.
+
+        Saves to pending/ subdirectory for later categorization.
 
         Args:
             image: Original PIL Image
@@ -546,11 +548,12 @@ class YOLOCardDetector:
             extra_info: Additional info to include in the report
 
         Returns:
-            Path to the debug folder created
+            Tuple of (path to the debug folder created, capture_id)
         """
-        # Create timestamped folder
+        # Create timestamped folder in pending/
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-        folder = debug_dir / timestamp
+        capture_id = timestamp
+        folder = debug_dir / "pending" / timestamp
         folder.mkdir(parents=True, exist_ok=True)
 
         # Save original image
@@ -619,7 +622,7 @@ class YOLOCardDetector:
         with open(report_path, "w", encoding="utf-8") as f:
             json.dump(report, f, indent=2, ensure_ascii=False)
 
-        return folder
+        return folder, capture_id
 
 
 # Singleton instance

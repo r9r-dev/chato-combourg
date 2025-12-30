@@ -22,6 +22,29 @@ export interface AnalyzeResponse {
   success: boolean;
   message?: string;
   cards: CardResult[];
+  capture_id?: string;
+}
+
+// Capture finalization types
+export type FinalizeStatus = 'failed' | 'fixed' | 'success';
+
+export interface CardLabel {
+  position: number;
+  card_id: string;
+  bbox?: BoundingBox;
+}
+
+export interface FinalizeRequest {
+  status: FinalizeStatus;
+  detection_count: number;
+  original_cards?: CardLabel[];
+  final_cards?: CardLabel[];
+}
+
+export interface FinalizeResponse {
+  success: boolean;
+  message: string;
+  category?: string;
 }
 
 // Calculator types
@@ -83,6 +106,8 @@ export interface GameState {
   score: CalculateResponse | null;
   selectedPlayers: SelectedPlayer[]; // Players for current game
   currentPlayerIndex: number; // Which player's board we're capturing
+  captureId?: string; // Current capture ID for finalization
+  originalCards?: GameCard[]; // Original cards before corrections
 }
 
 // User & Players (from API)
@@ -103,6 +128,8 @@ export interface SelectedPlayer extends Player {
   coins: number;
   cards: GameCard[];
   score: CalculateResponse | null;
+  captureId?: string;
+  originalCards?: GameCard[];  // Cards as detected, before corrections
 }
 
 // Games (from API)

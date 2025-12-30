@@ -62,8 +62,9 @@ async def analyze_photo(
         logger.info(f"Detected {len(detections)} cards")
 
         # Save capture for future model training
+        capture_id = None
         try:
-            capture_folder = yolo_detector.save_debug_info(
+            capture_folder, capture_id = yolo_detector.save_debug_info(
                 image=image,
                 detections=detections,
                 debug_dir=settings.captures_dir,
@@ -73,7 +74,7 @@ async def analyze_photo(
                     "file_size": len(content),
                 }
             )
-            logger.info(f"Capture saved to {capture_folder}")
+            logger.info(f"Capture saved to {capture_folder} (id: {capture_id})")
         except Exception as e:
             logger.warning(f"Failed to save capture: {e}")
 
@@ -111,7 +112,7 @@ async def analyze_photo(
     # Sort by position
     results.sort(key=lambda x: (x.position[0], x.position[1]))
 
-    return AnalyzeResponse(success=True, cards=results)
+    return AnalyzeResponse(success=True, cards=results, capture_id=capture_id)
 
 
 @router.get("/health")
