@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.6.0 (2025-12-30)
+
+- Remplacement du système de capture automatique par un bouton de capture manuel
+- Suppression de la minuterie automatique de capture pour plus de contrôle utilisateur
+
 ## v1.5.6 (2025-12-30)
 
 - Correction de la rotation d'orientation dans la capture camera
