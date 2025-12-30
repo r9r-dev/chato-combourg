@@ -24,7 +24,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy application code
 COPY backend/app/ ./app/
 COPY backend/cards/ ./cards/
-COPY backend/models/ ./models/
 COPY backend/requirements.txt ./requirements.txt
 
 # Copy frontend build
@@ -34,8 +33,8 @@ COPY --from=frontend-builder /frontend/dist ./frontend/dist
 COPY entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
 
-# Create directories for runtime caches
-RUN mkdir -p /app/deps /app/embeddings /root/.cache/clip
+# Create directories for runtime caches and models (mounted as volume)
+RUN mkdir -p /app/deps /app/embeddings /app/models /root/.cache/clip
 
 EXPOSE 8080
 
