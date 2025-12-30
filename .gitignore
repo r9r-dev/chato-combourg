@@ -41,6 +41,7 @@ backend/models/
 # Tests and debug output
 tests/
 backend/tests/
+training/
 
 # Training artifacts
 *.cache

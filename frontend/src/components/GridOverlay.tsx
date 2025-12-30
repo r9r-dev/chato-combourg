@@ -1,66 +1,61 @@
 import type { BoundingBox } from '../types';
 
-interface GridOverlayProps {
-  /** Set of identified card positions (0-8) */
-  identifiedPositions: Set<number>;
-  /** Detected bounding boxes by position */
-  detectedBboxes: Map<number, BoundingBox>;
+interface DetectionResult {
+  bbox: BoundingBox;
+  confidence: number;
 }
 
-export function GridOverlay({ identifiedPositions, detectedBboxes }: GridOverlayProps) {
+interface GridOverlayProps {
+  /** Display mode: 'viewfinder' shows grid lines only, 'results' shows detection rectangles */
+  mode: 'viewfinder' | 'results';
+  /** Detection results with bounding boxes and confidence - only used in results mode */
+  detections?: DetectionResult[];
+}
+
+const CONFIDENCE_THRESHOLD = 0.75;
+
+export function GridOverlay({ mode, detections = [] }: GridOverlayProps) {
   return (
     <div className="absolute inset-0 pointer-events-none">
-      {/* Detection rectangles - cyan overlay for detected cards */}
-      {Array.from(detectedBboxes.entries()).map(([position, bbox]) => {
-        const isIdentified = identifiedPositions.has(position);
-        return (
-          <div
-            key={`bbox-${position}`}
-            className={`absolute border-2 rounded-sm transition-colors ${
-              isIdentified
-                ? 'border-cyan-400 bg-cyan-400/20'
-                : 'border-white/30 bg-white/10'
-            }`}
-            style={{
-              left: `${bbox.x}%`,
-              top: `${bbox.y}%`,
-              width: `${bbox.width}%`,
-              height: `${bbox.height}%`,
-            }}
-          />
-        );
-      })}
+      {mode === 'viewfinder' ? (
+        <>
+          {/* Grid lines only (mire) */}
+          <div className="absolute inset-0 grid grid-cols-3 grid-rows-3">
+            {Array.from({ length: 9 }).map((_, i) => (
+              <div key={i} className="border border-gold/50" />
+            ))}
+          </div>
 
-      {/* Grid with numbered badges */}
-      <div className="absolute inset-0 grid grid-cols-3 grid-rows-3">
-        {Array.from({ length: 9 }).map((_, i) => {
-          const isIdentified = identifiedPositions.has(i);
-          return (
-            <div key={i} className="relative border border-gold/50 flex items-center justify-center">
-              {/* Numbered badge */}
+          {/* Corner indicators */}
+          <div className="absolute top-2 left-2 w-8 h-8 border-t-2 border-l-2 border-gold rounded-tl-lg" />
+          <div className="absolute top-2 right-2 w-8 h-8 border-t-2 border-r-2 border-gold rounded-tr-lg" />
+          <div className="absolute bottom-2 left-2 w-8 h-8 border-b-2 border-l-2 border-gold rounded-bl-lg" />
+          <div className="absolute bottom-2 right-2 w-8 h-8 border-b-2 border-r-2 border-gold rounded-br-lg" />
+        </>
+      ) : (
+        /* Results mode: detection rectangles */
+        <>
+          {detections.map((detection, index) => {
+            const isHighConfidence = detection.confidence >= CONFIDENCE_THRESHOLD;
+            return (
               <div
-                className={`
-                  w-12 h-12 rounded-full
-                  flex items-center justify-center
-                  text-xl font-bold transition-colors
-                  ${isIdentified
-                    ? 'bg-green-500/80 text-white'
-                    : 'bg-dark/50 text-white/40 border-2 border-white/20'
-                  }
-                `}
-              >
-                {i + 1}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Corner indicators */}
-      <div className="absolute top-2 left-2 w-8 h-8 border-t-2 border-l-2 border-gold rounded-tl-lg" />
-      <div className="absolute top-2 right-2 w-8 h-8 border-t-2 border-r-2 border-gold rounded-tr-lg" />
-      <div className="absolute bottom-2 left-2 w-8 h-8 border-b-2 border-l-2 border-gold rounded-bl-lg" />
-      <div className="absolute bottom-2 right-2 w-8 h-8 border-b-2 border-r-2 border-gold rounded-br-lg" />
+                key={index}
+                className={`absolute border-2 rounded-sm ${
+                  isHighConfidence
+                    ? 'border-green-500 bg-green-500/20'
+                    : 'border-white bg-white/20'
+                }`}
+                style={{
+                  left: `${detection.bbox.x}%`,
+                  top: `${detection.bbox.y}%`,
+                  width: `${detection.bbox.width}%`,
+                  height: `${detection.bbox.height}%`,
+                }}
+              />
+            );
+          })}
+        </>
+      )}
     </div>
   );
 }
