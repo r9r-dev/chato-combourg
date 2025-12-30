@@ -59,9 +59,13 @@ Single-pass detection and identification using YOLO11 with 92 classes (one per c
 
 **Flow**:
 1. YOLO11 detects cards and identifies them in one pass
-2. If >9 detections: select best card per grid zone (highest confidence)
-3. Convert class_id to card_id ("001"-"092")
-4. Return API response with positions and confidence scores
+2. If >9 detections: compute grid bounds from top 9 by confidence only (avoids false positives affecting grid calculation)
+3. Select best card per grid zone (highest confidence)
+4. Convert class_id to card_id ("001"-"092")
+5. Add 2 similar card suggestions per detection (same shields, category, cost)
+6. Return API response with positions, confidence scores, and alternatives
+
+**Similar Card Suggestions**: `find_similar_cards(card_id, limit=2)` returns cards with matching attributes (shield count > shield colors > category > cost).
 
 **Model**: `backend/models/card_detector/weights/best.pt`
 
@@ -103,7 +107,7 @@ React + Vite + TypeScript + Tailwind CSS PWA.
 
 #### Components
 - `CardGrid.tsx` - 3x3 card display with scores
-- `CardSelector.tsx` - Modal to replace card (6 suggestions + search)
+- `CardSelector.tsx` - Modal to replace card (3 suggestions: detected + 2 similar, plus search)
 - `NumberPad.tsx` - Numeric keypad for keys/coins input
 - `ConfirmDialog.tsx` - Confirmation modal
 - `GridOverlay.tsx` - Camera grid overlay
