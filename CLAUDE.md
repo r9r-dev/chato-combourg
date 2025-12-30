@@ -69,6 +69,8 @@ Single-pass detection and identification using YOLO11 with 92 classes (one per c
 
 **Model**: `backend/models/card_detector/weights/best.pt`
 
+**Training Data Capture**: Every `/api/analyze` request saves captures to `/app/data/captures/` for future model training. Each capture folder (named `YYYYMMDD_HHMMSS_microseconds`) contains: `original.jpg`, `annotated.jpg` (with bounding boxes), and `report.json` (detection details).
+
 #### Calculator Engine (backend/app/services/calculator/)
 - `models.py` - Pydantic models for request/response
 - `grid.py` - Grid helper functions (row/col, shields, categories)
@@ -97,7 +99,7 @@ React + Vite + TypeScript + Tailwind CSS PWA.
 - `Players.tsx` - Player selection (2-5 players, create new players)
 - `Keys.tsx` - Keys input with number pad (shows current player)
 - `Coins.tsx` - Coins input with number pad (shows current player)
-- `Camera.tsx` - Camera with 3x3 grid overlay, auto-capture every 2s
+- `Camera.tsx` - Camera with 3x3 grid overlay, 3-second countdown between scans, displays detection count, keeps best detection in memory for manual validation, handles device orientation via screen.orientation API
 - `Summary.tsx` - Results with rankings, click to view player's board
 - `Games.tsx` - Game history list
 
@@ -106,8 +108,8 @@ React + Vite + TypeScript + Tailwind CSS PWA.
 - `GameContext.tsx` - Game state (multi-player support)
 
 #### Components
-- `CardGrid.tsx` - 3x3 card display with scores
-- `CardSelector.tsx` - Modal to replace card (3 suggestions: detected + 2 similar, plus search)
+- `CardGrid.tsx` - 3x3 card display with scores, always shows 9 positions (empty slots display "?" and are clickable)
+- `CardSelector.tsx` - Modal to replace card (3 suggestions: detected + 2 similar, plus search); opens search directly for empty positions
 - `NumberPad.tsx` - Numeric keypad for keys/coins input
 - `ConfirmDialog.tsx` - Confirmation modal
 - `GridOverlay.tsx` - Camera grid overlay
