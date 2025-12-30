@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.7.0 (2025-12-31)
+
+- Système de catégorisation des captures pour la collecte de données d'entraînement
+- Bouton de capture manuel remplaçant le timer automatique
+- Suppression de la rotation manuelle d'orientation en caméra
+- Sauvegarde automatique de tous les captures d'analyse pour l'entraînement du modèle
+- Amélioration de l'UX en caméra avec compte à rebours et correction d'orientation
+- Validation automatique au détection des 9 cartes
+
 ## v1.6.0 (2025-12-30)
 
 - Remplacement du système de capture automatique par un bouton de capture manuel
