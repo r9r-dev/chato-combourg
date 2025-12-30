@@ -1,0 +1,141 @@
+# Changelog
+
+## v1.5.6 (2025-12-30)
+
+- Correction de la rotation d'orientation dans la capture camera
+
+## v1.5.5 (2025-12-30)
+
+- Sauvegarde des captures d'analyse pour l'entrainement futur du modele
+
+## v1.5.4 (2025-12-30)
+
+- Amelioration UX camera avec compte a rebours et correction d'orientation
+- Auto-validation quand les 9 cartes sont detectees
+
+## v1.5.3 (2025-12-30)
+
+- Correction du Dockerfile pour le montage du dossier models/
+
+## v1.5.2 (2025-12-30)
+
+- Correction du calcul de position dans la grille
+- Ajout des suggestions de cartes similaires
+
+## v1.5.1 (2025-12-30)
+
+- Correction de l'utilisation du modele YOLO avec images PIL
+
+## v1.5.0 (2025-12-30)
+
+- Migration vers YOLO11 avec detection et identification en une seule passe
+
+## v1.4.2 (2025-12-29)
+
+- Affichage de la version au demarrage du backend
+- Ajout du prompt d'installation PWA
+
+## v1.4.1 (2025-12-29)
+
+- Ajout de la page Review pour verification des cartes avant calcul du score
+- Application des parametres d'ordre des joueurs
+
+## v1.4.0 (2025-12-29)
+
+- Ajout de la page Parametres avec gestion des joueurs et export des donnees
+
+## v1.3.2 (2025-12-29)
+
+- Correction des accents francais dans l'interface
+
+## v1.3.1 (2025-12-29)
+
+- Mise a jour automatique de la PWA
+- Detection automatique des changements de requirements.txt
+
+## v1.3.0 (2025-12-29)
+
+- Ajout de la persistance utilisateur avec support multi-joueurs
+- Refonte du parcours utilisateur avec saisie cles/pieces
+
+## v1.2.0 (2025-12-29)
+
+- Affichage des rectangles de detection cyan sur la camera
+- Amelioration de l'assignation des positions par division de grille
+
+## v1.1.0 (2025-12-29)
+
+- Affichage des badges numerotes sur la camera pour chaque position
+- Ajout des miniatures WebP pour un chargement plus rapide
+- Assignation des positions par coordonnees spatiales
+- Ajout de l'icone apple-touch-icon pour iOS
+
+## v1.0.2 (2025-12-29)
+
+- Correction du double comptage des boucliers ligne+colonne
+
+## v1.0.1 (2025-12-29)
+
+- Ajout de l'icone chateau pour la PWA
+
+## v1.0.0 (2025-12-29)
+
+- Premiere version stable
+- Reconnaissance de cartes par photo
+- Calcul automatique des scores
+- Interface PWA responsive
+
+## v0.1.11 (2025-12-29)
+
+- Affichage des sauts de ligne dans les explications de cartes
+
+## v0.1.10 (2025-12-29)
+
+- Corrections de l'ordre des cartes, scoring des pieces et UI
+
+## v0.1.9 (2025-12-28)
+
+- Correction du parsing de la reponse API
+
+## v0.1.8 (2025-12-28)
+
+- Ajout de la dependance ultralytics (YOLO)
+
+## v0.1.7 (2025-12-28)
+
+- Ajout des types vite-plugin-pwa
+
+## v0.1.6 (2025-12-28)
+
+- Ajout des verifications au demarrage et logs detailles
+- Prompt de mise a jour PWA
+
+## v0.1.5 (2025-12-28)
+
+- Corrections du layout, ratio camera et noms de champs API
+
+## v0.1.4 (2025-12-28)
+
+- Correction du PATH pour les dependances Python
+
+## v0.1.3 (2025-12-28)
+
+- Utilisation de /bin/sh dans l'entrypoint
+
+## v0.1.2 (2025-12-28)
+
+- Chargement des dependances Python a la volee
+
+## v0.1.1 (2025-12-28)
+
+- Build Docker single platform pour eviter le manque d'espace disque
+
+## v0.1.0 (2025-12-28)
+
+- Workflow GitHub Actions pour le deploiement Docker
+- Mise a jour complete de l'application
+
+## v0.0.1 (2025-12-26)
+
+- Configuration Docker initiale
+- Initialisation de la PWA pour le calculateur de score Chateau Combo
