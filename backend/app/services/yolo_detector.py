@@ -3,6 +3,7 @@
 This module provides a simplified pipeline where YOLO11 handles both detection
 and identification of 92 card types in a single pass.
 """
+import json
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -10,6 +11,95 @@ from PIL import Image
 from ultralytics import YOLO
 
 MODELS_DIR = Path(__file__).parent.parent.parent / "models"
+CARDS_DIR = Path(__file__).parent.parent.parent / "cards"
+
+# Load card attributes for similarity matching
+_card_attributes: dict | None = None
+
+
+def _load_card_attributes() -> dict:
+    """Load card attributes from JSON file (cached)."""
+    global _card_attributes
+    if _card_attributes is None:
+        attrs_path = CARDS_DIR / "card_attributes.json"
+        with open(attrs_path) as f:
+            _card_attributes = json.load(f)
+    return _card_attributes
+
+
+def _get_shield_signature(shields: list[dict]) -> tuple:
+    """Get a comparable signature for shields (total count, sorted colors)."""
+    total_count = sum(s.get("count", 0) for s in shields)
+    # Create a sorted tuple of (color, count) for comparison
+    colors = tuple(sorted((s.get("color"), s.get("count", 0)) for s in shields))
+    return (total_count, colors)
+
+
+def find_similar_cards(card_id: str, limit: int = 2) -> list[dict]:
+    """Find cards similar to the given card based on attributes.
+
+    Similarity criteria (in order of priority):
+    1. Same number of shields
+    2. Same shield colors
+    3. Same category (village/castle/null)
+    4. Same cost (if still more than limit results)
+
+    Args:
+        card_id: The card ID to find similar cards for (e.g., "001")
+        limit: Maximum number of similar cards to return
+
+    Returns:
+        List of similar card IDs with similarity scores
+    """
+    attrs = _load_card_attributes()
+
+    if card_id not in attrs:
+        return []
+
+    target = attrs[card_id]
+    target_shields = target.get("shields", [])
+    target_signature = _get_shield_signature(target_shields)
+    target_category = target.get("category")
+    target_value = target.get("value", 0)
+
+    candidates = []
+
+    for cid, card_attrs in attrs.items():
+        if cid == card_id:
+            continue
+
+        # Calculate similarity score (higher = more similar)
+        score = 0
+        shields = card_attrs.get("shields", [])
+        signature = _get_shield_signature(shields)
+
+        # Same total shield count (most important)
+        if signature[0] == target_signature[0]:
+            score += 100
+
+        # Same shield colors
+        if signature[1] == target_signature[1]:
+            score += 50
+
+        # Same category
+        if card_attrs.get("category") == target_category:
+            score += 25
+
+        # Same value/cost
+        if card_attrs.get("value", 0) == target_value:
+            score += 10
+
+        # Only include if at least shields match
+        if score >= 100:
+            candidates.append({
+                "id": cid,
+                "score": score,
+                "probability": round(score / 185, 2),  # Normalize to 0-1
+            })
+
+    # Sort by score (descending) and return top N
+    candidates.sort(key=lambda x: (-x["score"], x["id"]))
+    return candidates[:limit]
 
 
 @dataclass
@@ -153,8 +243,9 @@ class YOLOCardDetector:
         # Sort by confidence (highest first)
         sorted_dets = sorted(detections, key=lambda d: d["confidence"], reverse=True)
 
-        # Compute grid bounds from all detections
-        grid_bounds = self._compute_grid_bounds(detections)
+        # Compute grid bounds from top 9 detections only (not all detections)
+        # This avoids false positives affecting the grid calculation
+        grid_bounds = self._compute_grid_bounds(sorted_dets[:9])
         if grid_bounds is None:
             return sorted_dets[:9]
 
@@ -368,10 +459,15 @@ class YOLOCardDetector:
             # Convert class_id to card_id
             card_id = class_id_to_card_id(det["class_id"])
 
-            # Create matches list (primary match + could add alternatives later)
+            # Create matches list: primary match + 2 similar cards as alternatives
             matches = [
                 {"id": card_id, "probability": round(det["confidence"], 4)}
             ]
+
+            # Add similar cards as alternatives
+            similar = find_similar_cards(card_id, limit=2)
+            for alt in similar:
+                matches.append({"id": alt["id"], "probability": alt["probability"]})
 
             # Convert bbox from pixels to percentages
             x1, y1, x2, y2 = det["bbox"]
