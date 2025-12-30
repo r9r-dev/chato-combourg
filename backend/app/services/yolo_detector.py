@@ -6,7 +6,6 @@ and identification of 92 card types in a single pass.
 from dataclasses import dataclass
 from pathlib import Path
 
-import numpy as np
 from PIL import Image
 from ultralytics import YOLO
 
@@ -222,11 +221,8 @@ class YOLOCardDetector:
         """
         self.initialize()
 
-        # Convert to numpy array
-        image_array = np.array(image)
-
-        # Run detection
-        results = self.model(image_array, verbose=False, conf=confidence)
+        # Run detection with PIL image directly (numpy array doesn't work correctly)
+        results = self.model.predict(source=image, verbose=False, conf=confidence)
 
         # Extract detections
         detections = []
@@ -279,8 +275,7 @@ class YOLOCardDetector:
         """
         self.initialize()
 
-        image_array = np.array(image)
-        results = self.model(image_array, verbose=False, conf=confidence)
+        results = self.model.predict(source=image, verbose=False, conf=confidence)
 
         detections = []
         boxes = results[0].boxes
