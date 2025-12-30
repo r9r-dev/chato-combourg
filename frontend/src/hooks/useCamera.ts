@@ -108,13 +108,50 @@ export function useCamera(options: UseCameraOptions = {}) {
 
     const video = videoRef.current;
     const canvas = document.createElement('canvas');
-
-    // Capture full frame (portrait orientation)
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
+
+    const videoWidth = video.videoWidth;
+    const videoHeight = video.videoHeight;
+
+    // Get screen orientation to handle device rotation
+    // portrait-primary: normal portrait
+    // portrait-secondary: upside-down portrait (180°)
+    // landscape-primary: normal landscape (90° clockwise)
+    // landscape-secondary: inverted landscape (90° counter-clockwise)
+    const orientation = screen.orientation?.type || 'portrait-primary';
+
+    // Determine rotation needed based on video dimensions and screen orientation
+    const isVideoLandscape = videoWidth > videoHeight;
+
+    let rotation = 0; // radians
+    let outputWidth = videoWidth;
+    let outputHeight = videoHeight;
+
+    if (isVideoLandscape) {
+      // Video is landscape, need to rotate to portrait
+      if (orientation === 'landscape-secondary') {
+        rotation = -Math.PI / 2; // -90°
+      } else {
+        rotation = Math.PI / 2; // 90°
+      }
+      outputWidth = videoHeight;
+      outputHeight = videoWidth;
+    } else {
+      // Video is portrait
+      if (orientation === 'portrait-secondary') {
+        rotation = Math.PI; // 180°
+      }
+    }
+
+    canvas.width = outputWidth;
+    canvas.height = outputHeight;
+
+    if (rotation !== 0) {
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(rotation);
+      ctx.translate(-videoWidth / 2, -videoHeight / 2);
+    }
 
     ctx.drawImage(video, 0, 0);
 

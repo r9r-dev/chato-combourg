@@ -19,7 +19,8 @@ export function CardSelector({
   onSelect,
   onClose,
 }: CardSelectorProps) {
-  const [showSearch, setShowSearch] = useState(false);
+  // Show search directly if no alternatives (empty position)
+  const [showSearch, setShowSearch] = useState(alternatives.length === 0);
   const [allCards, setAllCards] = useState<Card[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -178,19 +179,21 @@ export function CardSelector({
                 )}
               </div>
 
-              {/* Back button - sticky at bottom */}
-              <div className="sticky bottom-0 p-4 bg-dark-lighter border-t border-gold/20">
-                <button
-                  onClick={() => {
-                    setShowSearch(false);
-                    setSearchQuery('');
-                  }}
-                  className="w-full py-3 px-4 bg-dark-card text-white/70 rounded-xl
-                             hover:bg-dark hover:text-white transition-colors"
-                >
-                  Retour aux suggestions
-                </button>
-              </div>
+              {/* Back button - sticky at bottom (only if there are alternatives) */}
+              {alternatives.length > 0 && (
+                <div className="sticky bottom-0 p-4 bg-dark-lighter border-t border-gold/20">
+                  <button
+                    onClick={() => {
+                      setShowSearch(false);
+                      setSearchQuery('');
+                    }}
+                    className="w-full py-3 px-4 bg-dark-card text-white/70 rounded-xl
+                               hover:bg-dark hover:text-white transition-colors"
+                  >
+                    Retour aux suggestions
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
