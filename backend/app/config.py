@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # App version
-    app_version: str = "1.5.1"
+    app_version: str = "1.5.2"
 
     # Paths
     base_dir: Path = Path(__file__).parent.parent

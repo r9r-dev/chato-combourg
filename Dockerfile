@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy application code
 COPY backend/app/ ./app/
 COPY backend/cards/ ./cards/
-COPY backend/templates/ ./templates/
+COPY backend/models/ ./models/
 COPY backend/requirements.txt ./requirements.txt
 
 # Copy frontend build
