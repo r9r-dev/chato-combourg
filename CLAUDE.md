@@ -24,7 +24,12 @@ cd backend && pytest tests/
 
 # Container (use 'container' instead of docker on this system)
 container build -t card-api .
-container run -p 8080:8080 -v ./data:/app/data -e ANTHROPIC_API_KEY=sk-... -e DEV_MODE=true card-api
+container run -p 8080:8080 -v ./data:/app/data -e DEV_MODE=true card-api
+
+# Training (YOLO11)
+cd training
+source .venv/bin/activate
+python train.py
 ```
 
 ## Architecture
@@ -47,12 +52,18 @@ container run -p 8080:8080 -v ./data:/app/data -e ANTHROPIC_API_KEY=sk-... -e DE
   - `Remote-Name` - User display name
 - DEV_MODE=true uses fake user for local development
 
-#### Identification Pipeline
-1. **YOLO** (`yolo_detector.py`) detects cards in the photo and assigns grid positions
-2. **CLIP** (`clip_matcher.py`) identifies each card via embedding similarity
-3. **Attribute detection** (`template_matcher.py`) detects value + shields
-4. If CLIP hesitates: re-rank using attributes
-5. If still low confidence: **Claude Vision** fallback
+#### Identification Pipeline (YOLO11)
+Single-pass detection and identification using YOLO11 with 92 classes (one per card).
+
+**File**: `app/services/yolo_detector.py`
+
+**Flow**:
+1. YOLO11 detects cards and identifies them in one pass
+2. If >9 detections: select best card per grid zone (highest confidence)
+3. Convert class_id to card_id ("001"-"092")
+4. Return API response with positions and confidence scores
+
+**Model**: `backend/models/card_detector/weights/best.pt`
 
 #### Calculator Engine (backend/app/services/calculator/)
 - `models.py` - Pydantic models for request/response
@@ -67,7 +78,7 @@ container run -p 8080:8080 -v ./data:/app/data -e ANTHROPIC_API_KEY=sk-... -e DE
 - `has_price_reduction`, `has_lock`, `has_coin_purse`, `max_coins`
 
 #### Card Images
-- **PNG originals** (`backend/cards/`) - 630x880px, used for CLIP/YOLO recognition
+- **PNG originals** (`backend/cards/`) - 630x880px, used for YOLO training
 - **WebP thumbnails** (`backend/cards/thumbs/`) - 200x280px, used for frontend display
 
 ### Frontend (frontend/)
@@ -96,6 +107,14 @@ React + Vite + TypeScript + Tailwind CSS PWA.
 - `NumberPad.tsx` - Numeric keypad for keys/coins input
 - `ConfirmDialog.tsx` - Confirmation modal
 - `GridOverlay.tsx` - Camera grid overlay
+
+### Training (training/)
+
+YOLO11 training pipeline for card detection/identification.
+
+- `generate_dataset.py` - Synthetic dataset generator with augmentations
+- `train.py` - Training script with MPS support
+- `dataset/` - Generated training data (5000 train, 500 val images)
 
 ## API Endpoints
 
@@ -128,8 +147,7 @@ React + Vite + TypeScript + Tailwind CSS PWA.
 ## Configuration
 
 Environment variables in `.env`:
-- `ANTHROPIC_API_KEY` - Required for Claude Vision fallback
-- `CLIP_CONFIDENCE_THRESHOLD` - Threshold for fallback (default: 0.75)
+- `YOLO_CONFIDENCE_THRESHOLD` - Detection threshold (default: 0.3)
 - `API_PORT` - Server port (default: 8080)
 - `DEV_MODE` - Use fake user for development (default: false)
 - `DEV_USER_ID`, `DEV_USER_EMAIL`, `DEV_USER_NAME` - Fake user details

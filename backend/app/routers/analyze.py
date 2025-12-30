@@ -3,15 +3,11 @@ import logging
 from fastapi import APIRouter, File, UploadFile, HTTPException
 
 from app.config import settings
-
-logger = logging.getLogger(__name__)
 from app.models import AnalyzeResponse, CardResult, CardMatch, BoundingBox, ErrorResponse
 from app.services.image_processor import load_image_from_bytes
-from app.services.grid_detector import detect_cards_yolo
-from app.services.clip_matcher import clip_matcher
-from app.services.claude_fallback import claude_fallback
-from app.services.template_matcher import template_matcher
-from app.services.attribute_matcher import attribute_matcher
+from app.services.yolo_detector import yolo_detector
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["analyze"])
 
@@ -26,6 +22,7 @@ async def analyze_photo(
 ):
     """Analyze a photo containing 9 cards in a 3x3 grid.
 
+    Uses YOLO11 with 92 classes for detection and identification in a single pass.
     Returns identification results for each card position with confidence scores.
     """
     logger.info(f"Received analyze request: {photo.filename}, content_type={photo.content_type}")
@@ -56,97 +53,35 @@ async def analyze_photo(
         logger.error(f"Failed to process image: {e}", exc_info=True)
         raise HTTPException(status_code=400, detail=f"Failed to process image: {str(e)}")
 
-    # Detect cards in grid using YOLOv8
+    # Detect and identify cards using YOLO11
     try:
-        logger.info("Detecting cards with YOLO...")
-        detected_cards = detect_cards_yolo(image)
-        logger.info(f"Detected {len(detected_cards)} cards")
+        logger.info("Analyzing cards with YOLO11...")
+        card_results = yolo_detector.analyze_image(image, confidence=0.3)
+        logger.info(f"Detected {len(card_results)} cards")
     except Exception as e:
-        logger.error(f"Failed to detect cards: {e}", exc_info=True)
-        raise HTTPException(status_code=400, detail=f"Failed to detect cards: {str(e)}")
+        logger.error(f"Failed to analyze cards: {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail=f"Failed to analyze cards: {str(e)}")
 
-    # Get image dimensions for bbox percentage calculation
-    img_width, img_height = image.size
-
-    # Identify each card
+    # Convert to response models
     results = []
-    for card in detected_cards:
-        # Get CLIP matches (return more candidates for user selection)
-        clip_matches = clip_matcher.find_matches(card.image, top_k=settings.top_k_matches)
-        confidence = clip_matcher.get_confidence(clip_matches)
-
-        method = "clip"
-        final_matches = clip_matches
-
-        # Always detect attributes (value + shields) for filtering suggestions
-        detected_value = template_matcher.detect_value(card.image, threshold=0.5)
-        detected_shields = template_matcher.detect_shields(card.image, threshold=0.5)
-
-        # Calculate gap between top 2 matches
-        clip_gap = 1.0  # Default high gap if less than 2 matches
-        if len(clip_matches) >= 2:
-            clip_gap = clip_matches[0][1] - clip_matches[1][1]
-
-        # CLIP hesitates if: low confidence OR small gap between top matches
-        clip_hesitates = confidence < settings.clip_confidence_threshold or clip_gap <= 0.02
-
-        # If CLIP hesitates and we have detected attributes, use them to re-rank
-        if clip_hesitates and (detected_value is not None or detected_shields):
-            # Filter candidates using strict matching (card shields must be subset of detected)
-            filtered = attribute_matcher.filter_candidates_strict(
-                clip_matches,
-                value=detected_value,
-                shield_colors=detected_shields if detected_shields else None,
-            )
-            if filtered:
-                final_matches = filtered
-                method = "clip+attr"
-                confidence = clip_matcher.get_confidence(final_matches)
-
-        # Always filter suggestions (matches 2+) by detected attributes
-        if detected_value is not None or detected_shields:
-            top_match = final_matches[0] if final_matches else None
-            if top_match:
-                # Filter remaining matches by attributes
-                suggestions = attribute_matcher.filter_candidates_strict(
-                    final_matches[1:],
-                    value=detected_value,
-                    shield_colors=detected_shields if detected_shields else None,
-                )
-                # Keep top match + filtered suggestions
-                final_matches = [top_match] + suggestions
-
-        # Use Claude fallback if still low confidence
-        if confidence < settings.clip_confidence_threshold:
-            try:
-                claude_matches = claude_fallback.identify_card(card.image, clip_matches)
-                if claude_matches:
-                    final_matches = claude_matches
-                    method = "claude"
-            except Exception:
-                # If Claude fails, keep previous results
-                pass
-
-        # Create CardMatch objects
+    for card in card_results:
         matches = [
-            CardMatch(id=card_id, probability=round(prob, 4))
-            for card_id, prob in final_matches
+            CardMatch(id=m["id"], probability=m["probability"])
+            for m in card["matches"]
         ]
 
-        # Convert bbox from pixels to percentages
-        bbox_x, bbox_y, bbox_w, bbox_h = card.bbox
         bbox = BoundingBox(
-            x=round(bbox_x / img_width * 100, 2),
-            y=round(bbox_y / img_height * 100, 2),
-            width=round(bbox_w / img_width * 100, 2),
-            height=round(bbox_h / img_height * 100, 2),
+            x=card["bbox"]["x"],
+            y=card["bbox"]["y"],
+            width=card["bbox"]["width"],
+            height=card["bbox"]["height"],
         )
 
         results.append(
             CardResult(
-                position=card.position,
+                position=card["position"],
                 matches=matches,
-                method=method,
+                method=card["method"],
                 bbox=bbox,
             )
         )

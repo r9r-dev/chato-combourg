@@ -3,24 +3,24 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install runtime dependencies for OpenCV and git (needed for CLIP install)
+# Install runtime dependencies for OpenCV
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
     libglib2.0-0 \
-    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy application code
 COPY app/ ./app/
 COPY cards/ ./cards/
+COPY models/ ./models/
 COPY requirements.txt ./requirements.txt
 
 # Copy entrypoint script from parent
 COPY ../entrypoint.sh ./entrypoint.sh 2>/dev/null || true
 RUN chmod +x ./entrypoint.sh 2>/dev/null || true
 
-# Create directories for runtime caches and data
-RUN mkdir -p /app/deps /app/embeddings /app/data /root/.cache/clip
+# Create directories for runtime data
+RUN mkdir -p /app/data
 
 # SQLite database will be stored in /app/data (mount as volume for persistence)
 VOLUME /app/data

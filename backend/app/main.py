@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from app.config import settings
 from app.routers import analyze, calculator, players, games, users
 from app.services.card_database import card_database
-from app.services.clip_matcher import clip_matcher
+from app.services.yolo_detector import yolo_detector
 from app.database import init_db
 
 # Paths
@@ -90,10 +90,10 @@ async def lifespan(app: FastAPI):
     card_database.load()
     logger.info(f"Loaded {len(card_database)} cards")
 
-    # Initialize CLIP matcher (pre-compute embeddings)
-    logger.info("Initializing CLIP matcher...")
-    clip_matcher.initialize()
-    logger.info("CLIP matcher ready")
+    # Initialize YOLO detector
+    logger.info("Initializing YOLO11 detector...")
+    yolo_detector.initialize()
+    logger.info("YOLO11 detector ready")
 
     yield
 

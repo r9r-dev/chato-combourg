@@ -5,20 +5,11 @@ python-multipart>=0.0.20
 
 # Image processing
 pillow>=11.1.0
-opencv-python-headless>=4.10.0
-rembg>=2.0.50
-onnxruntime>=1.17.0
 
-# Machine Learning
-torch>=2.9.1
-numpy>=2.2.0
-ultralytics>=8.3.0
-
-# CLIP (OpenAI)
-git+https://github.com/openai/CLIP.git
-
-# Anthropic API
-anthropic>=0.75.0
+# Machine Learning (YOLO11)
+torch>=2.5.0
+numpy>=2.0.0
+ultralytics>=8.3.240
 
 # Configuration
 pydantic>=2.12.0

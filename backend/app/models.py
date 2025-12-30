@@ -17,7 +17,7 @@ class BoundingBox(BaseModel):
 class CardResult(BaseModel):
     position: tuple[int, int] = Field(..., description="Grid position (row, col)")
     matches: list[CardMatch] = Field(..., description="Possible matches sorted by probability")
-    method: str = Field(..., description="Identification method: 'clip' or 'claude'")
+    method: str = Field(..., description="Identification method used (e.g., 'yolo11')")
     bbox: BoundingBox | None = Field(None, description="Bounding box of detected card")
 
 
