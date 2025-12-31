@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.7.11 (2025-12-31)
+
+- Correction du chargement du modèle OpenVINO depuis un répertoire au lieu d'un fichier XML
+
 ## v1.7.10 (2025-12-31)
 
 - Amélioration des logs : filtrage des assets et affichage du temps d'analyse
