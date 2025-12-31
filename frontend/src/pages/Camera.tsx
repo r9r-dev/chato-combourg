@@ -337,16 +337,17 @@ export function Camera() {
         ) : isLiveMode ? (
           /* Live mode: capture button */
           <div className="flex flex-col items-center gap-4">
-            {/* Capture button */}
-            <button
-              onClick={handleCapture}
-              disabled={!isReady}
-              className="w-20 h-20 rounded-full bg-white border-4 border-white/30
-                         hover:bg-white/90 active:bg-white/70 transition-colors
-                         disabled:opacity-50 disabled:cursor-not-allowed
-                         flex items-center justify-center"
-              aria-label="Capturer"
-            />
+            {/* Capture button with outer ring */}
+            <div className="w-24 h-24 rounded-full bg-gray-700 p-1.5 flex items-center justify-center">
+              <button
+                onClick={handleCapture}
+                disabled={!isReady}
+                className="w-full h-full rounded-full bg-white
+                           hover:bg-white/90 active:bg-white/70 transition-colors
+                           disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Capturer"
+              />
+            </div>
 
             {/* Quit button */}
             <button
