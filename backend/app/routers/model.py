@@ -35,17 +35,17 @@ MODEL_VARIANTS = {
     "fp32": {
         "name": "FP32 (Full Precision)",
         "description": "Maximum precision, largest file size",
-        "recommended_for": "Best quality when storage is not a concern",
+        "recommended_for": "Meilleure qualité. Pour smartphones performants.",
     },
     "fp16": {
         "name": "FP16 (Half Precision)",
         "description": "Same precision as FP32, half the size",
-        "recommended_for": "Best balance of quality and size (recommended)",
+        "recommended_for": "Résultats très proches de FP32. Modèle recommandé.",
     },
     "int8": {
         "name": "INT8 (Quantized)",
         "description": "Smallest size, slightly reduced precision",
-        "recommended_for": "Limited storage devices",
+        "recommended_for": "Petit modèle pour smartphones moins performants.",
     },
 }
 

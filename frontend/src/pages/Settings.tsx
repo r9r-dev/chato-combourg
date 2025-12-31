@@ -458,7 +458,7 @@ export function Settings() {
           {/* Model variant selection */}
           {modelInfo && modelInfo.variants.length > 0 && (
             <div className="mb-4">
-              <div className="mb-2 text-white/60 text-sm">Precision du modele local</div>
+              <div className="mb-2 text-white/60 text-sm">Taille du modèle local</div>
               <div className="grid grid-cols-3 gap-2">
                 {modelInfo.variants.map(variant => (
                   <button
@@ -485,11 +485,11 @@ export function Settings() {
           {/* Model status */}
           <div className="p-3 bg-dark-lighter rounded-xl">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-white/60 text-sm">Modele local</span>
+              <span className="text-white/60 text-sm">Modèle local</span>
               {localModelInfo ? (
                 <span className="text-green-400 text-xs">Disponible</span>
               ) : (
-                <span className="text-white/40 text-xs">Non telecharge</span>
+                <span className="text-white/40 text-xs">Non téléchargé</span>
               )}
             </div>
 
@@ -504,7 +504,7 @@ export function Settings() {
                   <span className="text-white/70">{localModelInfo.variant.toUpperCase()}</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-white/40">Telecharge le</span>
+                  <span className="text-white/40">Téléchargé le</span>
                   <span className="text-white/70">
                     {new Date(localModelInfo.storedAt).toLocaleDateString()}
                   </span>
@@ -513,8 +513,8 @@ export function Settings() {
                   <div className="text-orange-400 text-xs">
                     {localModelInfo.version !== modelInfo.version
                       ? `Nouvelle version disponible (${modelInfo.version})`
-                      : `Variante differente selectionnee (${selectedVariant.toUpperCase()})`}
-                  </div>
+                      : `Variante différente sélectionnée (${selectedVariant.toUpperCase()})`}
+                  </div >
                 )}
                 <div className="flex gap-2 mt-2">
                   {modelInfo && (localModelInfo.version !== modelInfo.version || localModelInfo.variant !== selectedVariant) && (
@@ -553,7 +553,7 @@ export function Settings() {
                   </>
                 ) : (
                   <div className="text-white/40 text-xs">
-                    Modele non disponible sur le serveur
+                    Modèle non disponible sur le serveur
                   </div>
                 )}
                 {modelError && (
