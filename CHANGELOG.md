@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.7.9 (2025-12-31)
+
+- Amélioration des logs applicatifs
+
 ## v1.7.8 (2025-12-31)
 
 - Ajout d'un script d'entraînement Google Colab pour faciliter l'entraînement du modèle YOLO11
