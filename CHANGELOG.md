@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.0.4 (2025-12-31)
+
+- Correction du service des ressources PWA
+- Ajout de protections de sécurité pour le service worker et les assets statiques
+
 ## v2.0.3 (2025-12-31)
 
 - Ajout d'une page de licence
