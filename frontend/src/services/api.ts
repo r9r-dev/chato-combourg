@@ -265,3 +265,62 @@ export async function deleteCapture(captureId: string): Promise<void> {
     console.warn(`Delete capture failed for ${captureId}`);
   }
 }
+
+// Model API for offline inference
+export interface ModelInfo {
+  version: string;
+  format: string;
+  filename: string;
+  size_bytes: number;
+  size_mb: number;
+  sha256: string;
+  input_size: number;
+  opset: number;
+  num_classes: number;
+  available: boolean;
+}
+
+export async function getModelInfo(): Promise<ModelInfo> {
+  const response = await fetch(`${API_BASE}/model/info`);
+  if (!response.ok) {
+    throw new Error(`Get model info failed: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function downloadModel(
+  onProgress?: (loaded: number, total: number) => void
+): Promise<ArrayBuffer> {
+  const response = await fetch(`${API_BASE}/model/download`);
+  if (!response.ok) {
+    throw new Error(`Download model failed: ${response.statusText}`);
+  }
+
+  const contentLength = response.headers.get('content-length');
+  const total = contentLength ? parseInt(contentLength, 10) : 0;
+
+  if (!response.body) {
+    return response.arrayBuffer();
+  }
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let loaded = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    loaded += value.length;
+    onProgress?.(loaded, total);
+  }
+
+  const buffer = new Uint8Array(loaded);
+  let offset = 0;
+  for (const chunk of chunks) {
+    buffer.set(chunk, offset);
+    offset += chunk.length;
+  }
+
+  return buffer.buffer;
+}

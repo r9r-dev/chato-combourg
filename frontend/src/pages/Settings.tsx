@@ -6,9 +6,15 @@ import {
   deletePlayer,
   exportGames,
   createManualGame,
+  getModelInfo,
+  updateSettings,
+  getSettings,
+  downloadModel,
+  type ModelInfo,
 } from '../services/api';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import type { PlayerWithStats, PlayerOrderMode } from '../types';
+import type { PlayerWithStats, PlayerOrderMode, OfflineMode } from '../types';
+import { modelStorage } from '../services/modelStorage';
 
 const PLAYER_COLORS = [
   '#E53935', '#1E88E5', '#43A047', '#FB8C00', '#8E24AA',
@@ -20,6 +26,12 @@ const ORDER_OPTIONS: { value: PlayerOrderMode; label: string }[] = [
   { value: 'manual', label: 'Manuel' },
   { value: 'most_played', label: 'Les plus fréquents' },
   { value: 'last_played', label: 'Derniers à avoir joué' },
+];
+
+const OFFLINE_OPTIONS: { value: OfflineMode; label: string; description: string }[] = [
+  { value: 'never', label: 'Jamais', description: 'Toujours utiliser le serveur' },
+  { value: 'fallback', label: 'Serveur indisponible', description: 'Local si serveur hors ligne' },
+  { value: 'always', label: 'Toujours', description: 'Toujours utiliser le local' },
 ];
 
 export function Settings() {
@@ -53,12 +65,43 @@ export function Settings() {
   // Export state
   const [exporting, setExporting] = useState(false);
 
+  // Offline mode state
+  const [offlineMode, setOfflineMode] = useState<OfflineMode>('never');
+  const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null);
+  const [localModelInfo, setLocalModelInfo] = useState<{ version: string; storedAt: string } | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
+  const [modelError, setModelError] = useState<string | null>(null);
+
   // Sync from context
   useEffect(() => {
     setPlayers(playersWithStats);
     setManualOrder(manualPlayerOrder);
     setLoading(false);
   }, [playersWithStats, manualPlayerOrder]);
+
+  // Load offline mode settings and model info
+  useEffect(() => {
+    const loadOfflineSettings = async () => {
+      try {
+        // Load settings from backend
+        const settings = await getSettings();
+        if (settings.offline_mode) {
+          setOfflineMode(settings.offline_mode as OfflineMode);
+        }
+
+        // Load server model info
+        const info = await getModelInfo();
+        setModelInfo(info);
+
+        // Load local model info
+        const localInfo = await modelStorage.getModelInfo();
+        setLocalModelInfo(localInfo);
+      } catch (err) {
+        console.warn('Failed to load model info:', err);
+      }
+    };
+    loadOfflineSettings();
+  }, []);
 
   // Save player order setting
   const handleOrderChange = async (order: PlayerOrderMode) => {
@@ -173,6 +216,51 @@ export function Settings() {
     }
   };
 
+  // Handle offline mode change
+  const handleOfflineModeChange = async (mode: OfflineMode) => {
+    setOfflineMode(mode);
+    try {
+      await updateSettings({ offline_mode: mode });
+    } catch (err) {
+      console.error('Failed to save offline mode:', err);
+    }
+  };
+
+  // Download model for offline use
+  const handleDownloadModel = async () => {
+    if (!modelInfo?.available) return;
+
+    setModelError(null);
+    setDownloadProgress(0);
+
+    try {
+      const data = await downloadModel((loaded, total) => {
+        if (total > 0) {
+          setDownloadProgress(Math.round((loaded / total) * 100));
+        }
+      });
+
+      await modelStorage.saveModel(data, modelInfo.version, modelInfo.sha256);
+
+      const localInfo = await modelStorage.getModelInfo();
+      setLocalModelInfo(localInfo);
+      setDownloadProgress(null);
+    } catch (err) {
+      setModelError(err instanceof Error ? err.message : 'Erreur de telechargement');
+      setDownloadProgress(null);
+    }
+  };
+
+  // Delete local model
+  const handleDeleteModel = async () => {
+    try {
+      await modelStorage.deleteModel();
+      setLocalModelInfo(null);
+    } catch (err) {
+      console.error('Failed to delete model:', err);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-dvh">
@@ -272,21 +360,122 @@ export function Settings() {
         {/* Section: Jeu */}
         <section className="p-4 border-b border-white/10">
           <h2 className="text-gold font-semibold mb-3">Jeu</h2>
-          <div className="mb-2 text-white/60 text-sm">Ordre des joueurs</div>
-          <div className="grid grid-cols-2 gap-2">
-            {ORDER_OPTIONS.map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => handleOrderChange(opt.value)}
-                className={`p-3 rounded-xl text-sm font-medium transition-all ${
-                  playerOrder === opt.value
-                    ? 'bg-gold text-dark'
-                    : 'bg-dark-lighter text-white/70 hover:bg-dark-card'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
+
+          {/* Ordre des joueurs */}
+          <div className="mb-4">
+            <div className="mb-2 text-white/60 text-sm">Ordre des joueurs</div>
+            <div className="grid grid-cols-2 gap-2">
+              {ORDER_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => handleOrderChange(opt.value)}
+                  className={`p-3 rounded-xl text-sm font-medium transition-all ${
+                    playerOrder === opt.value
+                      ? 'bg-gold text-dark'
+                      : 'bg-dark-lighter text-white/70 hover:bg-dark-card'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Mode offline */}
+          <div className="mb-4">
+            <div className="mb-2 text-white/60 text-sm">Mode offline</div>
+            <div className="grid grid-cols-3 gap-2">
+              {OFFLINE_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => handleOfflineModeChange(opt.value)}
+                  disabled={opt.value !== 'never' && !localModelInfo}
+                  className={`p-3 rounded-xl text-sm font-medium transition-all ${
+                    offlineMode === opt.value
+                      ? 'bg-gold text-dark'
+                      : 'bg-dark-lighter text-white/70 hover:bg-dark-card disabled:opacity-40 disabled:cursor-not-allowed'
+                  }`}
+                  title={opt.description}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Model status */}
+          <div className="p-3 bg-dark-lighter rounded-xl">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-white/60 text-sm">Modele local</span>
+              {localModelInfo ? (
+                <span className="text-green-400 text-xs">Disponible</span>
+              ) : (
+                <span className="text-white/40 text-xs">Non telecharge</span>
+              )}
+            </div>
+
+            {localModelInfo ? (
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="text-white/40">Version</span>
+                  <span className="text-white/70">{localModelInfo.version}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-white/40">Telecharge le</span>
+                  <span className="text-white/70">
+                    {new Date(localModelInfo.storedAt).toLocaleDateString()}
+                  </span>
+                </div>
+                {modelInfo && localModelInfo.version !== modelInfo.version && (
+                  <div className="text-orange-400 text-xs">
+                    Nouvelle version disponible ({modelInfo.version})
+                  </div>
+                )}
+                <div className="flex gap-2 mt-2">
+                  {modelInfo && localModelInfo.version !== modelInfo.version && (
+                    <button
+                      onClick={handleDownloadModel}
+                      disabled={downloadProgress !== null}
+                      className="flex-1 p-2 bg-gold/20 text-gold rounded-lg text-xs font-medium disabled:opacity-50"
+                    >
+                      {downloadProgress !== null ? `${downloadProgress}%` : 'Mettre a jour'}
+                    </button>
+                  )}
+                  <button
+                    onClick={handleDeleteModel}
+                    className="p-2 bg-red-500/20 text-red-400 rounded-lg text-xs font-medium"
+                  >
+                    Supprimer
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {modelInfo?.available ? (
+                  <>
+                    <div className="text-white/40 text-xs">
+                      {modelInfo.size_mb} MB - Version {modelInfo.version}
+                    </div>
+                    <button
+                      onClick={handleDownloadModel}
+                      disabled={downloadProgress !== null}
+                      className="w-full p-2 bg-gold/20 text-gold rounded-lg text-sm font-medium disabled:opacity-50"
+                    >
+                      {downloadProgress !== null
+                        ? `Telechargement... ${downloadProgress}%`
+                        : 'Telecharger le modele'}
+                    </button>
+                  </>
+                ) : (
+                  <div className="text-white/40 text-xs">
+                    Modele non disponible sur le serveur
+                  </div>
+                )}
+                {modelError && (
+                  <div className="text-red-400 text-xs">{modelError}</div>
+                )}
+              </div>
+            )}
           </div>
         </section>
 
