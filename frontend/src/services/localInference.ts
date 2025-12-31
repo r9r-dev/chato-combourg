@@ -357,7 +357,7 @@ class LocalInferenceService {
       return {
         success: true,
         cards,
-        capture_id: `local_${Date.now()}`,
+        // No capture_id for local inference - captures are not saved
       };
 
     } catch (error) {
