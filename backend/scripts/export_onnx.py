@@ -66,6 +66,18 @@ def parse_args():
         default=17,
         help="ONNX opset version (default: 17 for broad compatibility)",
     )
+    parser.add_argument(
+        "--quantize",
+        action="store_true",
+        default=True,
+        help="Quantize model to INT8 for smaller size (default: True)",
+    )
+    parser.add_argument(
+        "--no-quantize",
+        action="store_false",
+        dest="quantize",
+        help="Disable INT8 quantization",
+    )
     return parser.parse_args()
 
 
@@ -157,6 +169,29 @@ def main():
             shutil.move(str(export_path), str(final_path))
 
         print(f"\nModel exported to: {final_path}")
+
+        # Quantize to INT8 if requested
+        if args.quantize:
+            print(f"\nQuantizing to INT8...")
+            try:
+                from onnxruntime.quantization import quantize_dynamic, QuantType
+
+                quantized_path = output_dir / "model_int8.onnx"
+                quantize_dynamic(
+                    str(final_path),
+                    str(quantized_path),
+                    weight_type=QuantType.QUInt8
+                )
+
+                # Replace original with quantized version
+                final_path.unlink()
+                quantized_path.rename(final_path)
+
+                print(f"Quantized model saved to: {final_path}")
+            except ImportError:
+                print("Warning: onnxruntime.quantization not available, skipping quantization")
+            except Exception as e:
+                print(f"Warning: Quantization failed: {e}")
 
     except Exception as e:
         print(f"Error during export: {e}")

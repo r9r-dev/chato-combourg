@@ -3,8 +3,9 @@ import { useCamera } from '../hooks/useCamera';
 import { useGame } from '../context/GameContext';
 import { GridOverlay } from '../components/GridOverlay';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import { analyzeImage, finalizeCapture, deleteCapture } from '../services/api';
-import type { GameCard, CardResult, BoundingBox } from '../types';
+import { analyzeImage, finalizeCapture, deleteCapture, getSettings } from '../services/api';
+import { localInference } from '../services/localInference';
+import type { GameCard, CardResult, BoundingBox, OfflineMode, AnalyzeResponse } from '../types';
 
 interface DetectionResult {
   bbox: BoundingBox;
@@ -31,6 +32,10 @@ export function Camera() {
   // Track current capture for finalization
   const currentCaptureIdRef = useRef<string | undefined>(undefined);
   const currentDetectionCountRef = useRef<number>(0);
+
+  // Offline mode
+  const [offlineMode, setOfflineMode] = useState<OfflineMode>('never');
+  const [inferenceMode, setInferenceMode] = useState<'server' | 'local' | null>(null);
 
   const currentPlayer = getCurrentPlayer();
   const playerIndex = state.currentPlayerIndex + 1;
@@ -103,6 +108,33 @@ export function Camera() {
     return `${count} cartes detectees`;
   }, []);
 
+  // Analyze with server or local inference
+  const runAnalysis = useCallback(async (blob: Blob): Promise<AnalyzeResponse> => {
+    if (offlineMode === 'always' && await localInference.isAvailable()) {
+      setInferenceMode('local');
+      return await localInference.analyze(blob);
+    }
+
+    if (offlineMode === 'fallback') {
+      // Try server first, fallback to local
+      try {
+        setInferenceMode('server');
+        return await analyzeImage(blob);
+      } catch (err) {
+        console.warn('Server unavailable, using local inference:', err);
+        if (await localInference.isAvailable()) {
+          setInferenceMode('local');
+          return await localInference.analyze(blob);
+        }
+        throw err;
+      }
+    }
+
+    // Default: server only
+    setInferenceMode('server');
+    return await analyzeImage(blob);
+  }, [offlineMode]);
+
   // Capture and analyze
   const handleCapture = useCallback(async () => {
     if (isAnalyzing || !isReady) return;
@@ -122,7 +154,7 @@ export function Camera() {
       // Create image URL but don't display yet
       tempImageUrl = URL.createObjectURL(blob);
 
-      const response = await analyzeImage(blob);
+      const response = await runAnalysis(blob);
 
       // Store capture ID for later finalization
       currentCaptureIdRef.current = response.capture_id;
@@ -177,6 +209,7 @@ export function Camera() {
     setCards,
     stopCamera,
     setStep,
+    runAnalysis,
   ]);
 
   // Reset to live view for retake
@@ -200,6 +233,21 @@ export function Camera() {
     setDetections([]);
     setDetectionResult(null);
   }, [capturedImageUrl]);
+
+  // Load offline mode setting on mount
+  useEffect(() => {
+    const loadOfflineMode = async () => {
+      try {
+        const settings = await getSettings();
+        if (settings.offline_mode) {
+          setOfflineMode(settings.offline_mode as OfflineMode);
+        }
+      } catch {
+        // Ignore - will use default 'never'
+      }
+    };
+    loadOfflineMode();
+  }, []);
 
   // Start camera on mount
   useEffect(() => {
@@ -305,6 +353,11 @@ export function Camera() {
               <div className="absolute inset-4 bg-gold/50 rounded-full animate-pulse" />
             </div>
             <p className="text-white/60 text-sm">Detection des cartes en cours</p>
+            {inferenceMode && (
+              <p className="text-white/40 text-xs">
+                Mode: {inferenceMode === 'local' ? 'Hors ligne' : 'Serveur'}
+              </p>
+            )}
           </div>
         ) : (
           <div className="relative w-full max-w-sm aspect-[3/4]">
