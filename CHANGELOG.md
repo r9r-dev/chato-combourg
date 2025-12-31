@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.7.5 (2025-12-31)
+
+- Refactorisation : déplacement des modèles à la racine du projet pour une structure plus claire
+- Ajout du support OpenVINO pour une inférence YOLO plus rapide sur les processeurs Intel
+
 ## v1.7.4 (2025-12-31)
 
 - Amélioration de la mise en page des images annotées pour les captures
