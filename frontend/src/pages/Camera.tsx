@@ -3,7 +3,7 @@ import { useCamera } from '../hooks/useCamera';
 import { useGame } from '../context/GameContext';
 import { GridOverlay } from '../components/GridOverlay';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import { analyzeImage, finalizeCapture } from '../services/api';
+import { analyzeImage, finalizeCapture, deleteCapture } from '../services/api';
 import type { GameCard, CardResult, BoundingBox } from '../types';
 
 interface DetectionResult {
@@ -206,11 +206,16 @@ export function Camera() {
     startCamera();
   }, [startCamera]);
 
-  // Clean up image URL on unmount
+  // Clean up on unmount
   useEffect(() => {
     return () => {
+      // Clean up image URL
       if (capturedImageUrl) {
         URL.revokeObjectURL(capturedImageUrl);
+      }
+      // Delete pending capture if component unmounts without validation
+      if (currentCaptureIdRef.current) {
+        deleteCapture(currentCaptureIdRef.current);
       }
     };
   }, [capturedImageUrl]);
@@ -234,8 +239,13 @@ export function Camera() {
     setShowExitConfirm(true);
   }, []);
 
-  // Confirm exit
+  // Confirm exit - cleanup pending capture
   const confirmExit = useCallback(() => {
+    // Delete pending capture if exists
+    if (currentCaptureIdRef.current) {
+      deleteCapture(currentCaptureIdRef.current);
+      currentCaptureIdRef.current = undefined;
+    }
     stopCamera();
     reset();
   }, [stopCamera, reset]);

@@ -253,3 +253,15 @@ export async function finalizeCapture(
   }
   return response.json();
 }
+
+// Delete pending capture (when user quits without validating)
+export async function deleteCapture(captureId: string): Promise<void> {
+  try {
+    await fetch(`${API_BASE}/captures/${captureId}`, {
+      method: 'DELETE',
+    });
+  } catch {
+    // Ignore errors - cleanup is non-critical
+    console.warn(`Delete capture failed for ${captureId}`);
+  }
+}

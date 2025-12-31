@@ -46,6 +46,22 @@ class FinalizeResponse(BaseModel):
     category: str | None = None
 
 
+@router.delete(
+    "/{capture_id}",
+    responses={404: {"description": "Capture not found"}},
+)
+async def delete_capture(capture_id: str):
+    """Delete a pending capture (when user quits without validating)."""
+    logger.info(f"Deleting pending capture {capture_id}")
+
+    success = capture_service.delete_pending_capture(capture_id)
+
+    if not success:
+        raise HTTPException(status_code=404, detail="Capture not found in pending")
+
+    return {"success": True, "message": "Capture deleted"}
+
+
 @router.post(
     "/{capture_id}/finalize",
     response_model=FinalizeResponse,

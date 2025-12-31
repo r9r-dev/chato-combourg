@@ -115,6 +115,23 @@ class CaptureService:
 
         return True
 
+    def delete_pending_capture(self, capture_id: str) -> bool:
+        """Delete a pending capture.
+
+        Args:
+            capture_id: The capture ID (timestamp)
+
+        Returns:
+            True if deleted, False if not found
+        """
+        pending_path = self._get_pending_path(capture_id)
+
+        if not pending_path.exists():
+            return False
+
+        shutil.rmtree(pending_path)
+        return True
+
     def get_capture_info(self, capture_id: str) -> dict | None:
         """Get info about a capture (from pending or any category)."""
         # Check pending first
