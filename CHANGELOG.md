@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.7.1 (2025-12-31)
+
+- Affichage d'un écran d'analyse pendant la détection des cartes
+- Installation des polices DejaVu dans Docker pour support Unicode des annotations
+- Amélioration de la taille de police et support Unicode pour les images annotées
+- Positionnement correct des étiquettes d'annotation dans la boîte englobante
+- Style amélioré du bouton de capture avec anneau extérieur
+- Suppression du Dockerfile backend inutilisé
+
 ## v1.7.0 (2025-12-31)
 
 - Système de catégorisation des captures pour la collecte de données d'entraînement
