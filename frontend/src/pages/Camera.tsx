@@ -108,6 +108,9 @@ export function Camera() {
     if (isAnalyzing || !isReady) return;
     setIsAnalyzing(true);
 
+    // Store blob URL temporarily for potential display after analysis
+    let tempImageUrl: string | null = null;
+
     try {
       const blob = await captureFrameAsync();
       if (!blob) {
@@ -116,9 +119,8 @@ export function Camera() {
         return;
       }
 
-      // Create image URL from blob for display
-      const imageUrl = URL.createObjectURL(blob);
-      setCapturedImageUrl(imageUrl);
+      // Create image URL but don't display yet
+      tempImageUrl = URL.createObjectURL(blob);
 
       const response = await analyzeImage(blob);
 
@@ -127,16 +129,29 @@ export function Camera() {
 
       if (response.success && response.cards.length > 0) {
         const { cards: newCards, detections: newDetections } = processResults(response.cards);
-        setIdentifiedCards(newCards);
-        setDetections(newDetections);
 
         const highConfPositions = getHighConfidencePositions(newCards);
         const detectedCount = highConfPositions.size;
         currentDetectionCountRef.current = detectedCount;
 
-        // Update detection result message
+        // If all 9 cards detected with high confidence, auto-validate directly
+        if (detectedCount === 9) {
+          // Don't show image, go straight to review
+          URL.revokeObjectURL(tempImageUrl);
+          setCards(newCards, currentCaptureIdRef.current);
+          stopCamera();
+          setStep('review');
+          return;
+        }
+
+        // Show image and results for manual review
+        setIdentifiedCards(newCards);
+        setDetections(newDetections);
+        setCapturedImageUrl(tempImageUrl);
         setDetectionResult(formatDetectionMessage(detectedCount));
       } else {
+        // No cards detected - show image anyway for retry
+        setCapturedImageUrl(tempImageUrl);
         setIdentifiedCards([]);
         setDetections([]);
         setDetectionResult('Aucune carte detectee');
@@ -144,6 +159,10 @@ export function Camera() {
       }
     } catch (err) {
       console.error('Analysis error:', err);
+      // Clean up on error
+      if (tempImageUrl) {
+        URL.revokeObjectURL(tempImageUrl);
+      }
       setDetectionResult("Erreur d'analyse");
     } finally {
       setIsAnalyzing(false);
@@ -155,6 +174,9 @@ export function Camera() {
     getHighConfidencePositions,
     formatDetectionMessage,
     isAnalyzing,
+    setCards,
+    stopCamera,
+    setStep,
   ]);
 
   // Reset to live view for retake
@@ -206,15 +228,6 @@ export function Camera() {
     setIsValidating(false);
   }, [identifiedCards, setCards, stopCamera, setStep, isValidating]);
 
-  // Auto-validate when all 9 cards are detected with high confidence
-  useEffect(() => {
-    if (!capturedImageUrl || isValidating) return;
-
-    const highConfPositions = getHighConfidencePositions(identifiedCards);
-    if (highConfPositions.size === 9) {
-      handleValidate();
-    }
-  }, [identifiedCards, capturedImageUrl, getHighConfidencePositions, isValidating, handleValidate]);
 
   // Handle back button - show confirmation
   const handleBack = useCallback(() => {
@@ -267,58 +280,73 @@ export function Camera() {
         </div>
       )}
 
-      {/* Camera/capture view */}
+      {/* Camera/capture/analyzing view */}
       <div className="relative flex-1 flex items-center justify-center overflow-hidden">
-        <div className="relative w-full max-w-sm aspect-[3/4]">
-          {isLiveMode ? (
-            <>
-              {/* Live video feed */}
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                webkit-playsinline="true"
-                muted
-                className="absolute inset-0 w-full h-full object-cover rounded-lg"
-              />
-              <GridOverlay mode="viewfinder" />
-            </>
-          ) : (
-            <>
-              {/* Captured image */}
-              <img
-                src={capturedImageUrl}
-                alt="Capture"
-                className="absolute inset-0 w-full h-full object-cover rounded-lg"
-              />
-              <GridOverlay
-                mode="results"
-                detections={detections}
-              />
-            </>
-          )}
-        </div>
+        {isAnalyzing ? (
+          /* Analyzing screen */
+          <div className="flex flex-col items-center justify-center gap-6">
+            <h2 className="text-3xl font-bold text-white">Analyse...</h2>
+            <div className="relative w-16 h-16">
+              {/* Outer ring */}
+              <div className="absolute inset-0 border-4 border-gold/30 rounded-full" />
+              {/* Spinning ring */}
+              <div className="absolute inset-0 border-4 border-transparent border-t-gold rounded-full animate-spin" />
+              {/* Inner pulsing dot */}
+              <div className="absolute inset-4 bg-gold/50 rounded-full animate-pulse" />
+            </div>
+            <p className="text-white/60 text-sm">Detection des cartes en cours</p>
+          </div>
+        ) : (
+          <div className="relative w-full max-w-sm aspect-[3/4]">
+            {isLiveMode ? (
+              <>
+                {/* Live video feed */}
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  webkit-playsinline="true"
+                  muted
+                  className="absolute inset-0 w-full h-full object-cover rounded-lg"
+                />
+                <GridOverlay mode="viewfinder" />
+              </>
+            ) : (
+              <>
+                {/* Captured image */}
+                <img
+                  src={capturedImageUrl}
+                  alt="Capture"
+                  className="absolute inset-0 w-full h-full object-cover rounded-lg"
+                />
+                <GridOverlay
+                  mode="results"
+                  detections={detections}
+                />
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Controls */}
       <div className="p-4 bg-dark-lighter">
-        {isLiveMode ? (
+        {isAnalyzing ? (
+          /* Analyzing mode: no controls */
+          <div className="h-28" /> /* Spacer to maintain layout */
+        ) : isLiveMode ? (
           /* Live mode: capture button */
           <div className="flex flex-col items-center gap-4">
             {/* Capture button */}
             <button
               onClick={handleCapture}
-              disabled={isAnalyzing || !isReady}
+              disabled={!isReady}
               className="w-20 h-20 rounded-full bg-white border-4 border-white/30
                          hover:bg-white/90 active:bg-white/70 transition-colors
                          disabled:opacity-50 disabled:cursor-not-allowed
                          flex items-center justify-center"
               aria-label="Capturer"
-            >
-              {isAnalyzing && (
-                <div className="w-8 h-8 border-4 border-dark/30 border-t-dark rounded-full animate-spin" />
-              )}
-            </button>
+            />
 
             {/* Quit button */}
             <button
