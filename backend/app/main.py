@@ -189,14 +189,36 @@ async def api_info():
     }
 
 
+# File extensions that should return 404 if not found (not SPA routes)
+STATIC_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".ico", ".svg", ".webp",
+                     ".js", ".css", ".woff", ".woff2", ".ttf", ".eot",
+                     ".json", ".webmanifest", ".xml", ".txt"}
+
+
 @app.get("/{full_path:path}")
 async def serve_spa(request: Request, full_path: str):
     """Serve the SPA for all non-API routes."""
+    from fastapi.responses import JSONResponse
+
     # Skip API routes
     if full_path.startswith("api/") or full_path.startswith("cards/"):
-        return {"detail": "Not found"}
+        return JSONResponse({"detail": "Not found"}, status_code=404)
 
-    # Serve index.html for SPA routing
+    # Check if this looks like a static file request
+    path_lower = full_path.lower()
+    is_static_file = any(path_lower.endswith(ext) for ext in STATIC_EXTENSIONS)
+
+    # Serve static files if they exist (PWA assets, etc.)
+    if full_path and FRONTEND_DIR.exists():
+        static_file = FRONTEND_DIR / full_path
+        if static_file.exists() and static_file.is_file():
+            return FileResponse(str(static_file))
+
+    # If it's a static file that doesn't exist, return 404 (security: don't serve index.html)
+    if is_static_file:
+        return JSONResponse({"detail": "Not found"}, status_code=404)
+
+    # Serve index.html for SPA routing (only for navigation routes)
     index_path = FRONTEND_DIR / "index.html"
     if index_path.exists():
         return FileResponse(str(index_path))
