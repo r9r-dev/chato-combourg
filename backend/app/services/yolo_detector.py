@@ -160,12 +160,14 @@ class YOLOCardDetector:
             return
 
         card_detector_dir = MODELS_DIR / "card_detector"
-        openvino_path = card_detector_dir / "openvino" / "model.xml"
+        # OpenVINO: pass the directory (contains model.xml, model.bin, metadata.yaml)
+        openvino_dir = card_detector_dir / "openvino"
         pytorch_path = card_detector_dir / "yolo11" / "model.pt"
 
         # Prefer OpenVINO model for better CPU performance
-        if openvino_path.exists():
-            self.model = YOLO(str(openvino_path), task="detect")
+        # Check for metadata.yaml to confirm valid OpenVINO export from Ultralytics
+        if (openvino_dir / "metadata.yaml").exists():
+            self.model = YOLO(str(openvino_dir), task="detect")
             self._model_type = "openvino"
         elif pytorch_path.exists():
             self.model = YOLO(str(pytorch_path), task="detect")
@@ -173,7 +175,7 @@ class YOLOCardDetector:
         else:
             raise FileNotFoundError(
                 f"YOLO model not found. Expected OpenVINO at "
-                f"{card_detector_dir / 'openvino' / 'model.xml'} "
+                f"{openvino_dir} (with metadata.yaml) "
                 f"or PyTorch at {pytorch_path}."
             )
 
