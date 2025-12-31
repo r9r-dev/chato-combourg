@@ -51,4 +51,4 @@ Pour plus de détails sur les règles de scoring, consultez [docs/CARD_RULES.md]
 
 ## Licence
 
-Ce projet est sous licence [GPL-3.0](LICENSE).
+Ce projet est sous licence [AGPL-3.0](LICENSE).

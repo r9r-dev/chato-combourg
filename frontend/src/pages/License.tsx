@@ -43,10 +43,10 @@ export function License() {
       {/* Content */}
       <div className="flex-1 overflow-auto p-4">
         <div className="prose prose-invert max-w-none">
-          <h2 className="text-gold text-xl font-bold mb-4">GNU General Public License v3.0</h2>
+          <h2 className="text-gold text-xl font-bold mb-4">GNU Affero General Public License v3.0</h2>
 
           <p className="text-white/80 text-sm mb-4">
-            Chato Combourg - Image Processing for Chateau Combo game
+            Chato Combourg - Image Processing for Chateau Combo boardgame
           </p>
 
           <p className="text-white/60 text-sm mb-4">
@@ -56,7 +56,7 @@ export function License() {
           <div className="bg-dark-lighter rounded-xl p-4 mb-6">
             <p className="text-white/70 text-sm mb-3">
               This program is free software: you can redistribute it and/or modify
-              it under the terms of the GNU General Public License as published by
+              it under the terms of the GNU Affero General Public License as published by
               the Free Software Foundation, either version 3 of the License, or
               (at your option) any later version.
             </p>
@@ -65,44 +65,42 @@ export function License() {
               This program is distributed in the hope that it will be useful,
               but WITHOUT ANY WARRANTY; without even the implied warranty of
               MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-              GNU General Public License for more details.
+              GNU Affero General Public License for more details.
             </p>
 
             <p className="text-white/70 text-sm">
-              You should have received a copy of the GNU General Public License
+              You should have received a copy of the GNU Affero General Public License
               along with this program. If not, see{' '}
               <a
-                href="https://www.gnu.org/licenses/gpl-3.0.html"
+                href="https://www.gnu.org/licenses/agpl-3.0.html"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gold hover:underline"
               >
-                gnu.org/licenses/gpl-3.0
+                gnu.org/licenses/agpl-3.0
               </a>.
             </p>
           </div>
 
           <h3 className="text-white text-lg font-semibold mb-3">Permissions</h3>
           <ul className="text-white/60 text-sm space-y-1 mb-6">
-            <li>- Utilisation commerciale</li>
-            <li>- Distribution</li>
-            <li>- Modification</li>
-            <li>- Utilisation de brevets</li>
-            <li>- Utilisation privée</li>
+            <li>- Utilisation, copie et distribution du logiciel</li>
+            <li>- Modification et creation de versions derivees</li>
+            <li>- Utilisation privee et commerciale</li>
           </ul>
 
           <h3 className="text-white text-lg font-semibold mb-3">Conditions</h3>
           <ul className="text-white/60 text-sm space-y-1 mb-6">
-            <li>- Divulguer le code source</li>
-            <li>- Conserver la licence et le copyright</li>
-            <li>- Même licence pour les travaux dérivés</li>
-            <li>- Documenter les modifications</li>
+            <li>- Fournir le code source aux utilisateurs (y compris via reseau)</li>
+            <li>- Conserver les notices de copyright et la licence</li>
+            <li>- Distribuer les modifications sous la meme licence AGPL v3</li>
+            <li>- Documenter les modifications apportees</li>
           </ul>
 
           <h3 className="text-white text-lg font-semibold mb-3">Limitations</h3>
           <ul className="text-white/60 text-sm space-y-1 mb-6">
-            <li>- Aucune garantie</li>
-            <li>- Aucune responsabilité</li>
+            <li>- Aucune garantie fournie</li>
+            <li>- Aucune responsabilite des auteurs</li>
           </ul>
 
           <div className="border-t border-white/10 pt-6">
