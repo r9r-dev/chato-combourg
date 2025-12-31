@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.0.7 (2025-12-31)
+
+- Changement de licence de GPL v3 vers AGPL v3
+- Ajout d'un tableau de scores correspondant à la feuille de score officielle et menu développeur
+- Correction des contraintes de caméra iOS Safari pour le mode portrait
+
 ## v2.0.6 (2025-12-31)
 
 - Suppression de la logique de rotation de caméra
