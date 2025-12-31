@@ -7,8 +7,13 @@ Application de calcul automatique du score pour le jeu de cartes **Château Comb
 - **Reconnaissance de cartes** : Prenez une photo de votre plateau 3x3, l'IA identifie automatiquement vos 9 cartes
 - **Calcul de score** : Application automatique des règles du jeu
 - **Gestion des joueurs** : Gestion des parties et classement final
-- **Historique** : Retrouvez toutes vos parties passées
+- **Historique** : Retrouvez toutes vos parties passées ainsi que des statistiques
 - **PWA** : Utilisable sur mobile comme une application native
+
+## Performances
+Avec un entrainement sur 5000 photos précalculées (génération automatique de fausses photos avec 9 cartes, ajout d'altérations multiples, textures de fond, chevauchements, etc.) et une validation sur 500 photos, le modèle yolo11x atteint un taux de réussite de 99,5% dans les pires conditions.
+
+Le modèle n'a pas été entrainé sur des photos réelles (trop long !) donc dans la réalité il n'est pas aussi performant mais se trompe malgré tout très rarement.
 
 ## Installation
 
