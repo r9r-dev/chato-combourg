@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.0.0 (2025-12-31)
+
+- Inference hors ligne pour la détection de cartes via ONNX Runtime Web
+- Support du mode hors ligne avec fallback automatique vers le serveur
+- Stockage du modèle dans IndexedDB pour utilisation locale
+- Corrections de chemins de modèles et de format de réponse en mode hors ligne
+
 ## v1.7.12 (2025-12-31)
 
 - Correction de la convention de nommage du dossier de modèle OpenVINO
