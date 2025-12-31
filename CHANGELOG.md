@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.0.1 (2025-12-31)
+
+- Ajout du support multi-modèles (OpenVINO et PyTorch) sélectionnable par l'utilisateur
+
 ## v2.0.0 (2025-12-31)
 
 - Inference hors ligne pour la détection de cartes via ONNX Runtime Web
