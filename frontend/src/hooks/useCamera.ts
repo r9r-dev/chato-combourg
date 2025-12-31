@@ -15,13 +15,13 @@ export function useCamera(options: UseCameraOptions = {}) {
     try {
       setError(null);
 
-      // iOS Safari requires specific constraints
-      // Portrait aspect ratio 3:4 for card grids
+      // iOS Safari camera constraints are inverted:
+      // To get portrait video (1080x1440), request width > height (1440x1080)
       const constraints: MediaStreamConstraints = {
         video: {
           facingMode: { ideal: facingMode },
-          width: { ideal: 1080 },
-          height: { ideal: 1440 },
+          width: { ideal: 1440 },
+          height: { ideal: 1080 },
         },
         audio: false,
       };
