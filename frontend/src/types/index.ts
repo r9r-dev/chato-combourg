@@ -177,10 +177,12 @@ export interface GameCreate {
 
 // Settings
 export type PlayerOrderMode = 'alphabetical' | 'manual' | 'most_played' | 'last_played';
+export type OfflineMode = 'never' | 'fallback' | 'always';
 
 export interface UserSettings {
   player_order: PlayerOrderMode;
   manual_player_order?: number[]; // Player IDs in custom order
+  offline_mode?: OfflineMode;
 }
 
 // Player with stats (for settings)

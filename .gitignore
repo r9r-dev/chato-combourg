@@ -48,3 +48,4 @@ training/
 
 # Training artifacts
 *.cache
+backend/data/

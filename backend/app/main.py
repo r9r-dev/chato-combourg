@@ -8,7 +8,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
-from app.routers import analyze, calculator, players, games, users, captures
+from app.routers import analyze, calculator, players, games, users, captures, model
 from app.services.card_database import card_database
 from app.services.yolo_detector import yolo_detector
 from app.database import init_db
@@ -164,6 +164,7 @@ app.include_router(players.router)
 app.include_router(games.router)
 app.include_router(users.router)
 app.include_router(captures.router)
+app.include_router(model.router)
 
 # Mount static files for card images
 app.mount("/cards", StaticFiles(directory=str(CARDS_DIR)), name="cards")
