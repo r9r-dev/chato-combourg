@@ -1,5 +1,14 @@
 # Changelog
 
+## v2.0.3 (2025-12-31)
+
+- Ajout d'une page de licence
+- Ajout du mode développeur
+- Correction de l'orientation de la caméra
+- Correction de la caméra qui ne se réinitialisait pas en cliquant sur le bouton Reprendre
+- Correction des erreurs de linting et des avertissements de dépréciation Pydantic
+- Correction de fautes de frappe
+
 ## v2.0.2 (2025-12-31)
 
 - Ajout du support multi-variantes ONNX (FP32/FP16/INT8) pour l'inférence hors ligne
