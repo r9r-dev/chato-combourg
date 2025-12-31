@@ -39,6 +39,7 @@ models/**/*.xml
 models/**/*.pth
 models/**/*.pkl
 backend/models/
+backend/data/
 
 # Tests and debug output
 tests/
