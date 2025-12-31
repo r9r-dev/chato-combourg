@@ -1,0 +1,3 @@
+# Place OpenVINO model files here:
+# - model.bin
+# - model.xml

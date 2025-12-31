@@ -32,10 +32,12 @@ npm-debug.log*
 .env
 .env.local
 
-# ML Models (downloaded on first run)
-*.pt
-*.pth
-*.pkl
+# ML Models (large files, not tracked)
+models/**/*.pt
+models/**/*.bin
+models/**/*.xml
+models/**/*.pth
+models/**/*.pkl
 backend/models/
 
 # Tests and debug output

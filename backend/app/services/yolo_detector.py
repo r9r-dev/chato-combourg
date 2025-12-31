@@ -11,7 +11,10 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 from ultralytics import YOLO
 
-MODELS_DIR = Path(__file__).parent.parent.parent / "models"
+# Models directory: /app/models in Docker, or project root in local dev
+_docker_models = Path("/app/models")
+_local_models = Path(__file__).parent.parent.parent.parent / "models"
+MODELS_DIR = _docker_models if _docker_models.exists() else _local_models
 CARDS_DIR = Path(__file__).parent.parent.parent / "cards"
 
 # Load card attributes for similarity matching
@@ -156,9 +159,9 @@ class YOLOCardDetector:
         if self._initialized:
             return
 
-        weights_dir = MODELS_DIR / "card_detector" / "weights"
-        openvino_path = weights_dir / "best_openvino_model"
-        pytorch_path = weights_dir / "best.pt"
+        card_detector_dir = MODELS_DIR / "card_detector"
+        openvino_path = card_detector_dir / "openvino"
+        pytorch_path = card_detector_dir / "yolo11" / "model.pt"
 
         # Prefer OpenVINO model for better CPU performance
         if openvino_path.exists():
