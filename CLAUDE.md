@@ -67,8 +67,6 @@ Single-pass detection and identification using YOLO11 with 92 classes (one per c
 
 **Similar Card Suggestions**: `find_similar_cards(card_id, limit=2)` returns cards with matching attributes (shield count > shield colors > category > cost).
 
-**Model**: `backend/models/card_detector/weights/best.pt`
-
 **Training Data Capture**: Every `/api/analyze` request saves captures to `/app/data/captures/` for future model training. Each capture folder (named `YYYYMMDD_HHMMSS_microseconds`) contains: `original.jpg`, `annotated.jpg` (with bounding boxes), and `report.json` (detection details).
 
 #### Calculator Engine (backend/app/services/calculator/)

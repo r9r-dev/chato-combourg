@@ -7,7 +7,7 @@ services:
       - "8080:8080"
     volumes:
       # Required: trained YOLO model weights
-      - ./backend/models:/app/models:ro
+      - ./models:/app/models:ro
 
       # Required: Python dependencies cache (installed at first startup)
       # First run takes ~5-10 minutes, subsequent starts are instant
