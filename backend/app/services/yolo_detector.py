@@ -565,7 +565,7 @@ class YOLOCardDetector:
         draw = ImageDraw.Draw(annotated)
 
         # Try to load a font with Unicode support, fallback to default
-        font_size = 28
+        font_size = 26
         font = None
         font_paths = [
             # Debian / Ubuntu (Docker python:3.12-slim with fonts-dejavu-core)
@@ -590,23 +590,87 @@ class YOLOCardDetector:
         colors = ["#FFD700", "#00FF00", "#FF6B6B", "#4ECDC4", "#9B59B6",
                   "#E74C3C", "#3498DB", "#2ECC71", "#F39C12"]
 
+        def wrap_text(text: str, max_width: int, font) -> list[str]:
+            """Wrap text to fit within max_width pixels."""
+            words = text.split()
+            lines = []
+            current_line = ""
+            for word in words:
+                test_line = f"{current_line} {word}".strip()
+                bbox = draw.textbbox((0, 0), test_line, font=font)
+                if bbox[2] - bbox[0] <= max_width:
+                    current_line = test_line
+                else:
+                    if current_line:
+                        lines.append(current_line)
+                    # Check if single word is too long
+                    word_bbox = draw.textbbox((0, 0), word, font=font)
+                    if word_bbox[2] - word_bbox[0] > max_width:
+                        # Truncate the word
+                        truncated = word
+                        while len(truncated) > 1:
+                            truncated = truncated[:-1]
+                            test = truncated + "..."
+                            test_bbox = draw.textbbox((0, 0), test, font=font)
+                            if test_bbox[2] - test_bbox[0] <= max_width:
+                                word = test
+                                break
+                    current_line = word
+            if current_line:
+                lines.append(current_line)
+            return lines if lines else [text[:10] + "..."]
+
         for i, det in enumerate(detections):
             x1, y1, x2, y2 = det["bbox"]
             color = colors[i % len(colors)]
+            box_width = x2 - x1
+            padding = 4
 
             # Draw bounding box
             draw.rectangle([x1, y1, x2, y2], outline=color, width=3)
 
-            # Draw label
+            # Extract detection info
             class_name = det.get("class_name", "?")
             conf = det.get("confidence", 0)
             position = det.get("position", (0, 0))
-            label = f"{class_name} ({conf:.0%}) [{position[0]},{position[1]}]"
 
-            # Background for text (inside bounding box, at top)
-            text_bbox = draw.textbbox((x1 + 4, y1 + 4), label, font=font)
-            draw.rectangle(text_bbox, fill=color)
-            draw.text((x1 + 4, y1 + 4), label, fill="black", font=font)
+            # 1. Confidence at top center
+            conf_text = f"{conf:.1%}"
+            conf_bbox = draw.textbbox((0, 0), conf_text, font=font)
+            conf_width = conf_bbox[2] - conf_bbox[0]
+            conf_x = x1 + (box_width - conf_width) // 2
+            conf_y = y1 + padding
+            bg_bbox = draw.textbbox((conf_x, conf_y), conf_text, font=font)
+            draw.rectangle(bg_bbox, fill=color)
+            draw.text((conf_x, conf_y), conf_text, fill="black", font=font)
+
+            # 2. Position at bottom left
+            pos_text = f"[{position[0]},{position[1]}]"
+            pos_bbox = draw.textbbox((0, 0), pos_text, font=font)
+            pos_height = pos_bbox[3] - pos_bbox[1]
+            pos_x = x1 + padding
+            pos_y = y2 - pos_height - padding
+            bg_bbox = draw.textbbox((pos_x, pos_y), pos_text, font=font)
+            draw.rectangle(bg_bbox, fill=color)
+            draw.text((pos_x, pos_y), pos_text, fill="black", font=font)
+
+            # 3. Class name with word wrap (below confidence)
+            max_text_width = box_width - (padding * 2)
+            lines = wrap_text(class_name, max_text_width, font)
+            # Start below confidence text
+            line_height = conf_bbox[3] - conf_bbox[1] + 2
+            start_y = conf_y + line_height + 4
+            for line in lines:
+                line_bbox = draw.textbbox((0, 0), line, font=font)
+                line_width = line_bbox[2] - line_bbox[0]
+                line_x = x1 + (box_width - line_width) // 2  # Center each line
+                # Stop if we would overlap with position text
+                if start_y + (line_bbox[3] - line_bbox[1]) > pos_y - 4:
+                    break
+                bg_bbox = draw.textbbox((line_x, start_y), line, font=font)
+                draw.rectangle(bg_bbox, fill=color)
+                draw.text((line_x, start_y), line, fill="black", font=font)
+                start_y += line_height
 
         # Save annotated image
         annotated_path = folder / "annotated.jpg"
