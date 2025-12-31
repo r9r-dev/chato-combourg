@@ -22,13 +22,17 @@ if not FRONTEND_DIR.exists():
     FRONTEND_DIR = BASE_DIR.parent / "frontend" / "dist"
 
 # Configure logging
-class HealthCheckFilter(logging.Filter):
-    """Filter out /api/health requests from access logs."""
+class AccessLogFilter(logging.Filter):
+    """Filter out noisy requests from access logs."""
+
+    # Paths to exclude from logs
+    EXCLUDED_PATHS = ["/api/health", "/cards/"]
 
     def filter(self, record: logging.LogRecord) -> bool:
         message = record.getMessage()
-        if "/api/health" in message:
-            return False
+        for path in self.EXCLUDED_PATHS:
+            if path in message:
+                return False
         return True
 
 
@@ -48,14 +52,14 @@ logging.basicConfig(
     format="%(levelname)s: %(message)s",
 )
 
-# Configure uvicorn access logger with simplified format and health filter
+# Configure uvicorn access logger with simplified format and filters
 access_logger = logging.getLogger("uvicorn.access")
-access_logger.addFilter(HealthCheckFilter())
+access_logger.addFilter(AccessLogFilter())
 for handler in logging.root.handlers:
     if isinstance(handler, logging.StreamHandler):
         access_handler = logging.StreamHandler()
         access_handler.setFormatter(AccessLogFormatter())
-        access_handler.addFilter(HealthCheckFilter())
+        access_handler.addFilter(AccessLogFilter())
         access_logger.handlers = [access_handler]
         access_logger.propagate = False
         break

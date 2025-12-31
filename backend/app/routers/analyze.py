@@ -1,4 +1,5 @@
 import logging
+import time
 
 from fastapi import APIRouter, File, UploadFile, HTTPException
 
@@ -49,6 +50,8 @@ async def analyze_photo(
 
     # Detect and identify cards using YOLO11
     try:
+        start_time = time.perf_counter()
+
         # Get raw detections first (needed for debug)
         detections = yolo_detector.detect_cards(image, confidence=0.3)
 
@@ -70,7 +73,9 @@ async def analyze_photo(
 
         # Convert detections to API format
         card_results = yolo_detector.analyze_image(image, confidence=0.3)
-        logger.info(f"Analyse: {len(card_results)} cartes détectées")
+
+        elapsed_ms = (time.perf_counter() - start_time) * 1000
+        logger.info(f"Analyse: {len(card_results)} cartes en {elapsed_ms:.0f}ms")
 
     except Exception as e:
         logger.error(f"Erreur analyse: {e}")
