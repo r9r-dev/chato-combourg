@@ -46,11 +46,11 @@ export function License() {
           <h2 className="text-gold text-xl font-bold mb-4">GNU General Public License v3.0</h2>
 
           <p className="text-white/80 text-sm mb-4">
-            Chato Combourg - Application de scoring pour le jeu Chateau Combo
+            Chato Combourg - Image Processing for Chateau Combo game
           </p>
 
           <p className="text-white/60 text-sm mb-4">
-            Copyright (C) 2024 Ronan Music Project
+            Copyright (C) 2025 Ronan Lamour
           </p>
 
           <div className="bg-dark-lighter rounded-xl p-4 mb-6">
@@ -107,7 +107,7 @@ export function License() {
 
           <div className="border-t border-white/10 pt-6">
             <a
-              href="https://github.com/music-project/chato-combourg"
+              href="https://github.com/r9r-dev/chato-combourg"
               target="_blank"
               rel="noopener noreferrer"
               className="block w-full p-3 bg-dark-lighter rounded-xl text-center text-white/70 hover:bg-dark-card"
