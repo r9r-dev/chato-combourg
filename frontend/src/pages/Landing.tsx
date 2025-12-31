@@ -60,7 +60,7 @@ export function Landing() {
       {/* Footer */}
       <footer className="text-center text-white/30 text-xs py-4">
         <p>v{__APP_VERSION__} - Ronan Lamour 2025</p>
-        <p className="mt-1">Licence MIT - Illustrations Catch Up Games</p>
+        <p className="mt-1">Licence GPL v3 - Illustrations Catch Up Games</p>
       </footer>
     </div>
   );
