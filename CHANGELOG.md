@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.0.2 (2025-12-31)
+
+- Ajout du support multi-variantes ONNX (FP32/FP16/INT8) pour l'inférence hors ligne
+
 ## v2.0.1 (2025-12-31)
 
 - Ajout du support multi-modèles (OpenVINO et PyTorch) sélectionnable par l'utilisateur
