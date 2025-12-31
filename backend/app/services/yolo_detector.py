@@ -603,11 +603,10 @@ class YOLOCardDetector:
             position = det.get("position", (0, 0))
             label = f"{class_name} ({conf:.0%}) [{position[0]},{position[1]}]"
 
-            # Background for text (position above bounding box)
-            text_y = max(0, y1 - font_size - 8)
-            text_bbox = draw.textbbox((x1, text_y), label, font=font)
+            # Background for text (inside bounding box, at top)
+            text_bbox = draw.textbbox((x1 + 4, y1 + 4), label, font=font)
             draw.rectangle(text_bbox, fill=color)
-            draw.text((x1, text_y), label, fill="black", font=font)
+            draw.text((x1 + 4, y1 + 4), label, fill="black", font=font)
 
         # Save annotated image
         annotated_path = folder / "annotated.jpg"
