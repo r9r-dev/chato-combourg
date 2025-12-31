@@ -14,11 +14,12 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install runtime dependencies for OpenCV and git (needed for CLIP install)
+# Install runtime dependencies for OpenCV, git, and fonts for image annotation
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
     libglib2.0-0 \
     git \
+    fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy application code

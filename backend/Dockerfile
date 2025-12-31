@@ -3,10 +3,11 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install runtime dependencies for OpenCV
+# Install runtime dependencies for OpenCV and fonts for image annotation
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
     libglib2.0-0 \
+    fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy application code

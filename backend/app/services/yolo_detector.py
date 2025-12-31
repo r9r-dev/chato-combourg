@@ -568,15 +568,15 @@ class YOLOCardDetector:
         font_size = 28
         font = None
         font_paths = [
-            # macOS
-            "/System/Library/Fonts/Helvetica.ttc",
-            "/System/Library/Fonts/SFNSText.ttf",
-            "/Library/Fonts/Arial Unicode.ttf",
-            # Linux / Docker
+            # Debian / Ubuntu (Docker python:3.12-slim with fonts-dejavu-core)
             "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+            # Other Linux distributions
             "/usr/share/fonts/TTF/DejaVuSans.ttf",
-            # Alpine Linux (Docker)
             "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+            # macOS (for local development)
+            "/System/Library/Fonts/Helvetica.ttc",
+            "/Library/Fonts/Arial Unicode.ttf",
         ]
         for font_path in font_paths:
             try:
