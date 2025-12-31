@@ -111,10 +111,27 @@ export function useCamera(options: UseCameraOptions = {}) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
 
-    // Capture frame as-is (browser handles orientation automatically)
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    ctx.drawImage(video, 0, 0);
+    // Detect if we need to rotate:
+    // - Video stream from camera sensor is in landscape (width > height)
+    // - Screen is in portrait mode (height > width)
+    // In this case, the browser rotates the video element for display,
+    // but drawImage captures the raw unrotated frame.
+    const isVideoLandscape = video.videoWidth > video.videoHeight;
+    const isScreenPortrait = window.innerHeight > window.innerWidth;
+    const needsRotation = isVideoLandscape && isScreenPortrait;
+
+    if (needsRotation) {
+      // Rotate 90 degrees clockwise to match the displayed portrait orientation
+      canvas.width = video.videoHeight;
+      canvas.height = video.videoWidth;
+      ctx.translate(canvas.width, 0);
+      ctx.rotate(Math.PI / 2);
+      ctx.drawImage(video, 0, 0);
+    } else {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0);
+    }
 
     return new Promise<Blob | null>((resolve) => {
       canvas.toBlob(
@@ -123,6 +140,24 @@ export function useCamera(options: UseCameraOptions = {}) {
         0.85
       );
     });
+  }, [isReady]);
+
+  // Get debug info about current video dimensions
+  const getDebugInfo = useCallback(() => {
+    if (!videoRef.current || !isReady) return null;
+
+    const video = videoRef.current;
+    const isVideoLandscape = video.videoWidth > video.videoHeight;
+    const isScreenPortrait = window.innerHeight > window.innerWidth;
+    const needsRotation = isVideoLandscape && isScreenPortrait;
+
+    return {
+      videoWidth: video.videoWidth,
+      videoHeight: video.videoHeight,
+      screenWidth: window.innerWidth,
+      screenHeight: window.innerHeight,
+      rotated: needsRotation,
+    };
   }, [isReady]);
 
   // Cleanup on unmount
@@ -140,5 +175,6 @@ export function useCamera(options: UseCameraOptions = {}) {
     stopCamera,
     captureFrame,
     captureFrameAsync,
+    getDebugInfo,
   };
 }

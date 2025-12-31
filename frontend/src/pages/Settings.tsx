@@ -98,6 +98,9 @@ export function Settings() {
         if (settings.detection_model) {
           setDetectionModel(settings.detection_model as DetectionModel);
         }
+        if (settings.model_variant) {
+          setSelectedVariant(settings.model_variant);
+        }
 
         // Load server model info
         const info = await getModelInfo();
@@ -106,6 +109,11 @@ export function Settings() {
         // Load local model info
         const localInfo = await modelStorage.getModelInfo();
         setLocalModelInfo(localInfo);
+
+        // If we have a local model, use its variant as selected
+        if (localInfo?.variant) {
+          setSelectedVariant(localInfo.variant);
+        }
       } catch (err) {
         console.warn('Failed to load model info:', err);
       }
@@ -262,6 +270,9 @@ export function Settings() {
       });
 
       await modelStorage.saveModel(data, modelInfo!.version, selectedVariant, variant.sha256);
+
+      // Save variant preference to server
+      await updateSettings({ model_variant: selectedVariant });
 
       const localInfo = await modelStorage.getModelInfo();
       setLocalModelInfo(localInfo);
@@ -597,10 +608,13 @@ export function Settings() {
         <section className="p-4">
           <h2 className="text-gold font-semibold mb-3">À propos</h2>
           <div className="space-y-2">
-            <div className="p-3 bg-dark-lighter rounded-xl">
+            <button
+              onClick={() => setStep('license')}
+              className="w-full p-3 bg-dark-lighter rounded-xl text-left hover:bg-dark-card"
+            >
               <div className="text-white/40 text-xs">Version</div>
-              <div className="text-white">v{__APP_VERSION__}</div>
-            </div>
+              <div className="text-white">{__APP_VERSION__}</div>
+            </button>
             <button
               onClick={forceUpdate}
               className="w-full p-3 bg-dark-lighter rounded-xl text-white/70 hover:bg-dark-card text-left"

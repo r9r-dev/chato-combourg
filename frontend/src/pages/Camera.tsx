@@ -15,7 +15,7 @@ interface DetectionResult {
 const CONFIDENCE_THRESHOLD = 0.75;
 
 export function Camera() {
-  const { videoRef, isReady, error, startCamera, stopCamera, captureFrameAsync } =
+  const { videoRef, isReady, error, startCamera, stopCamera, captureFrameAsync, getDebugInfo } =
     useCamera();
   const { state, setStep, setCards, reset, getCurrentPlayer } = useGame();
 
@@ -36,6 +36,16 @@ export function Camera() {
   // Offline mode
   const [offlineMode, setOfflineMode] = useState<OfflineMode>('never');
   const [inferenceMode, setInferenceMode] = useState<'server' | 'local' | null>(null);
+
+  // Developer mode
+  const [developerMode, setDeveloperMode] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<{
+    videoWidth: number;
+    videoHeight: number;
+    screenWidth: number;
+    screenHeight: number;
+    rotated: boolean;
+  } | null>(null);
 
   const currentPlayer = getCurrentPlayer();
   const playerIndex = state.currentPlayerIndex + 1;
@@ -234,25 +244,36 @@ export function Camera() {
     setDetectionResult(null);
   }, [capturedImageUrl]);
 
-  // Load offline mode setting on mount
+  // Load settings on mount
   useEffect(() => {
-    const loadOfflineMode = async () => {
+    const loadSettings = async () => {
       try {
         const settings = await getSettings();
         if (settings.offline_mode) {
           setOfflineMode(settings.offline_mode as OfflineMode);
         }
+        if (settings.developer_mode === 'true') {
+          setDeveloperMode(true);
+        }
       } catch {
-        // Ignore - will use default 'never'
+        // Ignore - will use defaults
       }
     };
-    loadOfflineMode();
+    loadSettings();
   }, []);
 
   // Start camera on mount
   useEffect(() => {
     startCamera();
   }, [startCamera]);
+
+  // Update debug info when camera is ready
+  useEffect(() => {
+    if (isReady && developerMode) {
+      const info = getDebugInfo();
+      setDebugInfo(info);
+    }
+  }, [isReady, developerMode, getDebugInfo]);
 
   // Clean up on unmount
   useEffect(() => {
@@ -373,7 +394,24 @@ export function Camera() {
               }`}
             />
             {isLiveMode ? (
-              <GridOverlay mode="viewfinder" />
+              <>
+                <GridOverlay mode="viewfinder" />
+                {/* Developer debug overlay */}
+                {developerMode && debugInfo && (
+                  <div className="absolute top-2 left-2 right-2 bg-black/70 rounded-lg p-2 text-xs font-mono">
+                    <div className="text-green-400">DEV MODE</div>
+                    <div className="text-white/80">
+                      Video: {debugInfo.videoWidth}x{debugInfo.videoHeight}
+                    </div>
+                    <div className="text-white/80">
+                      Screen: {debugInfo.screenWidth}x{debugInfo.screenHeight}
+                    </div>
+                    <div className={debugInfo.rotated ? 'text-orange-400' : 'text-white/60'}>
+                      Rotation: {debugInfo.rotated ? 'OUI (90deg)' : 'NON'}
+                    </div>
+                  </div>
+                )}
+              </>
             ) : (
               <>
                 {/* Captured image */}

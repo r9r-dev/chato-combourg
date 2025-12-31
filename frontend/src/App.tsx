@@ -10,6 +10,7 @@ import { Review } from './pages/Review';
 import { Summary } from './pages/Summary';
 import { Games } from './pages/Games';
 import { Settings } from './pages/Settings';
+import { License } from './pages/License';
 import { InstallPrompt } from './components/InstallPrompt';
 import { preloadCardImages } from './services/api';
 
@@ -40,6 +41,8 @@ function AppContent() {
       return <Games />;
     case 'settings':
       return <Settings />;
+    case 'license':
+      return <License />;
     default:
       return <Landing />;
   }
