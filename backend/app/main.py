@@ -33,12 +33,14 @@ def check_required_files():
     """Check that all required files are present at startup."""
     issues = []
 
-    # Check YOLO model
+    # Check YOLO model (OpenVINO or PyTorch)
     models_dir = BASE_DIR / "models"
-    yolo_model = models_dir / "card_detector" / "weights" / "best.pt"
-    if not yolo_model.exists():
-        issues.append(f"YOLO model not found: {yolo_model}")
-        issues.append("  -> Mount ./backend/models:/app/models in docker-compose.yaml")
+    openvino_model = models_dir / "card_detector" / "openvino"
+    pytorch_model = models_dir / "card_detector" / "yolo11" / "model.pt"
+    if not openvino_model.exists() and not pytorch_model.exists():
+        issues.append(f"YOLO model not found in {models_dir / 'card_detector'}")
+        issues.append("  -> Expected: openvino/ or yolo11/model.pt")
+        issues.append("  -> Mount ./models:/app/models in docker-compose.yaml")
 
     # Check cards directory
     if not CARDS_DIR.exists():
