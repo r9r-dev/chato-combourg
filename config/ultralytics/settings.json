@@ -3,7 +3,7 @@
   "datasets_dir": "/app/datasets",
   "weights_dir": "/app/models",
   "runs_dir": "/tmp/runs",
-  "uuid": "chato-combourg-prod",
+  "uuid": "chato-combourg-prod-001",
   "sync": false,
   "api_key": "",
   "openai_api_key": "",
@@ -15,5 +15,7 @@
   "neptune": false,
   "raytune": false,
   "tensorboard": false,
-  "wandb": false
+  "wandb": false,
+  "vscode_msg": false,
+  "openvino_msg": false
 }
