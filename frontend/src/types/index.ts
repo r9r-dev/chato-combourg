@@ -178,11 +178,13 @@ export interface GameCreate {
 // Settings
 export type PlayerOrderMode = 'alphabetical' | 'manual' | 'most_played' | 'last_played';
 export type OfflineMode = 'never' | 'fallback' | 'always';
+export type DetectionModel = 'openvino' | 'pytorch';
 
 export interface UserSettings {
   player_order: PlayerOrderMode;
   manual_player_order?: number[]; // Player IDs in custom order
   offline_mode?: OfflineMode;
+  detection_model?: DetectionModel;
 }
 
 // Player with stats (for settings)

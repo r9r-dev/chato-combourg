@@ -13,7 +13,7 @@ import {
   type ModelInfo,
 } from '../services/api';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import type { PlayerWithStats, PlayerOrderMode, OfflineMode } from '../types';
+import type { PlayerWithStats, PlayerOrderMode, OfflineMode, DetectionModel } from '../types';
 import { modelStorage } from '../services/modelStorage';
 
 const PLAYER_COLORS = [
@@ -32,6 +32,11 @@ const OFFLINE_OPTIONS: { value: OfflineMode; label: string; description: string 
   { value: 'never', label: 'Jamais', description: 'Toujours utiliser le serveur' },
   { value: 'fallback', label: 'Serveur indisponible', description: 'Local si serveur hors ligne' },
   { value: 'always', label: 'Toujours', description: 'Toujours utiliser le local' },
+];
+
+const MODEL_OPTIONS: { value: DetectionModel; label: string; description: string }[] = [
+  { value: 'openvino', label: 'OpenVINO', description: 'Optimisé pour CPU Intel (recommandé)' },
+  { value: 'pytorch', label: 'PyTorch', description: 'Compatible avec tous les processeurs' },
 ];
 
 export function Settings() {
@@ -65,8 +70,9 @@ export function Settings() {
   // Export state
   const [exporting, setExporting] = useState(false);
 
-  // Offline mode state
+  // Detection settings state
   const [offlineMode, setOfflineMode] = useState<OfflineMode>('never');
+  const [detectionModel, setDetectionModel] = useState<DetectionModel>('openvino');
   const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null);
   const [localModelInfo, setLocalModelInfo] = useState<{ version: string; storedAt: string } | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
@@ -79,14 +85,17 @@ export function Settings() {
     setLoading(false);
   }, [playersWithStats, manualPlayerOrder]);
 
-  // Load offline mode settings and model info
+  // Load detection settings and model info
   useEffect(() => {
-    const loadOfflineSettings = async () => {
+    const loadDetectionSettings = async () => {
       try {
         // Load settings from backend
         const settings = await getSettings();
         if (settings.offline_mode) {
           setOfflineMode(settings.offline_mode as OfflineMode);
+        }
+        if (settings.detection_model) {
+          setDetectionModel(settings.detection_model as DetectionModel);
         }
 
         // Load server model info
@@ -100,7 +109,7 @@ export function Settings() {
         console.warn('Failed to load model info:', err);
       }
     };
-    loadOfflineSettings();
+    loadDetectionSettings();
   }, []);
 
   // Save player order setting
@@ -226,6 +235,16 @@ export function Settings() {
     }
   };
 
+  // Handle detection model change
+  const handleDetectionModelChange = async (model: DetectionModel) => {
+    setDetectionModel(model);
+    try {
+      await updateSettings({ detection_model: model });
+    } catch (err) {
+      console.error('Failed to save detection model:', err);
+    }
+  };
+
   // Download model for offline use
   const handleDownloadModel = async () => {
     if (!modelInfo?.available) return;
@@ -246,7 +265,7 @@ export function Settings() {
       setLocalModelInfo(localInfo);
       setDownloadProgress(null);
     } catch (err) {
-      setModelError(err instanceof Error ? err.message : 'Erreur de telechargement');
+      setModelError(err instanceof Error ? err.message : 'Erreur de téléchargement');
       setDownloadProgress(null);
     }
   };
@@ -362,7 +381,7 @@ export function Settings() {
           <h2 className="text-gold font-semibold mb-3">Jeu</h2>
 
           {/* Ordre des joueurs */}
-          <div className="mb-4">
+          <div>
             <div className="mb-2 text-white/60 text-sm">Ordre des joueurs</div>
             <div className="grid grid-cols-2 gap-2">
               {ORDER_OPTIONS.map(opt => (
@@ -380,10 +399,41 @@ export function Settings() {
               ))}
             </div>
           </div>
+        </section>
+
+        {/* Section: Detection */}
+        <section className="p-4 border-b border-white/10">
+          <h2 className="text-gold font-semibold mb-3">Détection</h2>
+
+          {/* Modèle serveur */}
+          <div className="mb-4">
+            <div className="mb-2 text-white/60 text-sm">Modèle</div>
+            <div className="grid grid-cols-2 gap-2">
+              {MODEL_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => handleDetectionModelChange(opt.value)}
+                  className={`p-3 rounded-xl text-sm font-medium transition-all ${
+                    detectionModel === opt.value
+                      ? 'bg-gold text-dark'
+                      : 'bg-dark-lighter text-white/70 hover:bg-dark-card'
+                  }`}
+                  title={opt.description}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-2 text-white/40 text-xs">
+              {MODEL_OPTIONS.find(o => o.value === detectionModel)?.description}
+            </div>
+          </div>
 
           {/* Mode offline */}
           <div className="mb-4">
-            <div className="mb-2 text-white/60 text-sm">Mode offline</div>
+            <div className="mb-2 text-white/60 text-sm">
+              Mode offline <span className="text-red-400">(expérimental)</span>
+            </div>
             <div className="grid grid-cols-3 gap-2">
               {OFFLINE_OPTIONS.map(opt => (
                 <button
@@ -406,11 +456,11 @@ export function Settings() {
           {/* Model status */}
           <div className="p-3 bg-dark-lighter rounded-xl">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-white/60 text-sm">Modele local</span>
+              <span className="text-white/60 text-sm">Modèle local</span>
               {localModelInfo ? (
                 <span className="text-green-400 text-xs">Disponible</span>
               ) : (
-                <span className="text-white/40 text-xs">Non telecharge</span>
+                <span className="text-white/40 text-xs">Non téléchargé</span>
               )}
             </div>
 
@@ -421,7 +471,7 @@ export function Settings() {
                   <span className="text-white/70">{localModelInfo.version}</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-white/40">Telecharge le</span>
+                  <span className="text-white/40">Téléchargé le</span>
                   <span className="text-white/70">
                     {new Date(localModelInfo.storedAt).toLocaleDateString()}
                   </span>
@@ -438,7 +488,7 @@ export function Settings() {
                       disabled={downloadProgress !== null}
                       className="flex-1 p-2 bg-gold/20 text-gold rounded-lg text-xs font-medium disabled:opacity-50"
                     >
-                      {downloadProgress !== null ? `${downloadProgress}%` : 'Mettre a jour'}
+                      {downloadProgress !== null ? `${downloadProgress}%` : 'Mettre à jour'}
                     </button>
                   )}
                   <button
@@ -462,13 +512,13 @@ export function Settings() {
                       className="w-full p-2 bg-gold/20 text-gold rounded-lg text-sm font-medium disabled:opacity-50"
                     >
                       {downloadProgress !== null
-                        ? `Telechargement... ${downloadProgress}%`
-                        : 'Telecharger le modele'}
+                        ? `Téléchargement... ${downloadProgress}%`
+                        : 'Télécharger le modèle'}
                     </button>
                   </>
                 ) : (
                   <div className="text-white/40 text-xs">
-                    Modele non disponible sur le serveur
+                    Modèle non disponible sur le serveur
                   </div>
                 )}
                 {modelError && (

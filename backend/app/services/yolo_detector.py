@@ -148,38 +148,76 @@ def card_id_to_class_id(card_id: str) -> int:
 
 
 class YOLOCardDetector:
-    """Detect and identify cards from grid images using YOLO11x (92 classes)."""
+    """Detect and identify cards from grid images using YOLO11x (92 classes).
+
+    Supports both OpenVINO and PyTorch models, selectable per-request.
+    """
 
     def __init__(self):
-        self.model = None
+        self._openvino_model = None
+        self._pytorch_model = None
+        self._openvino_available = False
+        self._pytorch_available = False
         self._initialized = False
+        self._default_model_type = "openvino"  # Prefer OpenVINO by default
 
     def initialize(self) -> None:
-        """Load the trained YOLO11x model (OpenVINO if available, else PyTorch)."""
+        """Load available models (OpenVINO and/or PyTorch)."""
         if self._initialized:
             return
 
         card_detector_dir = MODELS_DIR / "card_detector"
-        # OpenVINO: Ultralytics expects folder named *_openvino_model/
         openvino_dir = card_detector_dir / "model_openvino_model"
         pytorch_path = card_detector_dir / "yolo11" / "model.pt"
 
-        # Prefer OpenVINO model for better CPU performance
-        # Check for metadata.yaml to confirm valid OpenVINO export from Ultralytics
+        # Load OpenVINO model if available
         if (openvino_dir / "metadata.yaml").exists():
-            self.model = YOLO(str(openvino_dir) + "/", task="detect")
-            self._model_type = "openvino"
-        elif pytorch_path.exists():
-            self.model = YOLO(str(pytorch_path), task="detect")
-            self._model_type = "pytorch"
-        else:
+            self._openvino_model = YOLO(str(openvino_dir) + "/", task="detect")
+            self._openvino_available = True
+
+        # Load PyTorch model if available
+        if pytorch_path.exists():
+            self._pytorch_model = YOLO(str(pytorch_path), task="detect")
+            self._pytorch_available = True
+
+        if not self._openvino_available and not self._pytorch_available:
             raise FileNotFoundError(
                 f"YOLO model not found. Expected OpenVINO at "
                 f"{openvino_dir} (with metadata.yaml) "
                 f"or PyTorch at {pytorch_path}."
             )
 
+        # Set default to best available
+        if self._openvino_available:
+            self._default_model_type = "openvino"
+        else:
+            self._default_model_type = "pytorch"
+
         self._initialized = True
+
+    def get_available_models(self) -> list[str]:
+        """Return list of available model types."""
+        self.initialize()
+        available = []
+        if self._openvino_available:
+            available.append("openvino")
+        if self._pytorch_available:
+            available.append("pytorch")
+        return available
+
+    def _get_model(self, model_type: str | None = None) -> YOLO:
+        """Get the requested model, falling back to default if unavailable."""
+        self.initialize()
+
+        if model_type == "pytorch" and self._pytorch_available:
+            return self._pytorch_model
+        elif model_type == "openvino" and self._openvino_available:
+            return self._openvino_model
+
+        # Fallback to default
+        if self._default_model_type == "openvino" and self._openvino_available:
+            return self._openvino_model
+        return self._pytorch_model
 
     def _compute_grid_bounds(self, detections: list[dict]) -> tuple:
         """Compute the 3x3 grid bounds from detected cards."""
@@ -314,22 +352,23 @@ class YOLOCardDetector:
         return detections
 
     def detect_cards(
-        self, image: Image.Image, confidence: float = 0.5
+        self, image: Image.Image, confidence: float = 0.5, model_type: str | None = None
     ) -> list[dict]:
         """Detect and identify cards in an image.
 
         Args:
             image: PIL Image of the grid
             confidence: Minimum confidence threshold (default 0.5 for new model)
+            model_type: Model to use ("openvino" or "pytorch"), None for default
 
         Returns:
             List of detected cards with class_id, class_name, bbox, confidence,
             sorted by position (top-left to bottom-right)
         """
-        self.initialize()
+        model = self._get_model(model_type)
 
         # Run detection with PIL image directly (numpy array doesn't work correctly)
-        results = self.model.predict(source=image, verbose=False, conf=confidence, task="detect")
+        results = model.predict(source=image, verbose=False, conf=confidence, task="detect")
 
         # Extract detections
         detections = []
@@ -366,7 +405,8 @@ class YOLOCardDetector:
         return detections
 
     def detect_with_alternatives(
-        self, image: Image.Image, confidence: float = 0.3, top_k: int = 6
+        self, image: Image.Image, confidence: float = 0.3, top_k: int = 6,
+        model_type: str | None = None
     ) -> list[dict]:
         """Detect cards with alternative suggestions (top-K per detection).
 
@@ -376,13 +416,14 @@ class YOLOCardDetector:
             image: PIL Image of the grid
             confidence: Minimum confidence threshold
             top_k: Number of alternative suggestions per card
+            model_type: Model to use ("openvino" or "pytorch"), None for default
 
         Returns:
             List of detected cards with 'alternatives' field containing top-K suggestions
         """
-        self.initialize()
+        model = self._get_model(model_type)
 
-        results = self.model.predict(source=image, verbose=False, conf=confidence, task="detect")
+        results = model.predict(source=image, verbose=False, conf=confidence, task="detect")
 
         detections = []
         boxes = results[0].boxes
@@ -419,7 +460,8 @@ class YOLOCardDetector:
         return detections
 
     def extract_cards(
-        self, image: Image.Image, confidence: float = 0.5, padding: int = 5
+        self, image: Image.Image, confidence: float = 0.5, padding: int = 5,
+        model_type: str | None = None
     ) -> list[tuple[Image.Image, dict]]:
         """Detect and extract card images from a grid.
 
@@ -427,11 +469,12 @@ class YOLOCardDetector:
             image: PIL Image of the grid
             confidence: Minimum confidence threshold
             padding: Padding around detected bounding box
+            model_type: Model to use ("openvino" or "pytorch"), None for default
 
         Returns:
             List of (card_image, detection_info) tuples
         """
-        detections = self.detect_cards(image, confidence)
+        detections = self.detect_cards(image, confidence, model_type)
 
         cards = []
         img_w, img_h = image.size
@@ -453,7 +496,7 @@ class YOLOCardDetector:
 
 
     def analyze_image(
-        self, image: Image.Image, confidence: float = 0.3
+        self, image: Image.Image, confidence: float = 0.3, model_type: str | None = None
     ) -> list[dict]:
         """Analyze an image and return card results in API format.
 
@@ -462,11 +505,12 @@ class YOLOCardDetector:
         Args:
             image: PIL Image of the grid
             confidence: Minimum confidence threshold
+            model_type: Model to use ("openvino" or "pytorch"), None for default
 
         Returns:
             List of card results with card_id, matches, position, bbox
         """
-        detections = self.detect_cards(image, confidence)
+        detections = self.detect_cards(image, confidence, model_type)
 
         img_width, img_height = image.size
         results = []
@@ -504,7 +548,8 @@ class YOLOCardDetector:
         return results
 
     def get_detected_cards(
-        self, image: Image.Image, confidence: float = 0.3, padding: int = 5
+        self, image: Image.Image, confidence: float = 0.3, padding: int = 5,
+        model_type: str | None = None
     ) -> list[DetectedCard]:
         """Detect and extract card images with DetectedCard format.
 
@@ -514,11 +559,12 @@ class YOLOCardDetector:
             image: PIL Image of the grid
             confidence: Minimum confidence threshold
             padding: Padding around detected bounding box
+            model_type: Model to use ("openvino" or "pytorch"), None for default
 
         Returns:
             List of DetectedCard objects
         """
-        detections = self.detect_cards(image, confidence)
+        detections = self.detect_cards(image, confidence, model_type)
 
         cards = []
         img_w, img_h = image.size

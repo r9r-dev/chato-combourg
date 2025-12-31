@@ -84,3 +84,41 @@ def get_current_user(
             db.refresh(user)
 
     return user
+
+
+def get_current_user_info_optional(request: Request) -> CurrentUser | None:
+    """
+    Extract user information from Pangolin headers or dev mode.
+    Returns None if not authenticated (no error raised).
+    """
+    if settings.dev_mode:
+        return CurrentUser(
+            id=settings.dev_user_id,
+            email=settings.dev_user_email,
+            name=settings.dev_user_name,
+        )
+
+    user_id = request.headers.get("Remote-User")
+    if not user_id:
+        return None
+
+    return CurrentUser(
+        id=user_id,
+        email=request.headers.get("Remote-Email"),
+        name=request.headers.get("Remote-Name"),
+    )
+
+
+def get_current_user_optional(
+    request: Request,
+    db: Session = Depends(get_db),
+) -> User | None:
+    """
+    Get the current user if authenticated, None otherwise.
+    Does not create the user if they don't exist.
+    """
+    user_info = get_current_user_info_optional(request)
+    if user_info is None:
+        return None
+
+    return db.query(User).filter(User.id == user_info.id).first()
