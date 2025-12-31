@@ -25,19 +25,14 @@ async def analyze_photo(
     Uses YOLO11 with 92 classes for detection and identification in a single pass.
     Returns identification results for each card position with confidence scores.
     """
-    logger.info(f"Received analyze request: {photo.filename}, content_type={photo.content_type}")
-
     # Validate file type
     if not photo.content_type or not photo.content_type.startswith("image/"):
-        logger.warning(f"Invalid content type: {photo.content_type}")
         raise HTTPException(status_code=400, detail="File must be an image")
 
     # Read and process image
     try:
         content = await photo.read()
-        logger.info(f"Image size: {len(content)} bytes")
         if len(content) > settings.max_upload_size:
-            logger.warning(f"File too large: {len(content)} > {settings.max_upload_size}")
             raise HTTPException(
                 status_code=400,
                 detail=f"File too large. Max size: {settings.max_upload_size // (1024*1024)}MB",
@@ -45,21 +40,17 @@ async def analyze_photo(
 
         # Load image with EXIF correction
         image = load_image_from_bytes(content)
-        logger.info(f"Image loaded: {image.size}")
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to process image: {e}", exc_info=True)
+        logger.error(f"Erreur image: {e}")
         raise HTTPException(status_code=400, detail=f"Failed to process image: {str(e)}")
 
     # Detect and identify cards using YOLO11
     try:
-        logger.info("Analyzing cards with YOLO11...")
-
         # Get raw detections first (needed for debug)
         detections = yolo_detector.detect_cards(image, confidence=0.3)
-        logger.info(f"Detected {len(detections)} cards")
 
         # Save capture for future model training
         capture_id = None
@@ -74,15 +65,15 @@ async def analyze_photo(
                     "file_size": len(content),
                 }
             )
-            logger.info(f"Capture saved to {capture_folder} (id: {capture_id})")
         except Exception as e:
-            logger.warning(f"Failed to save capture: {e}")
+            logger.warning(f"Capture non sauvegardée: {e}")
 
         # Convert detections to API format
         card_results = yolo_detector.analyze_image(image, confidence=0.3)
+        logger.info(f"Analyse: {len(card_results)} cartes détectées")
 
     except Exception as e:
-        logger.error(f"Failed to analyze cards: {e}", exc_info=True)
+        logger.error(f"Erreur analyse: {e}")
         raise HTTPException(status_code=400, detail=f"Failed to analyze cards: {str(e)}")
 
     # Convert to response models

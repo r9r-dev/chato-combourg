@@ -22,10 +22,44 @@ if not FRONTEND_DIR.exists():
     FRONTEND_DIR = BASE_DIR.parent / "frontend" / "dist"
 
 # Configure logging
+class HealthCheckFilter(logging.Filter):
+    """Filter out /api/health requests from access logs."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        message = record.getMessage()
+        if "/api/health" in message:
+            return False
+        return True
+
+
+class AccessLogFormatter(logging.Formatter):
+    """Simplified access log format: METHOD /path STATUS"""
+
+    def format(self, record: logging.LogRecord) -> str:
+        # Uvicorn access logs have args: (client_ip, method, path, http_version, status)
+        if hasattr(record, "args") and record.args and len(record.args) >= 5:
+            _, method, path, _, status = record.args[:5]
+            return f"{method} {path} {status}"
+        return super().format(record)
+
+
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    format="%(levelname)s: %(message)s",
 )
+
+# Configure uvicorn access logger with simplified format and health filter
+access_logger = logging.getLogger("uvicorn.access")
+access_logger.addFilter(HealthCheckFilter())
+for handler in logging.root.handlers:
+    if isinstance(handler, logging.StreamHandler):
+        access_handler = logging.StreamHandler()
+        access_handler.setFormatter(AccessLogFormatter())
+        access_handler.addFilter(HealthCheckFilter())
+        access_logger.handlers = [access_handler]
+        access_logger.propagate = False
+        break
+
 logger = logging.getLogger(__name__)
 
 

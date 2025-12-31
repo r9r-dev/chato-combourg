@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -5,6 +6,8 @@ from sqlalchemy import func
 
 from app.auth import get_current_user
 from app.database import get_db, User, Player, GamePlayer, Game
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/players", tags=["players"])
 
@@ -108,6 +111,7 @@ def create_player(
     db.add(player)
     db.commit()
     db.refresh(player)
+    logger.info(f"Nouveau joueur: {player.name}")
     return player
 
 

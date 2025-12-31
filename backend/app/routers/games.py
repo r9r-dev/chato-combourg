@@ -1,6 +1,7 @@
 import csv
 import io
 import json
+import logging
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
@@ -9,6 +10,8 @@ from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
 from app.database import get_db, User, Player, Game, GamePlayer
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/games", tags=["games"])
 
@@ -212,6 +215,12 @@ def create_game(
     db.commit()
     db.refresh(game)
 
+    # Log game creation
+    winner = next((gp for gp in game_players if ranks[game_players.index(gp)] == 1), None)
+    winner_name = player_lookup[winner.player_id].name if winner else "?"
+    player_names = [player_lookup[gp.player_id].name for gp in game_players]
+    logger.info(f"Partie: {', '.join(player_names)} -> {winner_name} gagne ({winner.score} pts)")
+
     # Build response
     return GameResponse(
         id=game.id,
@@ -362,6 +371,12 @@ def create_manual_game(
 
     db.commit()
     db.refresh(game)
+
+    # Log game creation
+    winner = next((gp for gp in game_players if ranks[game_players.index(gp)] == 1), None)
+    winner_name = player_lookup[winner.player_id].name if winner else "?"
+    player_names = [player_lookup[gp.player_id].name for gp in game_players]
+    logger.info(f"Partie manuelle: {', '.join(player_names)} -> {winner_name} gagne ({winner.score} pts)")
 
     # Build response
     return GameResponse(

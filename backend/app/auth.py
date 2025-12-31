@@ -1,9 +1,12 @@
+import logging
 from dataclasses import dataclass
 from fastapi import Request, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db, User
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -66,6 +69,7 @@ def get_current_user(
         db.add(user)
         db.commit()
         db.refresh(user)
+        logger.info(f"Nouvel utilisateur: {user_info.email or user_info.id}")
     else:
         # Update user info if changed
         updated = False
