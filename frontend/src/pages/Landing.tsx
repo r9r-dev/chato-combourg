@@ -1,9 +1,24 @@
+import { useState, useEffect } from 'react';
 import { useGame } from '../context/GameContext';
 import { useAuth } from '../context/AuthContext';
+import { getSettings } from '../services/api';
 
 export function Landing() {
   const { setStep } = useGame();
   const { user, loading } = useAuth();
+  const [developerMode, setDeveloperMode] = useState(false);
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const settings = await getSettings();
+        setDeveloperMode(settings.developer_mode === 'true');
+      } catch {
+        // Ignore
+      }
+    };
+    loadSettings();
+  }, []);
 
   return (
     <div className="flex flex-col h-dvh p-6 overflow-hidden">
@@ -46,6 +61,16 @@ export function Landing() {
             >
               Paramètres
             </button>
+
+            {developerMode && (
+              <button
+                onClick={() => setStep('developer')}
+                className="w-full py-4 px-8 bg-red-900 text-white font-semibold text-lg rounded-xl
+                           hover:bg-red-800 transition-colors border border-red-700"
+              >
+                Développeur
+              </button>
+            )}
           </div>
 
           {/* User info */}

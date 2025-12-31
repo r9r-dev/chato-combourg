@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useGame } from '../context/GameContext';
 import { CardGrid } from '../components/CardGrid';
 import { CardSelector } from '../components/CardSelector';
-import { getCardImageUrl } from '../services/api';
+import { ScoreTable } from '../components/ScoreTable';
 import type { SelectedPlayer } from '../types';
 
 export function Summary() {
@@ -10,20 +10,39 @@ export function Summary() {
 
   const [viewingPlayer, setViewingPlayer] = useState<SelectedPlayer | null>(null);
   const [selectedPosition, setSelectedPosition] = useState<number | null>(null);
+  const [mockPlayers, setMockPlayers] = useState<SelectedPlayer[] | null>(null);
   const hasSavedRef = useRef(false);
 
+  // Check for mock data from developer mode
+  useEffect(() => {
+    const mockData = sessionStorage.getItem('devMockPlayers');
+    if (mockData) {
+      try {
+        const players = JSON.parse(mockData) as SelectedPlayer[];
+        setMockPlayers(players);
+        sessionStorage.removeItem('devMockPlayers');
+      } catch {
+        // Ignore parse errors
+      }
+    }
+  }, []);
+
+  // Use mock players if available, otherwise use real game state
+  const players = mockPlayers ?? state.selectedPlayers;
+  const isDevMode = mockPlayers !== null;
+
   // Sort players by score (highest first)
-  const sortedPlayers = [...state.selectedPlayers].sort(
+  const sortedPlayers = [...players].sort(
     (a, b) => (b.score?.total_score ?? 0) - (a.score?.total_score ?? 0)
   );
 
-  // Save game automatically on mount
+  // Save game automatically on mount (only for real games)
   useEffect(() => {
-    if (!hasSavedRef.current && state.selectedPlayers.length >= 2) {
+    if (!isDevMode && !hasSavedRef.current && state.selectedPlayers.length >= 2) {
       hasSavedRef.current = true;
       saveGame();
     }
-  }, [state.selectedPlayers, saveGame]);
+  }, [state.selectedPlayers, saveGame, isDevMode]);
 
   // Handle viewing a player's board
   const handleViewPlayer = useCallback((player: SelectedPlayer) => {
@@ -117,106 +136,50 @@ export function Summary() {
     );
   }
 
-  // Main summary view with rankings
+  // Handle finish button
+  const handleFinish = () => {
+    if (isDevMode) {
+      setMockPlayers(null);
+      reset();
+    } else {
+      reset();
+    }
+  };
+
+  // Main summary view with score table
   return (
     <div className="flex flex-col h-dvh bg-dark overflow-hidden">
       {/* Header */}
-      <div className="p-4 bg-dark-lighter border-b border-white/10">
-        <h1 className="text-2xl font-bold text-gold text-center">Résultats</h1>
+      <div className={`p-4 border-b ${isDevMode ? 'bg-red-950/30 border-red-900/50' : 'bg-dark-lighter border-white/10'}`}>
+        <h1 className={`text-2xl font-bold text-center ${isDevMode ? 'text-red-400' : 'text-gold'}`}>
+          {isDevMode ? 'Test: Resultats' : 'Resultats'}
+        </h1>
+        <p className="text-white/50 text-sm text-center mt-1">
+          Cliquez sur un joueur pour voir sa grille
+        </p>
       </div>
 
-      {/* Rankings */}
+      {/* Score Table */}
       <div className="flex-1 overflow-auto p-4">
-        <div className="space-y-3">
-          {sortedPlayers.map((player, index) => {
-            const rank = index + 1;
-            const isWinner = rank === 1;
-
-            return (
-              <button
-                key={player.id}
-                onClick={() => handleViewPlayer(player)}
-                className={`w-full p-4 rounded-xl transition-all ${
-                  isWinner
-                    ? 'bg-gold/20 border-2 border-gold'
-                    : 'bg-dark-lighter border border-white/10 hover:border-white/30'
-                }`}
-              >
-                <div className="flex items-center gap-4">
-                  {/* Rank badge */}
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-                      isWinner
-                        ? 'bg-gold text-dark'
-                        : 'bg-dark-card text-white/60'
-                    }`}
-                  >
-                    {rank}
-                  </div>
-
-                  {/* Player color and name */}
-                  <div className="flex items-center gap-3 flex-1">
-                    <div
-                      className="w-8 h-8 rounded-full"
-                      style={{ backgroundColor: player.color }}
-                    />
-                    <span className={`font-medium ${isWinner ? 'text-gold' : 'text-white'}`}>
-                      {player.name}
-                    </span>
-                  </div>
-
-                  {/* Score */}
-                  <div className="text-right">
-                    <div className={`text-2xl font-bold ${isWinner ? 'text-gold' : 'text-white'}`}>
-                      {player.score?.total_score ?? 0}
-                    </div>
-                    <div className="text-white/40 text-xs">pts</div>
-                  </div>
-
-                  {/* Mini cards preview */}
-                  <div className="hidden sm:flex gap-0.5">
-                    {player.cards
-                      .sort((a, b) => a.position - b.position)
-                      .slice(0, 3)
-                      .map((card) => (
-                        <img
-                          key={card.position}
-                          src={getCardImageUrl(card.cardId)}
-                          alt=""
-                          className="w-6 h-8 rounded-sm object-cover"
-                        />
-                      ))}
-                  </div>
-
-                  {/* Arrow */}
-                  <svg
-                    className="w-5 h-5 text-white/40"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </div>
-              </button>
-            );
-          })}
+        <div className={`rounded-xl border overflow-hidden ${isDevMode ? 'bg-red-950/10 border-red-900/30' : 'bg-dark-lighter border-white/10'}`}>
+          <ScoreTable
+            players={sortedPlayers}
+            onPlayerClick={handleViewPlayer}
+          />
         </div>
       </div>
 
       {/* Footer */}
-      <div className="p-4 bg-dark-lighter border-t border-white/10">
+      <div className={`p-4 border-t ${isDevMode ? 'bg-red-950/30 border-red-900/50' : 'bg-dark-lighter border-white/10'}`}>
         <button
-          onClick={reset}
-          className="w-full py-4 px-8 bg-gold text-dark font-semibold text-lg rounded-xl
-                     hover:bg-gold-light active:bg-gold-dark transition-colors"
+          onClick={handleFinish}
+          className={`w-full py-4 px-8 font-semibold text-lg rounded-xl transition-colors ${
+            isDevMode
+              ? 'bg-red-900 text-white hover:bg-red-800 border border-red-700'
+              : 'bg-gold text-dark hover:bg-gold-light active:bg-gold-dark'
+          }`}
         >
-          Terminer
+          {isDevMode ? 'Retour' : 'Terminer'}
         </button>
       </div>
     </div>

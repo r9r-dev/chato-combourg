@@ -11,6 +11,7 @@ import { Summary } from './pages/Summary';
 import { Games } from './pages/Games';
 import { Settings } from './pages/Settings';
 import { License } from './pages/License';
+import { Developer } from './pages/Developer';
 import { InstallPrompt } from './components/InstallPrompt';
 import { preloadCardImages } from './services/api';
 
@@ -43,6 +44,8 @@ function AppContent() {
       return <Settings />;
     case 'license':
       return <License />;
+    case 'developer':
+      return <Developer />;
     default:
       return <Landing />;
   }
