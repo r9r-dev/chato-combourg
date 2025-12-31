@@ -175,9 +175,6 @@ Required mounts:
 container run -v ./backend/models:/app/models:ro -v ./data:/app/data ...
 ```
 
-### Ultralytics Config
-Pre-configured in `config/ultralytics/settings.json` and baked into the Docker image. Disables telemetry and analytics integrations.
-
 ### Pangolin Proxy
 The app expects to run behind Pangolin proxy which provides:
 - SSO authentication (Google, Apple, etc.)
