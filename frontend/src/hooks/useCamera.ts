@@ -111,27 +111,11 @@ export function useCamera(options: UseCameraOptions = {}) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
 
-    // Detect if we need to rotate:
-    // - Video stream from camera sensor is in landscape (width > height)
-    // - Screen is in portrait mode (height > width)
-    // In this case, the browser rotates the video element for display,
-    // but drawImage captures the raw unrotated frame.
-    const isVideoLandscape = video.videoWidth > video.videoHeight;
-    const isScreenPortrait = window.innerHeight > window.innerWidth;
-    const needsRotation = isVideoLandscape && isScreenPortrait;
-
-    if (needsRotation) {
-      // Rotate 90 degrees clockwise to match the displayed portrait orientation
-      canvas.width = video.videoHeight;
-      canvas.height = video.videoWidth;
-      ctx.translate(canvas.width, 0);
-      ctx.rotate(Math.PI / 2);
-      ctx.drawImage(video, 0, 0);
-    } else {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0);
-    }
+    // Capture raw video frame without any rotation
+    // The browser handles display orientation automatically
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
 
     return new Promise<Blob | null>((resolve) => {
       canvas.toBlob(
@@ -147,18 +131,65 @@ export function useCamera(options: UseCameraOptions = {}) {
     if (!videoRef.current || !isReady) return null;
 
     const video = videoRef.current;
-    const isVideoLandscape = video.videoWidth > video.videoHeight;
-    const isScreenPortrait = window.innerHeight > window.innerWidth;
-    const needsRotation = isVideoLandscape && isScreenPortrait;
+    const track = streamRef.current?.getVideoTracks()[0];
+    const settings = track?.getSettings();
 
     return {
       videoWidth: video.videoWidth,
       videoHeight: video.videoHeight,
       screenWidth: window.innerWidth,
       screenHeight: window.innerHeight,
-      rotated: needsRotation,
+      trackSettings: settings ? {
+        width: settings.width,
+        height: settings.height,
+        facingMode: settings.facingMode,
+        aspectRatio: settings.aspectRatio,
+      } : null,
     };
   }, [isReady]);
+
+  // Restart camera with new constraints (for debugging)
+  const restartWithConstraints = useCallback(async (newConstraints: MediaTrackConstraints) => {
+    stopCamera();
+
+    try {
+      setError(null);
+
+      const constraints: MediaStreamConstraints = {
+        video: {
+          facingMode: { ideal: facingMode },
+          ...newConstraints,
+        },
+        audio: false,
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
+
+      if (videoRef.current) {
+        const video = videoRef.current;
+        video.srcObject = stream;
+
+        await new Promise<void>((resolve, reject) => {
+          video.onloadedmetadata = () => {
+            video.play()
+              .then(() => resolve())
+              .catch(reject);
+          };
+          setTimeout(() => resolve(), 3000);
+        });
+
+        setIsReady(true);
+      }
+    } catch (err) {
+      let message = 'Impossible d\'accéder à la caméra';
+      if (err instanceof Error) {
+        message = err.message;
+      }
+      setError(message);
+      console.error('Camera error:', err);
+    }
+  }, [facingMode, stopCamera]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -176,5 +207,6 @@ export function useCamera(options: UseCameraOptions = {}) {
     captureFrame,
     captureFrameAsync,
     getDebugInfo,
+    restartWithConstraints,
   };
 }

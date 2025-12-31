@@ -15,7 +15,7 @@ interface DetectionResult {
 const CONFIDENCE_THRESHOLD = 0.75;
 
 export function Camera() {
-  const { videoRef, isReady, error, startCamera, stopCamera, captureFrameAsync, getDebugInfo } =
+  const { videoRef, isReady, error, startCamera, stopCamera, captureFrameAsync, getDebugInfo, restartWithConstraints } =
     useCamera();
   const { state, setStep, setCards, reset, getCurrentPlayer } = useGame();
 
@@ -44,8 +44,14 @@ export function Camera() {
     videoHeight: number;
     screenWidth: number;
     screenHeight: number;
-    rotated: boolean;
+    trackSettings: {
+      width?: number;
+      height?: number;
+      facingMode?: string;
+      aspectRatio?: number;
+    } | null;
   } | null>(null);
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
 
   const currentPlayer = getCurrentPlayer();
   const playerIndex = state.currentPlayerIndex + 1;
@@ -398,26 +404,112 @@ export function Camera() {
               playsInline
               webkit-playsinline="true"
               muted
-              className={`absolute inset-0 w-full h-full object-cover rounded-lg ${
-                isLiveMode ? '' : 'hidden'
-              }`}
+              className={`absolute inset-0 w-full h-full rounded-lg ${
+                developerMode ? 'object-contain bg-black' : 'object-cover'
+              } ${isLiveMode ? '' : 'hidden'}`}
             />
             {isLiveMode ? (
               <>
-                <GridOverlay mode="viewfinder" />
+                {!developerMode && <GridOverlay mode="viewfinder" />}
                 {/* Developer debug overlay */}
                 {developerMode && debugInfo && (
                   <div className="absolute top-2 left-2 right-2 bg-black/70 rounded-lg p-2 text-xs font-mono">
-                    <div className="text-green-400">DEV MODE</div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-green-400">DEV MODE</span>
+                      <button
+                        onClick={() => setShowDebugPanel(!showDebugPanel)}
+                        className="text-white/60 hover:text-white px-2"
+                      >
+                        {showDebugPanel ? '[-]' : '[+]'}
+                      </button>
+                    </div>
                     <div className="text-white/80">
                       Video: {debugInfo.videoWidth}x{debugInfo.videoHeight}
                     </div>
                     <div className="text-white/80">
                       Screen: {debugInfo.screenWidth}x{debugInfo.screenHeight}
                     </div>
-                    <div className={debugInfo.rotated ? 'text-orange-400' : 'text-white/60'}>
-                      Rotation: {debugInfo.rotated ? 'OUI (90deg)' : 'NON'}
-                    </div>
+                    {debugInfo.trackSettings && (
+                      <div className="text-white/60">
+                        Track: {debugInfo.trackSettings.width}x{debugInfo.trackSettings.height}
+                        {debugInfo.trackSettings.facingMode && ` (${debugInfo.trackSettings.facingMode})`}
+                      </div>
+                    )}
+                    {/* Debug controls panel */}
+                    {showDebugPanel && (
+                      <div className="mt-2 pt-2 border-t border-white/20 space-y-2">
+                        <div className="text-yellow-400 text-xs">Contraintes:</div>
+                        <div className="flex flex-wrap gap-1">
+                          <button
+                            onClick={() => restartWithConstraints({ width: { ideal: 1080 }, height: { ideal: 1440 } })}
+                            className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-500"
+                          >
+                            1080x1440
+                          </button>
+                          <button
+                            onClick={() => restartWithConstraints({ width: { ideal: 1440 }, height: { ideal: 1080 } })}
+                            className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-500"
+                          >
+                            1440x1080
+                          </button>
+                          <button
+                            onClick={() => restartWithConstraints({ width: { ideal: 720 }, height: { ideal: 1280 } })}
+                            className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-500"
+                          >
+                            720x1280
+                          </button>
+                          <button
+                            onClick={() => restartWithConstraints({ width: { ideal: 1280 }, height: { ideal: 720 } })}
+                            className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-500"
+                          >
+                            1280x720
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          <button
+                            onClick={() => restartWithConstraints({ aspectRatio: { ideal: 3/4 } })}
+                            className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-500"
+                          >
+                            AR 3:4
+                          </button>
+                          <button
+                            onClick={() => restartWithConstraints({ aspectRatio: { ideal: 4/3 } })}
+                            className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-500"
+                          >
+                            AR 4:3
+                          </button>
+                          <button
+                            onClick={() => restartWithConstraints({ aspectRatio: { ideal: 9/16 } })}
+                            className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-500"
+                          >
+                            AR 9:16
+                          </button>
+                          <button
+                            onClick={() => restartWithConstraints({ aspectRatio: { ideal: 16/9 } })}
+                            className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-500"
+                          >
+                            AR 16:9
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          <button
+                            onClick={() => restartWithConstraints({})}
+                            className="px-2 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-500"
+                          >
+                            Defaut
+                          </button>
+                          <button
+                            onClick={() => {
+                              const info = getDebugInfo();
+                              if (info) setDebugInfo(info);
+                            }}
+                            className="px-2 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-500"
+                          >
+                            Refresh Info
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </>
