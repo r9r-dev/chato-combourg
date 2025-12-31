@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.7.4 (2025-12-31)
+
+- Amélioration de la mise en page des images annotées pour les captures
+
 ## v1.7.3 (2025-12-31)
 
 - Suppression de la configuration Ultralytics (accepte l'avertissement par défaut)
