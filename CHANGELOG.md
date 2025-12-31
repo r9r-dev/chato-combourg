@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.7.7 (2025-12-31)
+
+- Correction: Mise à jour de la vérification de démarrage pour les nouveaux chemins de modèles
+- Nouvelle fonctionnalité: Suppression automatique des captures en attente lorsque l'utilisateur quitte l'application
+
 ## v1.7.6 (2025-12-31)
 
 Corrections et améliorations mineures
