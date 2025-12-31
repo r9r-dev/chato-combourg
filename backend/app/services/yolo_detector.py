@@ -152,18 +152,27 @@ class YOLOCardDetector:
         self._initialized = False
 
     def initialize(self) -> None:
-        """Load the trained YOLO11x model."""
+        """Load the trained YOLO11x model (OpenVINO if available, else PyTorch)."""
         if self._initialized:
             return
 
-        model_path = MODELS_DIR / "card_detector" / "weights" / "best.pt"
-        if not model_path.exists():
+        weights_dir = MODELS_DIR / "card_detector" / "weights"
+        openvino_path = weights_dir / "best_openvino_model"
+        pytorch_path = weights_dir / "best.pt"
+
+        # Prefer OpenVINO model for better CPU performance
+        if openvino_path.exists():
+            self.model = YOLO(str(openvino_path), task="detect")
+            self._model_type = "openvino"
+        elif pytorch_path.exists():
+            self.model = YOLO(str(pytorch_path), task="detect")
+            self._model_type = "pytorch"
+        else:
             raise FileNotFoundError(
-                f"YOLO model not found at {model_path}. "
-                "Download from Google Drive or train a new model."
+                f"YOLO model not found. Expected OpenVINO at {openvino_path} "
+                f"or PyTorch at {pytorch_path}."
             )
 
-        self.model = YOLO(str(model_path))
         self._initialized = True
 
     def _compute_grid_bounds(self, detections: list[dict]) -> tuple:
@@ -314,7 +323,7 @@ class YOLOCardDetector:
         self.initialize()
 
         # Run detection with PIL image directly (numpy array doesn't work correctly)
-        results = self.model.predict(source=image, verbose=False, conf=confidence)
+        results = self.model.predict(source=image, verbose=False, conf=confidence, task="detect")
 
         # Extract detections
         detections = []
@@ -367,7 +376,7 @@ class YOLOCardDetector:
         """
         self.initialize()
 
-        results = self.model.predict(source=image, verbose=False, conf=confidence)
+        results = self.model.predict(source=image, verbose=False, conf=confidence, task="detect")
 
         detections = []
         boxes = results[0].boxes

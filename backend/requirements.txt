@@ -10,6 +10,7 @@ pillow>=11.1.0
 torch>=2.5.0
 numpy>=2.0.0
 ultralytics>=8.3.240
+openvino>=2025.4.1
 
 # Configuration
 pydantic>=2.12.0
