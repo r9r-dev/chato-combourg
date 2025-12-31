@@ -564,10 +564,27 @@ class YOLOCardDetector:
         annotated = image.copy()
         draw = ImageDraw.Draw(annotated)
 
-        # Try to load a font, fallback to default
-        try:
-            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
-        except (OSError, IOError):
+        # Try to load a font with Unicode support, fallback to default
+        font_size = 28
+        font = None
+        font_paths = [
+            # macOS
+            "/System/Library/Fonts/Helvetica.ttc",
+            "/System/Library/Fonts/SFNSText.ttf",
+            "/Library/Fonts/Arial Unicode.ttf",
+            # Linux / Docker
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/TTF/DejaVuSans.ttf",
+            # Alpine Linux (Docker)
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        ]
+        for font_path in font_paths:
+            try:
+                font = ImageFont.truetype(font_path, font_size)
+                break
+            except (OSError, IOError):
+                continue
+        if font is None:
             font = ImageFont.load_default()
 
         colors = ["#FFD700", "#00FF00", "#FF6B6B", "#4ECDC4", "#9B59B6",
@@ -584,12 +601,13 @@ class YOLOCardDetector:
             class_name = det.get("class_name", "?")
             conf = det.get("confidence", 0)
             position = det.get("position", (0, 0))
-            label = f"{class_name} ({conf:.2f}) [{position[0]},{position[1]}]"
+            label = f"{class_name} ({conf:.0%}) [{position[0]},{position[1]}]"
 
-            # Background for text
-            bbox = draw.textbbox((x1, y1 - 20), label, font=font)
-            draw.rectangle(bbox, fill=color)
-            draw.text((x1, y1 - 20), label, fill="black", font=font)
+            # Background for text (position above bounding box)
+            text_y = max(0, y1 - font_size - 8)
+            text_bbox = draw.textbbox((x1, text_y), label, font=font)
+            draw.rectangle(text_bbox, fill=color)
+            draw.text((x1, text_y), label, fill="black", font=font)
 
         # Save annotated image
         annotated_path = folder / "annotated.jpg"
