@@ -1,0 +1,19 @@
+{
+  "settings_version": "0.0.6",
+  "datasets_dir": "/app/datasets",
+  "weights_dir": "/app/models",
+  "runs_dir": "/tmp/runs",
+  "uuid": "chato-combourg-prod",
+  "sync": false,
+  "api_key": "",
+  "openai_api_key": "",
+  "clearml": false,
+  "comet": false,
+  "dvc": false,
+  "hub": false,
+  "mlflow": false,
+  "neptune": false,
+  "raytune": false,
+  "tensorboard": false,
+  "wandb": false
+}

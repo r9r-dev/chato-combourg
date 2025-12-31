@@ -5,8 +5,6 @@ services:
     # build: .
     ports:
       - "8080:8080"
-    environment:
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     volumes:
       # Required: trained YOLO model weights
       - ./backend/models:/app/models:ro
@@ -15,14 +13,9 @@ services:
       # First run takes ~5-10 minutes, subsequent starts are instant
       - deps-cache:/app/deps
 
-      # Recommended: CLIP model cache (~350MB, downloaded at first startup)
-      - clip-cache:/root/.cache/clip
-
-      # Recommended: computed card embeddings
-      - embeddings:/app/embeddings
+      # Required: SQLite database and captures
+      - ./data:/app/data
     restart: unless-stopped
 
 volumes:
   deps-cache:
-  clip-cache:
-  embeddings:

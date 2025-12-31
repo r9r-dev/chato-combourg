@@ -34,8 +34,11 @@ COPY --from=frontend-builder /frontend/dist ./frontend/dist
 COPY entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
 
-# Create directories for runtime caches and models (mounted as volume)
-RUN mkdir -p /app/deps /app/embeddings /app/models /root/.cache/clip
+# Copy Ultralytics config (disables telemetry and analytics)
+COPY config/ultralytics/settings.json /root/.config/Ultralytics/settings.json
+
+# Create directories for runtime data (mounted as volumes)
+RUN mkdir -p /app/deps /app/models /app/data
 
 EXPOSE 8080
 

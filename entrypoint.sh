@@ -45,9 +45,5 @@ fi
 export PYTHONPATH="$DEPS_DIR:$PYTHONPATH"
 export PATH="$DEPS_DIR/bin:$PATH"
 
-# Download CLIP model if not cached
-echo "Checking CLIP model cache..."
-python -c "import clip; clip.load('ViT-B/32', device='cpu')" 2>/dev/null || true
-
 echo "Starting server..."
 exec python -m uvicorn app.main:app --host 0.0.0.0 --port 8080
