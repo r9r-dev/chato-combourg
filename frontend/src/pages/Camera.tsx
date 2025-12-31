@@ -361,19 +361,19 @@ export function Camera() {
           </div>
         ) : (
           <div className="relative w-full max-w-sm aspect-[3/4]">
+            {/* Live video feed - always mounted to preserve stream connection */}
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              webkit-playsinline="true"
+              muted
+              className={`absolute inset-0 w-full h-full object-cover rounded-lg ${
+                isLiveMode ? '' : 'hidden'
+              }`}
+            />
             {isLiveMode ? (
-              <>
-                {/* Live video feed */}
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  webkit-playsinline="true"
-                  muted
-                  className="absolute inset-0 w-full h-full object-cover rounded-lg"
-                />
-                <GridOverlay mode="viewfinder" />
-              </>
+              <GridOverlay mode="viewfinder" />
             ) : (
               <>
                 {/* Captured image */}
