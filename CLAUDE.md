@@ -128,8 +128,9 @@ YOLO11 training pipeline for card detection/identification.
 - `GET /api/cards` - List all 92 reference cards
 
 ### Model (Offline Support)
-- `GET /api/model/info` - Get ONNX model metadata (version, size, hash)
-- `GET /api/model/download` - Download ONNX model for local inference
+- `GET /api/model/info` - List all ONNX variants with metadata
+- `GET /api/model/info/{variant}` - Get specific variant info (fp32, fp16, int8)
+- `GET /api/model/download?variant=fp16` - Download ONNX model for local inference
 - `GET /api/model/classes` - List 92 class names
 
 ### User & Players
@@ -190,7 +191,7 @@ The app expects to run behind Pangolin proxy which provides:
 - Icons: `frontend/public/pwa-192x192.png`, `pwa-512x512.png`
 - Requires HTTPS for camera access on iOS
 
-## Offline Inference (feature/offline-inference branch)
+## Offline Inference
 
 Supports client-side card detection using ONNX Runtime Web.
 
@@ -200,18 +201,30 @@ Supports client-side card detection using ONNX Runtime Web.
   - `fallback` - Try server first, use local if unavailable
   - `always` - Always use local inference
 
+### Model Variants
+User can choose between 3 ONNX model variants:
+- **FP32** (~218 MB) - Full precision, best quality
+- **FP16** (~109 MB) - Half precision, recommended (same accuracy as FP32)
+- **INT8** (~55 MB) - Quantized, smallest size, slightly reduced precision
+
 ### Model Files
-- Source: `models/card_detector/yolo11/model.pt` (343 MB, 92 classes)
-- ONNX export: `backend/models/card_detector/onnx/model.onnx` (55 MB, INT8 quantized)
-- Export script: `backend/scripts/export_onnx.py`
+- Source: `models/card_detector/weights/model.pt` (343 MB, 92 classes)
+- ONNX exports: `backend/models/card_detector/onnx_{fp32,fp16,int8}/model.onnx`
+- Export script: `backend/scripts/export_onnx.py` (supports `--half` for FP16, `--int8` for INT8)
+
+### API Endpoints
+- `GET /api/model/info` - Returns all variant info (sizes, hashes, availability)
+- `GET /api/model/download?variant=fp16` - Download specific variant
+- `GET /api/model/classes` - List 92 class names
 
 ### Frontend Services
-- `modelStorage.ts` - IndexedDB storage for ONNX model
+- `modelStorage.ts` - IndexedDB storage for ONNX model (stores variant info)
 - `localInference.ts` - ONNX Runtime Web inference pipeline
 
 ### Workflow
-1. User downloads model in Settings (55 MB, one-time)
-2. Model stored in IndexedDB
-3. Camera.tsx checks offline_mode setting
-4. If local: runs inference via localInference service
-5. Results in same format as server API
+1. User selects model variant in Settings (FP32/FP16/INT8)
+2. User downloads model (one-time per variant)
+3. Model stored in IndexedDB with variant metadata
+4. Camera.tsx checks offline_mode setting
+5. If local: runs inference via localInference service
+6. Results in same format as server API

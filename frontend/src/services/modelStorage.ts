@@ -12,6 +12,7 @@ const MODEL_KEY = 'yolo-model';
 interface StoredModel {
   key: string;
   version: string;
+  variant: string;
   sha256: string;
   data: ArrayBuffer;
   storedAt: string;
@@ -60,7 +61,7 @@ class ModelStorage {
   /**
    * Get info about the stored model (without loading the data)
    */
-  async getModelInfo(): Promise<{ version: string; sha256: string; storedAt: string } | null> {
+  async getModelInfo(): Promise<{ version: string; variant: string; sha256: string; storedAt: string } | null> {
     try {
       const db = await this.openDB();
       return new Promise((resolve, reject) => {
@@ -74,6 +75,7 @@ class ModelStorage {
           if (result) {
             resolve({
               version: result.version,
+              variant: result.variant || 'fp16', // Default for old stored models
               sha256: result.sha256,
               storedAt: result.storedAt,
             });
@@ -112,7 +114,7 @@ class ModelStorage {
   /**
    * Save the model to storage
    */
-  async saveModel(data: ArrayBuffer, version: string, sha256: string): Promise<void> {
+  async saveModel(data: ArrayBuffer, version: string, variant: string, sha256: string): Promise<void> {
     const db = await this.openDB();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(STORE_NAME, 'readwrite');
@@ -121,6 +123,7 @@ class ModelStorage {
       const model: StoredModel = {
         key: MODEL_KEY,
         version,
+        variant,
         sha256,
         data,
         storedAt: new Date().toISOString(),

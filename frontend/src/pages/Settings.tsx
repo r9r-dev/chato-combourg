@@ -74,7 +74,8 @@ export function Settings() {
   const [offlineMode, setOfflineMode] = useState<OfflineMode>('never');
   const [detectionModel, setDetectionModel] = useState<DetectionModel>('openvino');
   const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null);
-  const [localModelInfo, setLocalModelInfo] = useState<{ version: string; storedAt: string } | null>(null);
+  const [localModelInfo, setLocalModelInfo] = useState<{ version: string; variant: string; storedAt: string } | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<string>('fp16');
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
   const [modelError, setModelError] = useState<string | null>(null);
 
@@ -247,19 +248,20 @@ export function Settings() {
 
   // Download model for offline use
   const handleDownloadModel = async () => {
-    if (!modelInfo?.available) return;
+    const variant = modelInfo?.variants.find(v => v.variant === selectedVariant);
+    if (!variant?.available) return;
 
     setModelError(null);
     setDownloadProgress(0);
 
     try {
-      const data = await downloadModel((loaded, total) => {
+      const data = await downloadModel(selectedVariant, (loaded, total) => {
         if (total > 0) {
           setDownloadProgress(Math.round((loaded / total) * 100));
         }
       });
 
-      await modelStorage.saveModel(data, modelInfo.version, modelInfo.sha256);
+      await modelStorage.saveModel(data, modelInfo!.version, selectedVariant, variant.sha256);
 
       const localInfo = await modelStorage.getModelInfo();
       setLocalModelInfo(localInfo);
@@ -453,14 +455,41 @@ export function Settings() {
             </div>
           </div>
 
+          {/* Model variant selection */}
+          {modelInfo && modelInfo.variants.length > 0 && (
+            <div className="mb-4">
+              <div className="mb-2 text-white/60 text-sm">Precision du modele local</div>
+              <div className="grid grid-cols-3 gap-2">
+                {modelInfo.variants.map(variant => (
+                  <button
+                    key={variant.variant}
+                    onClick={() => setSelectedVariant(variant.variant)}
+                    disabled={!variant.available}
+                    className={`p-2 rounded-xl text-xs font-medium transition-all ${
+                      selectedVariant === variant.variant
+                        ? 'bg-gold text-dark'
+                        : 'bg-dark-lighter text-white/70 hover:bg-dark-card disabled:opacity-40 disabled:cursor-not-allowed'
+                    }`}
+                    title={variant.description}
+                  >
+                    {variant.name.split(' ')[0]}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-2 text-white/40 text-xs">
+                {modelInfo.variants.find(v => v.variant === selectedVariant)?.recommended_for}
+              </div>
+            </div>
+          )}
+
           {/* Model status */}
           <div className="p-3 bg-dark-lighter rounded-xl">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-white/60 text-sm">Modèle local</span>
+              <span className="text-white/60 text-sm">Modele local</span>
               {localModelInfo ? (
                 <span className="text-green-400 text-xs">Disponible</span>
               ) : (
-                <span className="text-white/40 text-xs">Non téléchargé</span>
+                <span className="text-white/40 text-xs">Non telecharge</span>
               )}
             </div>
 
@@ -471,24 +500,30 @@ export function Settings() {
                   <span className="text-white/70">{localModelInfo.version}</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-white/40">Téléchargé le</span>
+                  <span className="text-white/40">Variante</span>
+                  <span className="text-white/70">{localModelInfo.variant.toUpperCase()}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-white/40">Telecharge le</span>
                   <span className="text-white/70">
                     {new Date(localModelInfo.storedAt).toLocaleDateString()}
                   </span>
                 </div>
-                {modelInfo && localModelInfo.version !== modelInfo.version && (
+                {modelInfo && (localModelInfo.version !== modelInfo.version || localModelInfo.variant !== selectedVariant) && (
                   <div className="text-orange-400 text-xs">
-                    Nouvelle version disponible ({modelInfo.version})
+                    {localModelInfo.version !== modelInfo.version
+                      ? `Nouvelle version disponible (${modelInfo.version})`
+                      : `Variante differente selectionnee (${selectedVariant.toUpperCase()})`}
                   </div>
                 )}
                 <div className="flex gap-2 mt-2">
-                  {modelInfo && localModelInfo.version !== modelInfo.version && (
+                  {modelInfo && (localModelInfo.version !== modelInfo.version || localModelInfo.variant !== selectedVariant) && (
                     <button
                       onClick={handleDownloadModel}
                       disabled={downloadProgress !== null}
                       className="flex-1 p-2 bg-gold/20 text-gold rounded-lg text-xs font-medium disabled:opacity-50"
                     >
-                      {downloadProgress !== null ? `${downloadProgress}%` : 'Mettre à jour'}
+                      {downloadProgress !== null ? `${downloadProgress}%` : localModelInfo.variant !== selectedVariant ? 'Changer' : 'Mettre a jour'}
                     </button>
                   )}
                   <button
@@ -501,10 +536,10 @@ export function Settings() {
               </div>
             ) : (
               <div className="space-y-2">
-                {modelInfo?.available ? (
+                {modelInfo?.variants.find(v => v.variant === selectedVariant)?.available ? (
                   <>
                     <div className="text-white/40 text-xs">
-                      {modelInfo.size_mb} MB - Version {modelInfo.version}
+                      {modelInfo.variants.find(v => v.variant === selectedVariant)?.size_mb.toFixed(1)} MB - Version {modelInfo.version}
                     </div>
                     <button
                       onClick={handleDownloadModel}
@@ -512,13 +547,13 @@ export function Settings() {
                       className="w-full p-2 bg-gold/20 text-gold rounded-lg text-sm font-medium disabled:opacity-50"
                     >
                       {downloadProgress !== null
-                        ? `Téléchargement... ${downloadProgress}%`
-                        : 'Télécharger le modèle'}
+                        ? `Telechargement... ${downloadProgress}%`
+                        : 'Telecharger le modele'}
                     </button>
                   </>
                 ) : (
                   <div className="text-white/40 text-xs">
-                    Modèle non disponible sur le serveur
+                    Modele non disponible sur le serveur
                   </div>
                 )}
                 {modelError && (

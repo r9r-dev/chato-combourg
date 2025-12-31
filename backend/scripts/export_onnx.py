@@ -5,9 +5,13 @@ This script exports the trained YOLO11 model to ONNX format compatible
 with ONNX Runtime Web for client-side inference in the PWA.
 
 Usage:
-    python scripts/export_onnx.py                    # Export with defaults
-    python scripts/export_onnx.py --imgsz 480        # Smaller input for mobile
-    python scripts/export_onnx.py --simplify         # Simplify the model graph
+    python scripts/export_onnx.py                       # Export FP32 (default)
+    python scripts/export_onnx.py --half                # Export FP16 (smaller, slightly less precise)
+    python scripts/export_onnx.py --imgsz 480           # Smaller input for mobile
+    python scripts/export_onnx.py --output ./custom/    # Custom output directory
+
+WARNING: INT8 quantization is NOT recommended for YOLO models as it
+drastically degrades detection accuracy. Use FP32 or FP16 instead.
 """
 
 import argparse
@@ -34,13 +38,19 @@ def parse_args():
         "--output",
         type=str,
         default=None,
-        help="Output directory (default: models/card_detector/onnx/)",
+        help="Output directory (default: backend/models/card_detector/onnx/)",
     )
     parser.add_argument(
         "--imgsz",
         type=int,
         default=640,
         help="Input image size (default: 640)",
+    )
+    parser.add_argument(
+        "--half",
+        action="store_true",
+        default=False,
+        help="Export in FP16 half-precision (smaller file, ~170MB -> ~85MB)",
     )
     parser.add_argument(
         "--simplify",
@@ -66,37 +76,33 @@ def parse_args():
         default=17,
         help="ONNX opset version (default: 17 for broad compatibility)",
     )
-    parser.add_argument(
-        "--quantize",
-        action="store_true",
-        default=True,
-        help="Quantize model to INT8 for smaller size (default: True)",
-    )
-    parser.add_argument(
-        "--no-quantize",
-        action="store_false",
-        dest="quantize",
-        help="Disable INT8 quantization",
-    )
     return parser.parse_args()
 
 
-def find_model_path(base_dir: Path) -> Path | None:
+def find_model_path(script_dir: Path) -> Path | None:
     """Find the best available model file."""
-    card_detector = base_dir / "models" / "card_detector"
+    backend_dir = script_dir.parent
+    project_root = backend_dir.parent
 
-    # Priority order: best.pt > last.pt > weights/best.pt > weights/last.pt
-    candidates = [
-        card_detector / "best.pt",
-        card_detector / "last.pt",
-        card_detector / "weights" / "best.pt",
-        card_detector / "weights" / "last.pt",
-        card_detector / "yolo11" / "model.pt",
+    # Search in multiple locations
+    search_dirs = [
+        backend_dir / "models" / "card_detector",
+        project_root / "models" / "card_detector",
     ]
 
-    for path in candidates:
-        if path.exists():
-            return path
+    for base_dir in search_dirs:
+        # Priority order for each location
+        candidates = [
+            base_dir / "yolo11" / "model.pt",
+            base_dir / "best.pt",
+            base_dir / "last.pt",
+            base_dir / "weights" / "best.pt",
+            base_dir / "weights" / "last.pt",
+        ]
+
+        for path in candidates:
+            if path.exists():
+                return path
 
     return None
 
@@ -121,10 +127,13 @@ def main():
     if args.model:
         model_path = Path(args.model)
     else:
-        model_path = find_model_path(backend_dir)
+        model_path = find_model_path(script_dir)
 
     if model_path is None or not model_path.exists():
-        print(f"Error: Model not found. Searched in {backend_dir / 'models' / 'card_detector'}")
+        print(f"Error: Model not found.")
+        print(f"Searched in:")
+        print(f"  - {backend_dir / 'models' / 'card_detector'}")
+        print(f"  - {backend_dir.parent / 'models' / 'card_detector'}")
         print("Please provide a model path with --model")
         return 1
 
@@ -142,15 +151,19 @@ def main():
     print(f"Loading model...")
     model = YOLO(str(model_path))
 
+    # Determine precision
+    precision = "fp16" if args.half else "fp32"
+
     # Export configuration
     print(f"\nExport configuration:")
+    print(f"  Precision: {precision.upper()}")
     print(f"  Image size: {args.imgsz}x{args.imgsz}")
     print(f"  Simplify: {args.simplify}")
     print(f"  Dynamic: {args.dynamic}")
     print(f"  Opset: {args.opset}")
 
     # Export to ONNX
-    print(f"\nExporting to ONNX...")
+    print(f"\nExporting to ONNX ({precision.upper()})...")
     try:
         export_path = model.export(
             format="onnx",
@@ -158,6 +171,7 @@ def main():
             simplify=args.simplify,
             dynamic=args.dynamic,
             opset=args.opset,
+            half=args.half,
         )
 
         # Move to output directory
@@ -169,29 +183,6 @@ def main():
             shutil.move(str(export_path), str(final_path))
 
         print(f"\nModel exported to: {final_path}")
-
-        # Quantize to INT8 if requested
-        if args.quantize:
-            print(f"\nQuantizing to INT8...")
-            try:
-                from onnxruntime.quantization import quantize_dynamic, QuantType
-
-                quantized_path = output_dir / "model_int8.onnx"
-                quantize_dynamic(
-                    str(final_path),
-                    str(quantized_path),
-                    weight_type=QuantType.QUInt8
-                )
-
-                # Replace original with quantized version
-                final_path.unlink()
-                quantized_path.rename(final_path)
-
-                print(f"Quantized model saved to: {final_path}")
-            except ImportError:
-                print("Warning: onnxruntime.quantization not available, skipping quantization")
-            except Exception as e:
-                print(f"Warning: Quantization failed: {e}")
 
     except Exception as e:
         print(f"Error during export: {e}")
@@ -211,6 +202,7 @@ def main():
         "sha256": file_hash,
         "input_size": args.imgsz,
         "opset": args.opset,
+        "precision": precision,
         "simplified": args.simplify,
         "dynamic": args.dynamic,
         "num_classes": 92,
@@ -224,6 +216,7 @@ def main():
 
     print(f"\nMetadata saved to: {metadata_path}")
     print(f"\nExport summary:")
+    print(f"  Precision: {precision.upper()}")
     print(f"  File size: {metadata['size_mb']} MB")
     print(f"  SHA-256: {file_hash[:16]}...")
     print(f"  Version: {metadata['version']}")

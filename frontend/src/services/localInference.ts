@@ -83,14 +83,19 @@ class LocalInferenceService {
           }
 
           // Calculate letterbox dimensions to maintain aspect ratio
-          const scale = Math.min(INPUT_SIZE / img.width, INPUT_SIZE / img.height);
+          // Note: img.width/height are the displayed dimensions (EXIF-corrected by browser)
+          const scale = Math.min(INPUT_SIZE / img.height, INPUT_SIZE / img.width);
           const newWidth = Math.round(img.width * scale);
           const newHeight = Math.round(img.height * scale);
-          const offsetX = Math.round((INPUT_SIZE - newWidth) / 2);
-          const offsetY = Math.round((INPUT_SIZE - newHeight) / 2);
 
-          // Fill with gray (letterbox)
-          ctx.fillStyle = '#808080';
+          // Calculate padding (same formula as ultralytics LetterBox)
+          const dw = INPUT_SIZE - newWidth;
+          const dh = INPUT_SIZE - newHeight;
+          const offsetX = Math.round(dw / 2 - 0.1);
+          const offsetY = Math.round(dh / 2 - 0.1);
+
+          // Fill with letterbox color (114, 114, 114) - same as YOLO training
+          ctx.fillStyle = 'rgb(114, 114, 114)';
           ctx.fillRect(0, 0, INPUT_SIZE, INPUT_SIZE);
 
           // Draw resized image centered

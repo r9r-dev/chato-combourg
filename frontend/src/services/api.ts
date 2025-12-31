@@ -267,17 +267,23 @@ export async function deleteCapture(captureId: string): Promise<void> {
 }
 
 // Model API for offline inference
+export interface ModelVariantInfo {
+  variant: string;
+  name: string;
+  description: string;
+  recommended_for: string;
+  size_mb: number;
+  sha256: string;
+  available: boolean;
+}
+
 export interface ModelInfo {
   version: string;
   format: string;
-  filename: string;
-  size_bytes: number;
-  size_mb: number;
-  sha256: string;
   input_size: number;
-  opset: number;
   num_classes: number;
-  available: boolean;
+  default_variant: string;
+  variants: ModelVariantInfo[];
 }
 
 export async function getModelInfo(): Promise<ModelInfo> {
@@ -289,9 +295,10 @@ export async function getModelInfo(): Promise<ModelInfo> {
 }
 
 export async function downloadModel(
+  variant: string = 'fp16',
   onProgress?: (loaded: number, total: number) => void
 ): Promise<ArrayBuffer> {
-  const response = await fetch(`${API_BASE}/model/download`);
+  const response = await fetch(`${API_BASE}/model/download?variant=${variant}`);
   if (!response.ok) {
     throw new Error(`Download model failed: ${response.statusText}`);
   }
