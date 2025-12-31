@@ -8,9 +8,11 @@ import App from './App.tsx'
 // Check for updates every hour
 registerSW({
   onRegisteredSW(_swUrl, r) {
-    r && setInterval(() => {
-      r.update()
-    }, 60 * 60 * 1000) // Check every hour
+    if (r) {
+      setInterval(() => {
+        r.update()
+      }, 60 * 60 * 1000) // Check every hour
+    }
   },
   onOfflineReady() {
     console.log('App ready for offline use')

@@ -5,7 +5,7 @@ import logging
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
@@ -51,6 +51,8 @@ class GameCreate(BaseModel):
 class GamePlayerResponse(BaseModel):
     """Player data in a game response."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     player_id: int
     player_name: str
@@ -62,24 +64,22 @@ class GamePlayerResponse(BaseModel):
     score: int
     rank: int | None
 
-    class Config:
-        from_attributes = True
-
 
 class GameResponse(BaseModel):
     """Game response."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     played_at: datetime
     notes: str | None
     players: list[GamePlayerResponse]
 
-    class Config:
-        from_attributes = True
-
 
 class GameListItem(BaseModel):
     """Simplified game for list view."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     played_at: datetime
@@ -87,9 +87,6 @@ class GameListItem(BaseModel):
     player_count: int
     winner_name: str | None
     winner_score: int | None
-
-    class Config:
-        from_attributes = True
 
 
 class ManualGamePlayerCreate(BaseModel):

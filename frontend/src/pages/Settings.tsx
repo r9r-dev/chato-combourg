@@ -312,9 +312,10 @@ export function Settings() {
         if (!a.last_played_at) return 1;
         if (!b.last_played_at) return -1;
         return new Date(b.last_played_at).getTime() - new Date(a.last_played_at).getTime();
-      case 'manual':
+      case 'manual': {
         const orderMap = new Map(manualOrder.map((id, i) => [id, i]));
         return (orderMap.get(a.id) ?? 999) - (orderMap.get(b.id) ?? 999);
+      }
       default:
         return 0;
     }

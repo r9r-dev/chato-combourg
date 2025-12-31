@@ -1,8 +1,14 @@
 from pathlib import Path
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
     # App version
     app_version: str = "2.0.2"
 
@@ -31,11 +37,6 @@ class Settings(BaseSettings):
 
     # Analysis captures - saves images and reports to data/captures/
     captures_dir: Path = database_dir / "captures"
-
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        extra = "ignore"  # Ignore extra fields from .env
 
 
 settings = Settings()

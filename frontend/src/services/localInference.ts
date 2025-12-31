@@ -27,6 +27,11 @@ interface Detection {
   height: number;
 }
 
+interface DetectionWithGrid extends Detection {
+  row: number;
+  col: number;
+}
+
 class LocalInferenceService {
   private session: ort.InferenceSession | null = null;
   private isInitializing = false;
@@ -237,7 +242,7 @@ class LocalInferenceService {
   /**
    * Assign detections to grid positions
    */
-  private assignGridPositions(detections: Detection[]): Detection[] {
+  private assignGridPositions(detections: Detection[]): DetectionWithGrid[] {
     if (detections.length === 0) return [];
 
     // Compute grid bounds from detections
@@ -260,24 +265,23 @@ class LocalInferenceService {
     const gridWidth = gridRight - gridLeft;
     const gridHeight = gridBottom - gridTop;
 
-    // Assign grid positions
-    for (const det of detections) {
+    // Assign grid positions and return as DetectionWithGrid
+    const gridDetections: DetectionWithGrid[] = detections.map(det => {
       const col = Math.min(2, Math.max(0, Math.floor(((det.x - gridLeft) / gridWidth) * 3)));
       const row = Math.min(2, Math.max(0, Math.floor(((det.y - gridTop) / gridHeight) * 3)));
-      (det as Detection & { row: number; col: number }).row = row;
-      (det as Detection & { row: number; col: number }).col = col;
-    }
+      return { ...det, row, col };
+    });
 
-    return detections;
+    return gridDetections;
   }
 
   /**
    * Select best 9 cards (one per grid position)
    */
-  private selectBest9(detections: (Detection & { row?: number; col?: number })[]): typeof detections {
+  private selectBest9(detections: DetectionWithGrid[]): DetectionWithGrid[] {
     if (detections.length <= 9) return detections;
 
-    const grid: Map<string, typeof detections[0]> = new Map();
+    const grid = new Map<string, DetectionWithGrid>();
 
     for (const det of detections) {
       const key = `${det.row},${det.col}`;
@@ -288,8 +292,8 @@ class LocalInferenceService {
     }
 
     return Array.from(grid.values()).sort((a, b) => {
-      if (a.row !== b.row) return (a.row ?? 0) - (b.row ?? 0);
-      return (a.col ?? 0) - (b.col ?? 0);
+      if (a.row !== b.row) return a.row - b.row;
+      return a.col - b.col;
     });
   }
 
@@ -325,10 +329,10 @@ class LocalInferenceService {
       }
 
       // Post-process
-      let detections = this.postprocessOutput(outputTensor);
-      detections = this.applyNMS(detections);
-      detections = this.assignGridPositions(detections);
-      const best9 = this.selectBest9(detections as (Detection & { row?: number; col?: number })[]);
+      const rawDetections = this.postprocessOutput(outputTensor);
+      const nmsDetections = this.applyNMS(rawDetections);
+      const gridDetections = this.assignGridPositions(nmsDetections);
+      const best9 = this.selectBest9(gridDetections);
 
       // Convert to CardResult format
       const cards: CardResult[] = best9.map(det => {
@@ -347,7 +351,7 @@ class LocalInferenceService {
         }
 
         return {
-          position: [(det as any).row ?? 0, (det as any).col ?? 0] as [number, number],
+          position: [det.row, det.col] as [number, number],
           matches,
           method: 'local-onnx',
           bbox: {

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
@@ -11,12 +11,11 @@ router = APIRouter(prefix="/api", tags=["users"])
 class UserResponse(BaseModel):
     """User profile response."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     email: str | None
     name: str | None
-
-    class Config:
-        from_attributes = True
 
 
 class SettingsResponse(BaseModel):

@@ -1,6 +1,6 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -28,25 +28,23 @@ class PlayerUpdate(BaseModel):
 class PlayerResponse(BaseModel):
     """Player response."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
     color: str
 
-    class Config:
-        from_attributes = True
-
 
 class PlayerWithStatsResponse(BaseModel):
     """Player response with statistics."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     name: str
     color: str
     games_count: int
     last_played_at: str | None
-
-    class Config:
-        from_attributes = True
 
 
 @router.get("")

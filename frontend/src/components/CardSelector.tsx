@@ -23,18 +23,22 @@ export function CardSelector({
   const [showSearch, setShowSearch] = useState(alternatives.length === 0);
   const [allCards, setAllCards] = useState<Card[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
   // Load all cards when search is opened
   useEffect(() => {
     if (showSearch && allCards.length === 0) {
-      setIsLoading(true);
+      let cancelled = false;
       getCards()
-        .then(setAllCards)
-        .catch(console.error)
-        .finally(() => setIsLoading(false));
+        .then((cards) => {
+          if (!cancelled) setAllCards(cards);
+        })
+        .catch(console.error);
+      return () => { cancelled = true; };
     }
   }, [showSearch, allCards.length]);
+
+  // Calculate loading state from other state
+  const isLoading = showSearch && allCards.length === 0;
 
   // Filter cards for search
   const filteredCards = allCards.filter(
