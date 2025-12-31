@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.7.6 (2025-12-31)
+
+Corrections et améliorations mineures
+
 ## v1.7.5 (2025-12-31)
 
 - Refactorisation : déplacement des modèles à la racine du projet pour une structure plus claire
