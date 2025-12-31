@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.0.5 (2025-12-31)
+
+- Correction : la caméra ne s'affichait pas après avoir cliqué sur le bouton Reprendre
+
 ## v2.0.4 (2025-12-31)
 
 - Correction du service des ressources PWA
