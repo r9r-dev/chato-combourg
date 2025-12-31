@@ -13,8 +13,11 @@ from pydantic import BaseModel
 router = APIRouter(prefix="/api/model", tags=["model"])
 
 # Path to ONNX model directory
-BASE_DIR = Path(__file__).parent.parent.parent
-ONNX_DIR = BASE_DIR / "models" / "card_detector" / "onnx"
+# Same logic as yolo_detector: /app/models in Docker, or project root in local dev
+_docker_models = Path("/app/models")
+_local_models = Path(__file__).parent.parent.parent.parent / "models"
+MODELS_DIR = _docker_models if _docker_models.exists() else _local_models
+ONNX_DIR = MODELS_DIR / "card_detector" / "onnx"
 
 
 class ModelInfo(BaseModel):
