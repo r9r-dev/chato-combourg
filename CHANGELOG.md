@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.7.2 (2025-12-31)
+
+- Suppression des vestiges de CLIP
+- Ajout de la configuration Ultralytics
+
 ## v1.7.1 (2025-12-31)
 
 - Affichage d'un écran d'analyse pendant la détection des cartes
