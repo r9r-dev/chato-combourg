@@ -160,7 +160,7 @@ class YOLOCardDetector:
             return
 
         card_detector_dir = MODELS_DIR / "card_detector"
-        openvino_path = card_detector_dir / "openvino"
+        openvino_path = card_detector_dir / "openvino" / "model.xml"
         pytorch_path = card_detector_dir / "yolo11" / "model.pt"
 
         # Prefer OpenVINO model for better CPU performance
@@ -172,7 +172,8 @@ class YOLOCardDetector:
             self._model_type = "pytorch"
         else:
             raise FileNotFoundError(
-                f"YOLO model not found. Expected OpenVINO at {openvino_path} "
+                f"YOLO model not found. Expected OpenVINO at "
+                f"{card_detector_dir / 'openvino' / 'model.xml'} "
                 f"or PyTorch at {pytorch_path}."
             )
 
