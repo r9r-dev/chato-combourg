@@ -242,7 +242,16 @@ export function Camera() {
     setIdentifiedCards([]);
     setDetections([]);
     setDetectionResult(null);
-  }, [capturedImageUrl]);
+
+    // Resume video playback after unhiding (iOS Safari suspends paused videos)
+    if (videoRef.current) {
+      try {
+        await videoRef.current.play();
+      } catch {
+        // Ignore play errors - video might already be playing
+      }
+    }
+  }, [capturedImageUrl, videoRef]);
 
   // Load settings on mount
   useEffect(() => {
