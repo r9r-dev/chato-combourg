@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.7.3 (2025-12-31)
+
+- Suppression de la configuration Ultralytics (accepte l'avertissement par défaut)
+- Correction : Ajout des champs de paramètres Ultralytics manquants
+
 ## v1.7.2 (2025-12-31)
 
 - Suppression des vestiges de CLIP
