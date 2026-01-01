@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.4.2 (2026-01-01)
+
+Corrections et améliorations mineures
+
 ## v2.4.1 (2026-01-01)
 
 - Refactorisation des pages Keys et Coins pour meilleure réutilisabilité
