@@ -160,6 +160,12 @@ function generateMockGamesData() {
       winner_name: winner.player_name,
       winner_score: winner.score,
       is_legacy: false,
+      players: playerScores.map((p) => ({
+        player_name: p.player_name,
+        player_color: p.player_color,
+        score: p.score,
+        rank: p.rank,
+      })),
     });
 
     gameDetails[i] = {
@@ -186,9 +192,9 @@ function generateMockGamesData() {
     player_name: p.name,
     player_color: p.color,
     favorite_cards: [
-      String(1 + Math.floor(Math.random() * 92)).padStart(3, '0'),
-      String(1 + Math.floor(Math.random() * 92)).padStart(3, '0'),
-      String(1 + Math.floor(Math.random() * 92)).padStart(3, '0'),
+      { card_id: String(1 + Math.floor(Math.random() * 92)).padStart(3, '0'), play_count: 5 + Math.floor(Math.random() * 10) },
+      { card_id: String(1 + Math.floor(Math.random() * 92)).padStart(3, '0'), play_count: 3 + Math.floor(Math.random() * 8) },
+      { card_id: String(1 + Math.floor(Math.random() * 92)).padStart(3, '0'), play_count: 1 + Math.floor(Math.random() * 5) },
     ],
   }));
 

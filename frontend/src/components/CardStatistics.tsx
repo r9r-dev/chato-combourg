@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getCardImageUrl, getCards } from '../services/api';
-import type { Statistics, CardStatistic, PlayerCardStatistic, Card } from '../types';
+import type { Statistics, CardStatistic, PlayerCardStatistic } from '../types';
 
 interface CardStatisticsProps {
   statistics: Statistics | null;
@@ -70,42 +70,6 @@ function FeaturedCard({
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-// Small card row (3-4 cards)
-function CardRow({
-  cards,
-  title,
-  maxCards = 4,
-}: {
-  cards: CardStatistic[];
-  title: string;
-  maxCards?: number;
-}) {
-  if (cards.length === 0) return null;
-
-  return (
-    <div className="bg-dark-lighter rounded-xl border border-white/10 p-3">
-      <h3 className="text-white/60 text-sm mb-3 text-center">{title}</h3>
-      <div className="flex justify-center gap-2">
-        {cards.slice(0, maxCards).map((card) => (
-          <div
-            key={card.card_id}
-            className="w-14 rounded-lg overflow-hidden border border-white/10"
-          >
-            <img
-              src={getCardImageUrl(card.card_id)}
-              alt={`Carte ${card.card_id}`}
-              className="w-full aspect-[630/880] object-cover"
-            />
-            <div className="text-center py-1 text-xs text-white/60">
-              {card.play_count}x
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
