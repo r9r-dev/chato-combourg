@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.2.0 (2026-01-01)
+
+- Amélioration de la page Mes parties avec onglets et statistiques
+
 ## v2.1.0 (2026-01-01)
 
 - Ajout d'un worker PyTorch pour l'inférence distante sur Mac M4
