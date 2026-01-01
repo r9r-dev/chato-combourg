@@ -72,8 +72,18 @@ Single-pass detection and identification using YOLO11 with 92 classes (one per c
 #### Calculator Engine (backend/app/services/calculator/)
 - `models.py` - Pydantic models for request/response
 - `grid.py` - Grid helper functions (row/col, shields, categories)
-- `rules.py` - 92 card scoring rules (French explanations)
+- `rule_factories.py` - Factory functions for generating scoring rules
+- `rules.py` - 92 card scoring rules (uses factories, French explanations)
 - `engine.py` - Main score calculation
+
+#### Error Handling (backend/app/)
+- `exceptions.py` - Custom exception classes (AppException, ValidationError, NotFoundError, etc.)
+- Global exception handlers in `main.py` for consistent JSON error responses
+- Error format: `{ success: false, code: "ERROR_CODE", detail: "Message" }`
+
+#### Business Logic (backend/app/)
+- `queries.py` - Database query helpers with automatic 404 handling
+- `services/game_service.py` - Game creation and rank calculation logic
 
 #### Card Attributes (backend/cards/card_attributes.json)
 - `value` - Card cost (0-8)
@@ -103,14 +113,24 @@ React + Vite + TypeScript + Tailwind CSS PWA.
 
 #### Contexts
 - `AuthContext.tsx` - User authentication and player management
-- `GameContext.tsx` - Game state (multi-player support)
+- `GameContext.tsx` - Game state (multi-player support, uses useReducer)
+- `gameReducer.ts` - Typed actions and reducer for game state
+- `useLegacyMode.ts` - Hook for legacy game import logic
 
 #### Components
 - `CardGrid.tsx` - 3x3 card display with scores, always shows 9 positions (empty slots display "?" and are clickable)
 - `CardSelector.tsx` - Modal to replace card (3 suggestions: detected + 2 similar, plus search); opens search directly for empty positions
 - `NumberPad.tsx` - Numeric keypad for keys/coins input
+- `NumericInputPage.tsx` - Reusable page for numeric input (used by Keys and Coins)
+- `PlayerBadge.tsx` - Colored circular badge for player identification
 - `ConfirmDialog.tsx` - Confirmation modal
 - `GridOverlay.tsx` - Camera grid overlay
+- `ErrorBoundary.tsx` - React error boundary for graceful error handling
+
+#### API Service (services/api.ts)
+- `ApiError` class with status, code, and detail parsed from response
+- All API functions use `handleApiError()` for consistent error handling
+- French error messages for user-facing errors
 
 ### Training (training/)
 
