@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.3.0 (2026-01-01)
+
+- Simplification du mode legacy pour la saisie manuelle de parties
+
 ## v2.2.0 (2026-01-01)
 
 - Amélioration de la page Mes parties avec onglets et statistiques
