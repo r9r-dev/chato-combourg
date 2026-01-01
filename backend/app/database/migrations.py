@@ -108,3 +108,20 @@ def migration_001_add_card_scores(engine: Engine) -> None:
             logger.info("Added card_scores column to game_players")
         else:
             logger.info("Column card_scores already exists, skipping")
+
+
+@migration(2, "Add is_legacy column to game_players")
+def migration_002_add_is_legacy(engine: Engine) -> None:
+    """Add is_legacy column to mark imported games without card data."""
+    with engine.connect() as conn:
+        result = conn.execute(text("PRAGMA table_info(game_players)"))
+        columns = {row[1] for row in result.fetchall()}
+
+        if "is_legacy" not in columns:
+            conn.execute(text(
+                "ALTER TABLE game_players ADD COLUMN is_legacy INTEGER DEFAULT 0"
+            ))
+            conn.commit()
+            logger.info("Added is_legacy column to game_players")
+        else:
+            logger.info("Column is_legacy already exists, skipping")
