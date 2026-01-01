@@ -9,6 +9,8 @@ import type {
   GameDetail,
   GameCreate,
   PlayerWithStats,
+  PlayerWithFullStats,
+  Statistics,
   FinalizeRequest,
   FinalizeResponse,
 } from '../types';
@@ -122,8 +124,16 @@ export async function deletePlayer(playerId: number): Promise<void> {
 }
 
 // Games API
-export async function getGames(limit = 20, offset = 0): Promise<GameListItem[]> {
-  const response = await fetch(`${API_BASE}/games?limit=${limit}&offset=${offset}`);
+export async function getGames(
+  limit = 20,
+  offset = 0,
+  playerId?: number
+): Promise<GameListItem[]> {
+  let url = `${API_BASE}/games?limit=${limit}&offset=${offset}`;
+  if (playerId !== undefined) {
+    url += `&player_id=${playerId}`;
+  }
+  const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Get games failed: ${response.statusText}`);
   }
@@ -164,6 +174,24 @@ export async function getPlayersWithStats(): Promise<PlayerWithStats[]> {
   const response = await fetch(`${API_BASE}/players?with_stats=true`);
   if (!response.ok) {
     throw new Error(`Get players failed: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+// Players with full stats (includes wins_count and win_percentage)
+export async function getPlayersWithFullStats(): Promise<PlayerWithFullStats[]> {
+  const response = await fetch(`${API_BASE}/players?with_stats=true`);
+  if (!response.ok) {
+    throw new Error(`Get players failed: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+// Statistics
+export async function getStatistics(): Promise<Statistics> {
+  const response = await fetch(`${API_BASE}/statistics`);
+  if (!response.ok) {
+    throw new Error(`Get statistics failed: ${response.statusText}`);
   }
   return response.json();
 }

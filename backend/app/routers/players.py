@@ -44,6 +44,8 @@ class PlayerWithStatsResponse(BaseModel):
     name: str
     color: str
     games_count: int
+    wins_count: int
+    win_percentage: float
     last_played_at: str | None
 
 
@@ -67,7 +69,17 @@ def list_players(
             db.query(func.count(GamePlayer.id))
             .filter(GamePlayer.player_id == player.id)
             .scalar()
-        )
+        ) or 0
+
+        # Count wins (rank = 1)
+        wins_count = (
+            db.query(func.count(GamePlayer.id))
+            .filter(GamePlayer.player_id == player.id, GamePlayer.rank == 1)
+            .scalar()
+        ) or 0
+
+        # Calculate win percentage
+        win_percentage = (wins_count / games_count * 100) if games_count > 0 else 0.0
 
         # Get last played date
         last_game = (
@@ -83,7 +95,9 @@ def list_players(
                 id=player.id,
                 name=player.name,
                 color=player.color,
-                games_count=games_count or 0,
+                games_count=games_count,
+                wins_count=wins_count,
+                win_percentage=round(win_percentage, 1),
                 last_played_at=last_game[0].isoformat() if last_game else None,
             )
         )

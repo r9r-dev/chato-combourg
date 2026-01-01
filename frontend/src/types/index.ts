@@ -192,3 +192,33 @@ export interface PlayerWithStats extends Player {
   games_count: number;
   last_played_at: string | null;
 }
+
+// Player with full stats (for players tab)
+export interface PlayerWithFullStats extends PlayerWithStats {
+  wins_count: number;
+  win_percentage: number;
+}
+
+// Card statistics
+export interface CardStatistic {
+  card_id: string;
+  play_count: number;
+  avg_score_impact: number;
+  win_rate: number;
+}
+
+export interface PlayerCardStatistic {
+  player_id: number;
+  player_name: string;
+  player_color: string;
+  favorite_cards: string[];
+}
+
+export interface Statistics {
+  total_games: number;
+  most_played_cards: CardStatistic[];
+  least_played_cards: CardStatistic[];
+  win_correlated_cards: CardStatistic[];
+  loss_correlated_cards: CardStatistic[];
+  player_favorites: PlayerCardStatistic[];
+}

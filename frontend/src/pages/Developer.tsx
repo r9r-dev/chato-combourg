@@ -1,5 +1,16 @@
 import { useGame } from '../context/GameContext';
-import type { SelectedPlayer, GameCard, CalculateResponse, CardScoreDetail } from '../types';
+import type {
+  SelectedPlayer,
+  GameCard,
+  CalculateResponse,
+  CardScoreDetail,
+  GameListItem,
+  GameDetail,
+  PlayerWithFullStats,
+  Statistics,
+  CardStatistic,
+  PlayerCardStatistic,
+} from '../types';
 
 // Generate mock data for testing the score table
 function generateMockPlayers(): SelectedPlayer[] {
@@ -81,8 +92,123 @@ function generateMockPlayers(): SelectedPlayer[] {
   });
 }
 
+// Generate mock data for testing the Games page
+function generateMockGamesData() {
+  const playerNames = ['Laure', 'Ronan', 'Mabel', 'Bruno', 'Nico'];
+  const playerColors = ['#e74c3c', '#3498db', '#9b59b6', '#2ecc71', '#f39c12'];
+
+  // Generate players with stats
+  const players: PlayerWithFullStats[] = playerNames.map((name, i) => ({
+    id: i + 1,
+    name,
+    color: playerColors[i],
+    games_count: 10 + Math.floor(Math.random() * 20),
+    wins_count: 2 + Math.floor(Math.random() * 8),
+    win_percentage: 0,
+    last_played_at: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
+  }));
+  // Calculate win percentage
+  players.forEach((p) => {
+    p.win_percentage = p.games_count > 0 ? Math.round((p.wins_count / p.games_count) * 100 * 10) / 10 : 0;
+  });
+
+  // Generate games
+  const games: GameListItem[] = [];
+  const gameDetails: Record<number, GameDetail> = {};
+
+  for (let i = 1; i <= 15; i++) {
+    const numPlayers = 2 + Math.floor(Math.random() * 4); // 2-5 players
+    const gamePlayers = [...players].sort(() => Math.random() - 0.5).slice(0, numPlayers);
+    const playedAt = new Date(Date.now() - i * 2 * 24 * 60 * 60 * 1000);
+
+    // Generate scores for each player
+    const playerScores = gamePlayers.map((p, idx) => {
+      const score = 50 + Math.floor(Math.random() * 80);
+      // Generate random card IDs (001-092)
+      const cards = Array.from({ length: 9 }, () =>
+        String(1 + Math.floor(Math.random() * 92)).padStart(3, '0')
+      );
+      return {
+        id: i * 10 + idx,
+        player_id: p.id,
+        player_name: p.name,
+        player_color: p.color,
+        position: idx + 1,
+        keys: Math.floor(Math.random() * 4),
+        coins: Math.floor(Math.random() * 10),
+        cards,
+        score,
+        rank: 0,
+      };
+    });
+
+    // Assign ranks
+    playerScores.sort((a, b) => b.score - a.score);
+    playerScores.forEach((p, idx) => {
+      p.rank = idx + 1;
+    });
+
+    const winner = playerScores[0];
+
+    games.push({
+      id: i,
+      played_at: playedAt.toISOString(),
+      notes: i % 3 === 0 ? 'Partie du dimanche' : null,
+      player_count: numPlayers,
+      winner_name: winner.player_name,
+      winner_score: winner.score,
+    });
+
+    gameDetails[i] = {
+      id: i,
+      played_at: playedAt.toISOString(),
+      notes: i % 3 === 0 ? 'Partie du dimanche' : null,
+      players: playerScores,
+    };
+  }
+
+  // Generate statistics
+  const cardStats: CardStatistic[] = [];
+  for (let i = 1; i <= 20; i++) {
+    cardStats.push({
+      card_id: String(i).padStart(3, '0'),
+      play_count: 5 + Math.floor(Math.random() * 30),
+      avg_score_impact: 40 + Math.floor(Math.random() * 60),
+      win_rate: 20 + Math.floor(Math.random() * 60),
+    });
+  }
+
+  const playerFavorites: PlayerCardStatistic[] = players.map((p) => ({
+    player_id: p.id,
+    player_name: p.name,
+    player_color: p.color,
+    favorite_cards: [
+      String(1 + Math.floor(Math.random() * 92)).padStart(3, '0'),
+      String(1 + Math.floor(Math.random() * 92)).padStart(3, '0'),
+      String(1 + Math.floor(Math.random() * 92)).padStart(3, '0'),
+    ],
+  }));
+
+  const statistics: Statistics = {
+    total_games: games.length,
+    most_played_cards: [...cardStats].sort((a, b) => b.play_count - a.play_count).slice(0, 10),
+    least_played_cards: [...cardStats].sort((a, b) => a.play_count - b.play_count).slice(0, 10),
+    win_correlated_cards: [...cardStats].sort((a, b) => b.win_rate - a.win_rate).slice(0, 10),
+    loss_correlated_cards: [...cardStats].sort((a, b) => a.win_rate - b.win_rate).slice(0, 10),
+    player_favorites: playerFavorites,
+  };
+
+  return { games, gameDetails, players, statistics };
+}
+
 export function Developer() {
   const { setStep, state } = useGame();
+
+  const handleTestGamesPage = () => {
+    const mockData = generateMockGamesData();
+    sessionStorage.setItem('devMockGames', JSON.stringify(mockData));
+    setStep('games');
+  };
 
   const handleTestScoreTable = () => {
     // Inject mock players into game state and go to summary
@@ -119,11 +245,23 @@ export function Developer() {
               onClick={handleTestScoreTable}
               className="w-full py-3 px-4 bg-red-900/50 text-white rounded-lg
                          hover:bg-red-800/50 transition-colors border border-red-700/50
-                         text-left"
+                         text-left mb-3"
             >
               <div className="font-medium">Tableau des scores</div>
               <div className="text-sm text-white/50 mt-1">
                 Affiche le Summary avec 5 joueurs fictifs
+              </div>
+            </button>
+
+            <button
+              onClick={handleTestGamesPage}
+              className="w-full py-3 px-4 bg-red-900/50 text-white rounded-lg
+                         hover:bg-red-800/50 transition-colors border border-red-700/50
+                         text-left"
+            >
+              <div className="font-medium">Page Mes parties</div>
+              <div className="text-sm text-white/50 mt-1">
+                Affiche la page Games avec données fictives (historique, joueurs, stats)
               </div>
             </button>
           </div>

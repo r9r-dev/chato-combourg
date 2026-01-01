@@ -126,18 +126,21 @@ def compute_ranks(players: list[GamePlayerCreate]) -> list[int]:
 def list_games(
     limit: int = 20,
     offset: int = 0,
+    player_id: int | None = None,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """List games for the current user (most recent first)."""
-    games = (
-        db.query(Game)
-        .filter(Game.user_id == user.id)
-        .order_by(Game.played_at.desc())
-        .offset(offset)
-        .limit(limit)
-        .all()
-    )
+    """List games for the current user (most recent first).
+
+    Optionally filter by player_id to show only games where that player participated.
+    """
+    query = db.query(Game).filter(Game.user_id == user.id)
+
+    # Filter by player if specified
+    if player_id is not None:
+        query = query.join(GamePlayer).filter(GamePlayer.player_id == player_id)
+
+    games = query.order_by(Game.played_at.desc()).offset(offset).limit(limit).all()
 
     result = []
     for game in games:
