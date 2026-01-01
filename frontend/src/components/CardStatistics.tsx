@@ -1,10 +1,38 @@
 import { useState, useEffect } from 'react';
 import { getCardImageUrl, getCards } from '../services/api';
+import { useLongPress } from '../hooks/useLongPress';
+import { CardPreview } from './CardPreview';
 import type { Statistics, CardStatistic, PlayerCardStatistic } from '../types';
 
 interface CardStatisticsProps {
   statistics: Statistics | null;
   loading?: boolean;
+}
+
+// Long press card wrapper
+function LongPressCard({
+  cardId,
+  cardName,
+  className,
+  children,
+  onPreviewChange,
+}: {
+  cardId: string;
+  cardName?: string;
+  className?: string;
+  children: React.ReactNode;
+  onPreviewChange: (preview: { cardId: string; cardName?: string } | null) => void;
+}) {
+  const longPressHandlers = useLongPress({
+    onLongPress: () => onPreviewChange({ cardId, cardName }),
+    onRelease: () => onPreviewChange(null),
+  });
+
+  return (
+    <div className={className} {...longPressHandlers}>
+      {children}
+    </div>
+  );
 }
 
 // Featured card component with runner-ups
@@ -14,12 +42,16 @@ function FeaturedCard({
   subtitle,
   accent,
   showWinRate = false,
+  cardNames,
+  onPreviewChange,
 }: {
   cards: CardStatistic[];
   title: string;
   subtitle: string;
   accent: 'gold' | 'red';
   showWinRate?: boolean;
+  cardNames: Record<string, string>;
+  onPreviewChange: (preview: { cardId: string; cardName?: string } | null) => void;
 }) {
   if (cards.length === 0) return null;
 
@@ -37,13 +69,18 @@ function FeaturedCard({
       </div>
       {/* Main card */}
       <div className="flex justify-center">
-        <div className="w-16 rounded-lg overflow-hidden border border-white/20">
+        <LongPressCard
+          cardId={mainCard.card_id}
+          cardName={cardNames[mainCard.card_id]}
+          className="w-16 rounded-lg overflow-hidden border border-white/20 cursor-pointer select-none"
+          onPreviewChange={onPreviewChange}
+        >
           <img
             src={getCardImageUrl(mainCard.card_id)}
-            alt={`Carte ${mainCard.card_id}`}
-            className="w-full aspect-[630/880] object-cover"
+            alt={cardNames[mainCard.card_id] || `Carte ${mainCard.card_id}`}
+            className="w-full aspect-[630/880] object-cover pointer-events-none"
           />
-        </div>
+        </LongPressCard>
       </div>
       <div className="text-center mt-2">
         <div className={`text-lg font-bold ${textColor}`}>
@@ -57,12 +94,19 @@ function FeaturedCard({
       {runnerUps.length > 0 && (
         <div className="flex justify-center gap-2 mt-3 pt-3 border-t border-white/10">
           {runnerUps.map((card) => (
-            <div key={card.card_id} className="w-10 rounded-lg overflow-hidden border border-white/10">
-              <img
-                src={getCardImageUrl(card.card_id)}
-                alt={`Carte ${card.card_id}`}
-                className="w-full aspect-[630/880] object-cover"
-              />
+            <div key={card.card_id} className="flex flex-col">
+              <LongPressCard
+                cardId={card.card_id}
+                cardName={cardNames[card.card_id]}
+                className="w-10 rounded-lg overflow-hidden border border-white/10 cursor-pointer select-none"
+                onPreviewChange={onPreviewChange}
+              >
+                <img
+                  src={getCardImageUrl(card.card_id)}
+                  alt={cardNames[card.card_id] || `Carte ${card.card_id}`}
+                  className="w-full aspect-[630/880] object-cover pointer-events-none"
+                />
+              </LongPressCard>
               <div className="text-center py-0.5 text-xs text-white/40">
                 {showWinRate ? `${card.win_rate.toFixed(0)}%` : `${card.play_count}x`}
               </div>
@@ -75,7 +119,15 @@ function FeaturedCard({
 }
 
 // Player favorites - one card per player in a row
-function PlayerFavorites({ favorites }: { favorites: PlayerCardStatistic[] }) {
+function PlayerFavorites({
+  favorites,
+  cardNames,
+  onPreviewChange,
+}: {
+  favorites: PlayerCardStatistic[];
+  cardNames: Record<string, string>;
+  onPreviewChange: (preview: { cardId: string; cardName?: string } | null) => void;
+}) {
   if (favorites.length === 0) return null;
 
   return (
@@ -95,13 +147,18 @@ function PlayerFavorites({ favorites }: { favorites: PlayerCardStatistic[] }) {
               >
                 {playerFav.player_name.charAt(0).toUpperCase()}
               </div>
-              <div className="w-12 rounded-lg overflow-hidden border border-white/20">
+              <LongPressCard
+                cardId={topCard.card_id}
+                cardName={cardNames[topCard.card_id]}
+                className="w-12 rounded-lg overflow-hidden border border-white/20 cursor-pointer select-none"
+                onPreviewChange={onPreviewChange}
+              >
                 <img
                   src={getCardImageUrl(topCard.card_id)}
-                  alt={`Carte ${topCard.card_id}`}
-                  className="w-full aspect-[630/880] object-cover"
+                  alt={cardNames[topCard.card_id] || `Carte ${topCard.card_id}`}
+                  className="w-full aspect-[630/880] object-cover pointer-events-none"
                 />
-              </div>
+              </LongPressCard>
               <div className="text-white/40 text-xs mt-1">{topCard.play_count}x</div>
             </div>
           );
@@ -206,6 +263,7 @@ function CardStatsTable({ cards, cardNames }: { cards: CardStatistic[]; cardName
 
 export function CardStatistics({ statistics, loading }: CardStatisticsProps) {
   const [cardNames, setCardNames] = useState<Record<string, string>>({});
+  const [preview, setPreview] = useState<{ cardId: string; cardName?: string } | null>(null);
 
   // Load card names
   useEffect(() => {
@@ -272,6 +330,8 @@ export function CardStatistics({ statistics, loading }: CardStatisticsProps) {
           subtitle="Meilleur taux de victoire"
           accent="gold"
           showWinRate
+          cardNames={cardNames}
+          onPreviewChange={setPreview}
         />
         <FeaturedCard
           cards={statistics.loss_correlated_cards.slice(0, 3)}
@@ -279,26 +339,43 @@ export function CardStatistics({ statistics, loading }: CardStatisticsProps) {
           subtitle="Pire taux de victoire"
           accent="red"
           showWinRate
+          cardNames={cardNames}
+          onPreviewChange={setPreview}
         />
         <FeaturedCard
           cards={statistics.most_played_cards.slice(0, 3)}
           title="La préférée"
           subtitle="La plus jouée"
           accent="gold"
+          cardNames={cardNames}
+          onPreviewChange={setPreview}
         />
         <FeaturedCard
           cards={statistics.least_played_cards.slice(0, 3)}
           title="La détestée"
           subtitle="La moins jouée"
           accent="red"
+          cardNames={cardNames}
+          onPreviewChange={setPreview}
         />
       </div>
 
       {/* Player favorites */}
-      <PlayerFavorites favorites={statistics.player_favorites} />
+      <PlayerFavorites
+        favorites={statistics.player_favorites}
+        cardNames={cardNames}
+        onPreviewChange={setPreview}
+      />
 
       {/* Card statistics table */}
       <CardStatsTable cards={statistics.most_played_cards} cardNames={cardNames} />
+
+      {/* Card preview on long press */}
+      <CardPreview
+        cardId={preview?.cardId || ''}
+        cardName={preview?.cardName}
+        visible={preview !== null}
+      />
     </div>
   );
 }
