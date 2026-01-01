@@ -10,7 +10,11 @@ from fastapi.staticfiles import StaticFiles
 from app.config import settings
 from app.routers import analyze, calculator, players, games, users, captures, model
 from app.services.card_database import card_database
-from app.services.yolo_detector import yolo_detector
+from app.services.yolo_detector import (
+    yolo_detector,
+    start_worker_health_thread,
+    stop_worker_health_thread,
+)
 from app.database import init_db
 
 # Paths
@@ -135,10 +139,16 @@ async def lifespan(app: FastAPI):
     yolo_detector.initialize()
     logger.info("YOLO11 detector ready")
 
+    # Start worker health-check thread (for PyTorch worker on Mac)
+    if settings.pytorch_worker_url:
+        logger.info(f"Starting worker health-check thread for {settings.pytorch_worker_url}")
+        start_worker_health_thread()
+
     yield
 
     # Shutdown
     logger.info("Shutting down...")
+    stop_worker_health_thread()
 
 
 app = FastAPI(

@@ -1,0 +1,11 @@
+# PyTorch Worker dependencies
+fastapi>=0.115.0
+uvicorn>=0.32.0
+python-multipart>=0.0.17
+pillow>=11.0.0
+pydantic>=2.10.0
+ultralytics>=8.3.0
+torch>=2.5.0
+
+# macOS Menu Bar App
+rumps>=0.4.0

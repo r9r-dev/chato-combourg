@@ -2,14 +2,23 @@
 
 This module provides a simplified pipeline where YOLO11 handles both detection
 and identification of 92 card types in a single pass.
+
+Supports remote PyTorch inference on a Mac M4 worker for faster processing (~1s vs 7s).
 """
+import io
 import json
+import logging
+import threading
+import time
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
+import httpx
 from PIL import Image, ImageDraw, ImageFont
 from ultralytics import YOLO
+
+logger = logging.getLogger(__name__)
 
 # Models directory: /app/models in Docker, or project root in local dev
 _docker_models = Path("/app/models")
@@ -19,6 +28,93 @@ CARDS_DIR = Path(__file__).parent.parent.parent / "cards"
 
 # Load card attributes for similarity matching
 _card_attributes: dict | None = None
+
+# Worker health-check state
+_worker_health_cache: dict = {
+    "is_healthy": False,
+    "last_check": 0.0,
+}
+_worker_health_lock = threading.Lock()
+_worker_health_thread: threading.Thread | None = None
+_worker_health_stop = threading.Event()
+
+# Health-check interval (5 minutes)
+WORKER_HEALTH_CHECK_INTERVAL = 300.0
+
+
+def _worker_health_check_loop():
+    """Background thread that checks worker health every 5 minutes."""
+    from app.config import settings
+
+    logger.info("Worker health-check thread started")
+
+    while not _worker_health_stop.is_set():
+        if settings.pytorch_worker_url:
+            try:
+                with httpx.Client(timeout=5.0) as client:
+                    response = client.get(f"{settings.pytorch_worker_url}/health")
+
+                is_healthy = response.status_code == 200
+
+                with _worker_health_lock:
+                    _worker_health_cache["is_healthy"] = is_healthy
+                    _worker_health_cache["last_check"] = time.time()
+
+                if is_healthy:
+                    logger.debug("Worker health check OK")
+                else:
+                    logger.warning(f"Worker health check failed: status {response.status_code}")
+
+            except Exception as e:
+                with _worker_health_lock:
+                    _worker_health_cache["is_healthy"] = False
+                    _worker_health_cache["last_check"] = time.time()
+                logger.debug(f"Worker health check failed: {e}")
+
+        # Wait for next check (interruptible)
+        _worker_health_stop.wait(timeout=WORKER_HEALTH_CHECK_INTERVAL)
+
+    logger.info("Worker health-check thread stopped")
+
+
+def start_worker_health_thread():
+    """Start the background health-check thread (if not already running)."""
+    global _worker_health_thread
+
+    if _worker_health_thread is not None and _worker_health_thread.is_alive():
+        return
+
+    _worker_health_stop.clear()
+    _worker_health_thread = threading.Thread(
+        target=_worker_health_check_loop,
+        name="worker-health-check",
+        daemon=True,
+    )
+    _worker_health_thread.start()
+
+
+def stop_worker_health_thread():
+    """Stop the background health-check thread."""
+    global _worker_health_thread
+
+    if _worker_health_thread is None:
+        return
+
+    _worker_health_stop.set()
+    _worker_health_thread.join(timeout=2.0)
+    _worker_health_thread = None
+
+
+def is_worker_healthy() -> bool:
+    """Check if worker is currently considered healthy."""
+    with _worker_health_lock:
+        return _worker_health_cache["is_healthy"]
+
+
+def _mark_worker_unhealthy():
+    """Mark worker as unhealthy (thread-safe)."""
+    with _worker_health_lock:
+        _worker_health_cache["is_healthy"] = False
 
 
 def _load_card_attributes() -> dict:
@@ -351,6 +447,76 @@ class YOLOCardDetector:
 
         return detections
 
+    def _forward_to_worker(self, image: Image.Image, confidence: float = 0.3) -> list[dict] | None:
+        """Forward inference request to remote PyTorch worker (Mac M4).
+
+        Args:
+            image: PIL Image to analyze
+            confidence: Minimum confidence threshold
+
+        Returns:
+            List of detections from worker, or None if worker unavailable
+        """
+        from app.config import settings
+
+        if not settings.pytorch_worker_url:
+            return None
+
+        # Check worker health (updated by background thread)
+        if not is_worker_healthy():
+            return None
+
+        try:
+            # Convert image to JPEG bytes
+            img_buffer = io.BytesIO()
+            image.save(img_buffer, format="JPEG", quality=95)
+            img_buffer.seek(0)
+
+            # Send to worker
+            with httpx.Client(timeout=settings.pytorch_worker_timeout) as client:
+                response = client.post(
+                    f"{settings.pytorch_worker_url}/infer",
+                    files={"image": ("image.jpg", img_buffer, "image/jpeg")},
+                )
+
+            if response.status_code != 200:
+                logger.warning(f"Worker returned status {response.status_code}")
+                _mark_worker_unhealthy()
+                return None
+
+            data = response.json()
+            if not data.get("success"):
+                logger.warning(f"Worker returned error: {data}")
+                return None
+
+            # Convert worker response to internal format
+            detections = []
+            for card in data.get("cards", []):
+                detections.append({
+                    "class_id": card["class_id"],
+                    "class_name": card["class_name"],
+                    "bbox": tuple(card["bbox"]),
+                    "confidence": card["confidence"],
+                    "center": tuple(card["center"]),
+                    "position": tuple(card["position"]) if card.get("position") else None,
+                })
+
+            logger.info(f"Worker inference: {len(detections)} cards in {data.get('inference_time_ms', 0):.0f}ms")
+            return detections
+
+        except httpx.TimeoutException:
+            logger.warning(f"Worker timeout after {settings.pytorch_worker_timeout}s")
+            _mark_worker_unhealthy()
+            return None
+        except httpx.ConnectError:
+            logger.warning(f"Worker not reachable at {settings.pytorch_worker_url}")
+            _mark_worker_unhealthy()
+            return None
+        except Exception as e:
+            logger.warning(f"Worker error: {e}")
+            _mark_worker_unhealthy()
+            return None
+
     def detect_cards(
         self, image: Image.Image, confidence: float = 0.5, model_type: str | None = None
     ) -> list[dict]:
@@ -365,6 +531,15 @@ class YOLOCardDetector:
             List of detected cards with class_id, class_name, bbox, confidence,
             sorted by position (top-left to bottom-right)
         """
+        # Route PyTorch requests to remote worker (Mac M4) if configured
+        if model_type == "pytorch":
+            worker_result = self._forward_to_worker(image, confidence)
+            if worker_result is not None:
+                return worker_result
+            # Fallback to local OpenVINO if worker unavailable
+            logger.info("PyTorch worker unavailable, falling back to OpenVINO")
+            model_type = "openvino"
+
         model = self._get_model(model_type)
 
         # Run detection with PIL image directly (numpy array doesn't work correctly)

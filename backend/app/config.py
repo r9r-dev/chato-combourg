@@ -38,5 +38,11 @@ class Settings(BaseSettings):
     # Analysis captures - saves images and reports to data/captures/
     captures_dir: Path = database_dir / "captures"
 
+    # PyTorch Worker (Mac M4)
+    # Set PYTORCH_WORKER_URL to enable remote inference on Mac
+    # Example: http://192.168.1.10:8081
+    pytorch_worker_url: str = ""
+    pytorch_worker_timeout: float = 10.0  # seconds
+
 
 settings = Settings()

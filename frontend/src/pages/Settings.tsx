@@ -35,8 +35,8 @@ const OFFLINE_OPTIONS: { value: OfflineMode; label: string; description: string 
 ];
 
 const MODEL_OPTIONS: { value: DetectionModel; label: string; description: string }[] = [
-  { value: 'openvino', label: 'OpenVINO', description: 'Optimisé pour CPU Intel (recommandé)' },
-  { value: 'pytorch', label: 'PyTorch', description: 'Compatible avec tous les processeurs' },
+  { value: 'openvino', label: 'OpenVINO', description: 'Serveur (~7s)' },
+  { value: 'pytorch', label: 'PyTorch', description: 'Mac M4 (~1s, si disponible)' },
 ];
 
 export function Settings() {
