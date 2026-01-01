@@ -251,13 +251,28 @@ export function Camera() {
 
     // Resume video playback after unhiding (iOS Safari suspends paused videos)
     if (videoRef.current) {
-      try {
-        await videoRef.current.play();
-      } catch {
-        // Ignore play errors - video might already be playing
+      // Check if video has valid source and stream is active
+      const video = videoRef.current;
+      const stream = video.srcObject as MediaStream | null;
+      const isStreamActive = stream && stream.active && stream.getVideoTracks().some(t => t.readyState === 'live');
+
+      if (!isStreamActive) {
+        // Stream is not active, restart camera
+        startCamera();
+      } else {
+        // Try to resume playback
+        try {
+          await video.play();
+        } catch {
+          // If play fails, restart camera
+          startCamera();
+        }
       }
+    } else {
+      // No video ref, restart camera
+      startCamera();
     }
-  }, [capturedImageUrl, videoRef]);
+  }, [capturedImageUrl, videoRef, startCamera]);
 
   // Load settings on mount
   useEffect(() => {
