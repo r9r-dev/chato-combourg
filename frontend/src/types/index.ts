@@ -233,11 +233,16 @@ export interface CardStatistic {
   win_rate: number;
 }
 
+export interface FavoriteCard {
+  card_id: string;
+  play_count: number;
+}
+
 export interface PlayerCardStatistic {
   player_id: number;
   player_name: string;
   player_color: string;
-  favorite_cards: string[];
+  favorite_cards: FavoriteCard[];
 }
 
 export interface Statistics {

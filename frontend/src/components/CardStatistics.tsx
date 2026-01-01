@@ -107,23 +107,26 @@ function PlayerFavorites({ favorites }: PlayerFavoritesProps) {
             {/* Favorite cards (expanded) */}
             {expanded === playerFav.player_id && (
               <div className="flex gap-2 p-3 pt-0 border-t border-white/5">
-                {playerFav.favorite_cards.map((cardId, index) => (
+                {playerFav.favorite_cards.map((card, index) => (
                   <div
-                    key={cardId}
+                    key={card.card_id}
                     className="relative w-16 rounded-lg overflow-hidden border border-white/20"
                   >
                     <img
-                      src={getCardImageUrl(cardId)}
-                      alt={`Carte ${cardId}`}
+                      src={getCardImageUrl(card.card_id)}
+                      alt={`Carte ${card.card_id}`}
                       className="w-full aspect-[630/880] object-cover"
                     />
                     <div className="absolute top-1 left-1 w-5 h-5 rounded-full bg-gold text-dark text-xs font-bold flex items-center justify-center">
                       {index + 1}
                     </div>
+                    <div className="absolute bottom-0 inset-x-0 bg-black/70 text-white text-xs text-center py-0.5">
+                      {card.play_count}x
+                    </div>
                   </div>
                 ))}
                 {playerFav.favorite_cards.length === 0 && (
-                  <p className="text-white/40 text-sm">Aucune donnée</p>
+                  <p className="text-white/40 text-sm">Aucune donnee</p>
                 )}
               </div>
             )}

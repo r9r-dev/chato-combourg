@@ -22,13 +22,20 @@ class CardStatistic(BaseModel):
     win_rate: float
 
 
+class FavoriteCard(BaseModel):
+    """A favorite card with play count."""
+
+    card_id: str
+    play_count: int
+
+
 class PlayerCardStatistic(BaseModel):
     """Favorite cards for a player."""
 
     player_id: int
     player_name: str
     player_color: str
-    favorite_cards: list[str]
+    favorite_cards: list[FavoriteCard]
 
 
 class StatisticsResponse(BaseModel):
@@ -135,7 +142,10 @@ def get_statistics(
         player = player_lookup[player_id]
         # Get top 3 most played cards for this player
         sorted_cards = sorted(card_counts.items(), key=lambda x: x[1], reverse=True)
-        top_cards = [card_id for card_id, count in sorted_cards[:3]]
+        top_cards = [
+            FavoriteCard(card_id=card_id, play_count=count)
+            for card_id, count in sorted_cards[:3]
+        ]
 
         player_favorites.append(
             PlayerCardStatistic(
