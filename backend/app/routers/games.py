@@ -1,19 +1,33 @@
+"""Game management endpoints."""
+
 import csv
 import io
 import json
 import logging
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, Query
+
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, field_validator
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
-from app.database import get_db, User, Player, Game, GamePlayer
+from app.database import get_db, User, Game, GamePlayer
+from app.queries import get_game_or_404
+from app.services.game_service import (
+    create_game_with_players,
+    build_game_response,
+    GamePlayerData,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/games", tags=["games"])
+
+
+# =============================================================================
+# Pydantic Models
+# =============================================================================
 
 
 class GamePlayerCreate(BaseModel):
@@ -124,9 +138,6 @@ class ManualGameCreate(BaseModel):
         return v
 
 
-# ========== Legacy game models ==========
-
-
 class LegacyPlayerCreate(BaseModel):
     """Player data for legacy game creation (with card scores)."""
 
@@ -157,36 +168,9 @@ class LegacyGameCreate(BaseModel):
         return v
 
 
-def compute_ranks(players: list[GamePlayerCreate]) -> list[int]:
-    """
-    Compute ranks based on scores (highest score = rank 1).
-    Tiebreaker: most remaining coins wins.
-    If still tied (same score and coins), players share the same rank.
-    """
-    # Sort by score (descending), then by coins (descending) for tiebreaking
-    sorted_indices = sorted(
-        range(len(players)),
-        key=lambda i: (players[i].score, players[i].coins),
-        reverse=True
-    )
-
-    ranks = [0] * len(players)
-    current_rank = 1
-
-    for i, idx in enumerate(sorted_indices):
-        if i == 0:
-            ranks[idx] = current_rank
-        else:
-            prev_idx = sorted_indices[i - 1]
-            # If same score and same coins, share the rank
-            if (players[idx].score == players[prev_idx].score and
-                players[idx].coins == players[prev_idx].coins):
-                ranks[idx] = ranks[prev_idx]
-            else:
-                current_rank = i + 1
-                ranks[idx] = current_rank
-
-    return ranks
+# =============================================================================
+# Endpoints
+# =============================================================================
 
 
 @router.get("", response_model=list[GameListItem])
@@ -256,79 +240,27 @@ def create_game(
     db: Session = Depends(get_db),
 ):
     """Create a new game with player boards."""
-    # Validate all players belong to the user
-    player_ids = [p.player_id for p in data.players]
-    players = (
-        db.query(Player)
-        .filter(Player.id.in_(player_ids), Player.user_id == user.id)
-        .all()
-    )
-    if len(players) != len(player_ids):
-        raise HTTPException(status_code=400, detail="Invalid player IDs")
+    players_data: list[GamePlayerData] = [
+        {
+            "player_id": p.player_id,
+            "keys": p.keys,
+            "coins": p.coins,
+            "cards": p.cards,
+            "score": p.score,
+        }
+        for p in data.players
+    ]
 
-    # Create player lookup for response
-    player_lookup = {p.id: p for p in players}
-
-    # Compute ranks
-    ranks = compute_ranks(data.players)
-
-    # Create game
-    game = Game(
-        user_id=user.id,
-        played_at=data.played_at or datetime.utcnow(),
+    game, game_players, player_lookup = create_game_with_players(
+        db=db,
+        user=user,
+        players_data=players_data,
+        played_at=data.played_at,
         notes=data.notes,
+        use_coins_tiebreaker=True,
     )
-    db.add(game)
-    db.flush()  # Get game.id
 
-    # Create game players
-    game_players = []
-    for position, (player_data, rank) in enumerate(zip(data.players, ranks), start=1):
-        gp = GamePlayer(
-            game_id=game.id,
-            player_id=player_data.player_id,
-            position=position,
-            keys=player_data.keys,
-            coins=player_data.coins,
-            cards=player_data.cards,
-            score=player_data.score,
-            rank=rank,
-        )
-        db.add(gp)
-        game_players.append(gp)
-
-    db.commit()
-    db.refresh(game)
-
-    # Log game creation
-    winner = next((gp for gp in game_players if ranks[game_players.index(gp)] == 1), None)
-    winner_name = player_lookup[winner.player_id].name if winner else "?"
-    player_names = [player_lookup[gp.player_id].name for gp in game_players]
-    logger.info(f"Partie: {', '.join(player_names)} -> {winner_name} gagne ({winner.score} pts)")
-
-    # Build response
-    return GameResponse(
-        id=game.id,
-        played_at=game.played_at,
-        notes=game.notes,
-        players=[
-            GamePlayerResponse(
-                id=gp.id,
-                player_id=gp.player_id,
-                player_name=player_lookup[gp.player_id].name,
-                player_color=player_lookup[gp.player_id].color,
-                position=gp.position,
-                keys=gp.keys,
-                coins=gp.coins,
-                cards=gp.cards,
-                card_scores=gp.card_scores,
-                score=gp.score,
-                rank=gp.rank,
-                is_legacy=gp.is_legacy or False,
-            )
-            for gp in game_players
-        ],
-    )
+    return GameResponse(**build_game_response(game, game_players, player_lookup))
 
 
 @router.get("/export")
@@ -410,94 +342,27 @@ def create_manual_game(
     db: Session = Depends(get_db),
 ):
     """Create a manual game (scores only, no cards/keys/coins)."""
-    # Validate all players belong to the user
-    player_ids = [p.player_id for p in data.players]
-    players = (
-        db.query(Player)
-        .filter(Player.id.in_(player_ids), Player.user_id == user.id)
-        .all()
-    )
-    if len(players) != len(player_ids):
-        raise HTTPException(status_code=400, detail="Invalid player IDs")
+    players_data: list[GamePlayerData] = [
+        {
+            "player_id": p.player_id,
+            "keys": 0,
+            "coins": 0,
+            "cards": [],
+            "score": p.score,
+        }
+        for p in data.players
+    ]
 
-    # Create player lookup for response
-    player_lookup = {p.id: p for p in players}
-
-    # Compute ranks based on scores (with ties allowed for same score)
-    sorted_indices = sorted(
-        range(len(data.players)), key=lambda i: data.players[i].score, reverse=True
-    )
-    ranks = [0] * len(data.players)
-    current_rank = 1
-    for i, idx in enumerate(sorted_indices):
-        if i == 0:
-            ranks[idx] = current_rank
-        else:
-            prev_idx = sorted_indices[i - 1]
-            # If same score, share the rank
-            if data.players[idx].score == data.players[prev_idx].score:
-                ranks[idx] = ranks[prev_idx]
-            else:
-                current_rank = i + 1
-                ranks[idx] = current_rank
-
-    # Create game
-    game = Game(
-        user_id=user.id,
-        played_at=data.played_at or datetime.utcnow(),
+    game, game_players, player_lookup = create_game_with_players(
+        db=db,
+        user=user,
+        players_data=players_data,
+        played_at=data.played_at,
         notes=data.notes,
+        use_coins_tiebreaker=False,  # Pas de tiebreaker pour les parties manuelles
     )
-    db.add(game)
-    db.flush()  # Get game.id
 
-    # Create game players (with empty cards, 0 keys/coins)
-    game_players = []
-    for position, (player_data, rank) in enumerate(zip(data.players, ranks), start=1):
-        gp = GamePlayer(
-            game_id=game.id,
-            player_id=player_data.player_id,
-            position=position,
-            keys=0,
-            coins=0,
-            cards=[],  # Empty cards for manual games
-            score=player_data.score,
-            rank=rank,
-        )
-        db.add(gp)
-        game_players.append(gp)
-
-    db.commit()
-    db.refresh(game)
-
-    # Log game creation
-    winner = next((gp for gp in game_players if ranks[game_players.index(gp)] == 1), None)
-    winner_name = player_lookup[winner.player_id].name if winner else "?"
-    player_names = [player_lookup[gp.player_id].name for gp in game_players]
-    logger.info(f"Partie manuelle: {', '.join(player_names)} -> {winner_name} gagne ({winner.score} pts)")
-
-    # Build response
-    return GameResponse(
-        id=game.id,
-        played_at=game.played_at,
-        notes=game.notes,
-        players=[
-            GamePlayerResponse(
-                id=gp.id,
-                player_id=gp.player_id,
-                player_name=player_lookup[gp.player_id].name,
-                player_color=player_lookup[gp.player_id].color,
-                position=gp.position,
-                keys=gp.keys,
-                coins=gp.coins,
-                cards=gp.cards,
-                card_scores=gp.card_scores,
-                score=gp.score,
-                rank=gp.rank,
-                is_legacy=gp.is_legacy or False,
-            )
-            for gp in game_players
-        ],
-    )
+    return GameResponse(**build_game_response(game, game_players, player_lookup))
 
 
 @router.get("/{game_id}", response_model=GameResponse)
@@ -507,36 +372,12 @@ def get_game(
     db: Session = Depends(get_db),
 ):
     """Get a specific game with all player boards."""
-    game = (
-        db.query(Game)
-        .filter(Game.id == game_id, Game.user_id == user.id)
-        .first()
-    )
-    if not game:
-        raise HTTPException(status_code=404, detail="Game not found")
+    game = get_game_or_404(db, game_id, user.id)
 
-    return GameResponse(
-        id=game.id,
-        played_at=game.played_at,
-        notes=game.notes,
-        players=[
-            GamePlayerResponse(
-                id=gp.id,
-                player_id=gp.player_id,
-                player_name=gp.player.name,
-                player_color=gp.player.color,
-                position=gp.position,
-                keys=gp.keys,
-                coins=gp.coins,
-                cards=gp.cards,
-                card_scores=gp.card_scores,
-                score=gp.score,
-                rank=gp.rank,
-                is_legacy=gp.is_legacy or False,
-            )
-            for gp in game.game_players
-        ],
-    )
+    # Build player lookup from game players
+    player_lookup = {gp.player_id: gp.player for gp in game.game_players}
+
+    return GameResponse(**build_game_response(game, list(game.game_players), player_lookup))
 
 
 @router.delete("/{game_id}", status_code=204)
@@ -546,14 +387,7 @@ def delete_game(
     db: Session = Depends(get_db),
 ):
     """Delete a game."""
-    game = (
-        db.query(Game)
-        .filter(Game.id == game_id, Game.user_id == user.id)
-        .first()
-    )
-    if not game:
-        raise HTTPException(status_code=404, detail="Game not found")
-
+    game = get_game_or_404(db, game_id, user.id)
     db.delete(game)
     db.commit()
 
@@ -570,112 +404,26 @@ def create_legacy_game(
     Legacy games store individual card scores and keys, but no card IDs.
     They are flagged as is_legacy=True and excluded from card-based statistics.
     """
-    # Validate all players belong to the user
-    player_ids = [p.player_id for p in data.players]
-    players = (
-        db.query(Player)
-        .filter(Player.id.in_(player_ids), Player.user_id == user.id)
-        .all()
-    )
-    if len(players) != len(player_ids):
-        raise HTTPException(status_code=400, detail="Invalid player IDs")
-
-    # Create player lookup
-    player_lookup = {p.id: p for p in players}
-
-    # Build player boards
-    player_boards: list[dict] = []
-    for player_data in data.players:
-        total_score = sum(player_data.card_scores) + player_data.keys
-        player_boards.append({
-            "player_id": player_data.player_id,
-            "keys": player_data.keys,
+    players_data: list[GamePlayerData] = [
+        {
+            "player_id": p.player_id,
+            "keys": p.keys,
             "coins": 0,
-            "cards": [],  # No cards in legacy mode
-            "card_scores": player_data.card_scores,
-            "score": total_score,
+            "cards": [],
+            "card_scores": p.card_scores,
+            "score": sum(p.card_scores) + p.keys,
             "is_legacy": True,
-        })
+        }
+        for p in data.players
+    ]
 
-    # Compute ranks based on total scores (with ties allowed for same score)
-    sorted_indices = sorted(
-        range(len(player_boards)),
-        key=lambda i: player_boards[i]["score"],
-        reverse=True,
-    )
-    ranks = [0] * len(player_boards)
-    current_rank = 1
-    for i, idx in enumerate(sorted_indices):
-        if i == 0:
-            ranks[idx] = current_rank
-        else:
-            prev_idx = sorted_indices[i - 1]
-            # If same score, share the rank (no coin tiebreaker for legacy)
-            if player_boards[idx]["score"] == player_boards[prev_idx]["score"]:
-                ranks[idx] = ranks[prev_idx]
-            else:
-                current_rank = i + 1
-                ranks[idx] = current_rank
-
-    # Create game
-    game = Game(
-        user_id=user.id,
-        played_at=data.played_at or datetime.utcnow(),
+    game, game_players, player_lookup = create_game_with_players(
+        db=db,
+        user=user,
+        players_data=players_data,
+        played_at=data.played_at,
         notes=data.notes,
-    )
-    db.add(game)
-    db.flush()
-
-    # Create game players
-    game_players = []
-    for position, (board, rank) in enumerate(zip(player_boards, ranks), start=1):
-        gp = GamePlayer(
-            game_id=game.id,
-            player_id=board["player_id"],
-            position=position,
-            keys=board["keys"],
-            coins=board["coins"],
-            cards=board["cards"],
-            card_scores=board["card_scores"],
-            score=board["score"],
-            rank=rank,
-            is_legacy=board["is_legacy"],
-        )
-        db.add(gp)
-        game_players.append(gp)
-
-    db.commit()
-    db.refresh(game)
-
-    # Log game creation
-    winner = next((gp for gp in game_players if ranks[game_players.index(gp)] == 1), None)
-    winner_name = player_lookup[winner.player_id].name if winner else "?"
-    player_names = [player_lookup[gp.player_id].name for gp in game_players]
-    logger.info(
-        f"Legacy game: {', '.join(player_names)} -> {winner_name} wins "
-        f"({winner.score if winner else 0} pts)"
+        use_coins_tiebreaker=False,  # Pas de tiebreaker pour les parties legacy
     )
 
-    # Build response
-    return GameResponse(
-        id=game.id,
-        played_at=game.played_at,
-        notes=game.notes,
-        players=[
-            GamePlayerResponse(
-                id=gp.id,
-                player_id=gp.player_id,
-                player_name=player_lookup[gp.player_id].name,
-                player_color=player_lookup[gp.player_id].color,
-                position=gp.position,
-                keys=gp.keys,
-                coins=gp.coins,
-                cards=gp.cards,
-                card_scores=gp.card_scores,
-                score=gp.score,
-                rank=gp.rank,
-                is_legacy=gp.is_legacy,
-            )
-            for gp in game_players
-        ],
-    )
+    return GameResponse(**build_game_response(game, game_players, player_lookup))

@@ -1,4 +1,7 @@
+"""Player management endpoints."""
+
 import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
@@ -6,10 +9,16 @@ from sqlalchemy import func
 
 from app.auth import get_current_user
 from app.database import get_db, User, Player, GamePlayer, Game
+from app.queries import get_player_or_404, count_player_games
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/players", tags=["players"])
+
+
+# =============================================================================
+# Pydantic Models
+# =============================================================================
 
 
 class PlayerCreate(BaseModel):
@@ -47,6 +56,11 @@ class PlayerWithStatsResponse(BaseModel):
     wins_count: int
     win_percentage: float
     last_played_at: str | None
+
+
+# =============================================================================
+# Endpoints
+# =============================================================================
 
 
 @router.get("")
@@ -134,14 +148,7 @@ def get_player(
     db: Session = Depends(get_db),
 ):
     """Get a specific player."""
-    player = (
-        db.query(Player)
-        .filter(Player.id == player_id, Player.user_id == user.id)
-        .first()
-    )
-    if not player:
-        raise HTTPException(status_code=404, detail="Player not found")
-    return player
+    return get_player_or_404(db, player_id, user.id)
 
 
 @router.put("/{player_id}", response_model=PlayerResponse)
@@ -152,13 +159,7 @@ def update_player(
     db: Session = Depends(get_db),
 ):
     """Update a player."""
-    player = (
-        db.query(Player)
-        .filter(Player.id == player_id, Player.user_id == user.id)
-        .first()
-    )
-    if not player:
-        raise HTTPException(status_code=404, detail="Player not found")
+    player = get_player_or_404(db, player_id, user.id)
 
     if data.name is not None:
         player.name = data.name
@@ -177,25 +178,15 @@ def delete_player(
     db: Session = Depends(get_db),
 ):
     """Delete a player."""
-    player = (
-        db.query(Player)
-        .filter(Player.id == player_id, Player.user_id == user.id)
-        .first()
-    )
-    if not player:
-        raise HTTPException(status_code=404, detail="Player not found")
+    player = get_player_or_404(db, player_id, user.id)
 
     # Check if player has registered games
-    games_count = (
-        db.query(func.count(GamePlayer.id))
-        .filter(GamePlayer.player_id == player.id)
-        .scalar()
-    ) or 0
+    games_count = count_player_games(db, player.id)
 
     if games_count > 0:
         raise HTTPException(
             status_code=400,
-            detail=f"Impossible de supprimer ce joueur: {games_count} partie(s) enregistrée(s)"
+            detail=f"Impossible de supprimer ce joueur : {games_count} partie(s) enregistrée(s)"
         )
 
     db.delete(player)
