@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.3.3 (2026-01-01)
+
+- Ajout d'un système de migration de base de données
+
 ## v2.3.2 (2026-01-01)
 
 - Correction des erreurs TypeScript dans CardStatistics et Developer
