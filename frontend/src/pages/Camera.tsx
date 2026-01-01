@@ -354,17 +354,26 @@ export function Camera() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-dvh p-6 text-center overflow-hidden">
-        <div className="bg-red-900/50 text-red-200 p-6 rounded-xl mb-6">
-          <p className="text-lg font-semibold mb-2">Erreur camera</p>
-          <p>{error}</p>
+      <div className="flex flex-col h-dvh bg-dark overflow-hidden">
+        {/* Header with back button */}
+        <div className="p-3 bg-dark-lighter border-b border-white/10">
+          <div className="flex items-center">
+            <button
+              onClick={handleBack}
+              className="p-2 -ml-2 text-white/60 hover:text-white transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
-        <button
-          onClick={handleBack}
-          className="py-3 px-6 bg-dark-lighter text-white rounded-xl hover:bg-dark-card transition-colors"
-        >
-          Quitter
-        </button>
+        <div className="flex-1 flex items-center justify-center p-6">
+          <div className="bg-red-900/50 text-red-200 p-6 rounded-xl text-center">
+            <p className="text-lg font-semibold mb-2">Erreur camera</p>
+            <p>{error}</p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -373,21 +382,32 @@ export function Camera() {
 
   return (
     <div className="flex flex-col h-dvh bg-dark overflow-hidden">
-      {/* Player indicator */}
-      {currentPlayer && (
-        <div className="p-3 bg-dark-lighter border-b border-white/10">
-          <div className="flex items-center justify-center gap-2">
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
-              style={{ backgroundColor: currentPlayer.color }}
-            >
-              {playerIndex}
+      {/* Header with back button and player indicator */}
+      <div className="p-3 bg-dark-lighter border-b border-white/10">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={handleBack}
+            className="p-2 -ml-2 text-white/60 hover:text-white transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          {currentPlayer && (
+            <div className="flex items-center gap-2">
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                style={{ backgroundColor: currentPlayer.color }}
+              >
+                {playerIndex}
+              </div>
+              <span className="text-white font-medium">{currentPlayer.name}</span>
+              <span className="text-white/40 text-sm">({playerIndex}/{totalPlayers})</span>
             </div>
-            <span className="text-white font-medium">{currentPlayer.name}</span>
-            <span className="text-white/40 text-sm">({playerIndex}/{totalPlayers})</span>
-          </div>
+          )}
+          <div className="w-10" />
         </div>
-      )}
+      </div>
 
       {/* Camera/capture/analyzing view */}
       <div className="relative flex-1 flex items-center justify-center overflow-hidden">
@@ -553,7 +573,7 @@ export function Camera() {
           <div className="h-28" /> /* Spacer to maintain layout */
         ) : isLiveMode ? (
           /* Live mode: capture button */
-          <div className="flex flex-col items-center gap-4">
+          <div className="flex flex-col items-center">
             {/* Capture button with outer ring */}
             <div className="w-24 h-24 rounded-full bg-gray-700 p-1.5 flex items-center justify-center">
               <button
@@ -565,14 +585,6 @@ export function Camera() {
                 aria-label="Capturer"
               />
             </div>
-
-            {/* Quit button */}
-            <button
-              onClick={handleBack}
-              className="py-2 px-6 text-white/70 hover:text-white transition-colors"
-            >
-              Quitter
-            </button>
           </div>
         ) : (
           /* Results mode: detection info and action buttons */
