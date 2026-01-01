@@ -1,52 +1,145 @@
-"""Scoring rules for each card (001-092)."""
+"""Scoring rules for each card (001-092).
+
+Ce module définit les règles de scoring pour les 92 cartes du jeu.
+Les règles simples utilisent les factories de rule_factories.py.
+Les règles complexes restent définies explicitement.
+"""
 
 from .grid import Grid
+from .rule_factories import (
+    # Helpers
+    pluriel,
+    boucliers,
+    COLOR_NAMES,
+    # Factories
+    make_shields_in_row_rule,
+    make_shields_in_col_rule,
+    make_shields_in_row_and_col_rule,
+    make_position_rule,
+    make_pairs_rule,
+    make_trios_rule,
+    make_no_shield_rule,
+    make_coins_on_card_rule,
+    make_threshold_rule,
+    make_category_count_rule,
+    make_unique_colors_rule,
+    make_feature_count_rule,
+    make_exact_value_rule,
+    make_min_value_rule,
+    make_flipped_card_rule,
+)
 
 
-def pluriel(n: int, singular: str, plural: str = None) -> str:
-    """Return singular or plural form based on count."""
-    if plural is None:
-        plural = singular + "s"
-    return singular if n <= 1 else plural
+# =============================================================================
+# Règles générées par factories
+# =============================================================================
+
+# Boucliers sur colonne
+rule_001 = make_shields_in_col_rule("blue", 4)
+rule_009 = make_shields_in_col_rule("blue", 3)
+rule_033 = make_shields_in_col_rule("green", 3)
+rule_037 = make_shields_in_col_rule("pink", 3)
+rule_045 = make_shields_in_col_rule("red", 3)
+rule_055 = make_shields_in_col_rule("yellow", 3)
+
+# Boucliers sur rangée
+rule_011 = make_shields_in_row_rule("green", 3)
+rule_013 = make_shields_in_row_rule("blue", 4)
+rule_028 = make_shields_in_row_rule("blue", 3)
+rule_043 = make_shields_in_row_rule("red", 3)
+rule_048 = make_shields_in_row_rule("pink", 3)
+rule_060 = make_shields_in_row_rule("orange", 3)
+rule_067 = make_shields_in_row_rule("yellow", 3)
+rule_073 = make_shields_in_row_rule("orange", 3)
+
+# Boucliers sur rangée ET colonne
+rule_019 = make_shields_in_row_and_col_rule("blue", 2)
+rule_023 = make_shields_in_row_and_col_rule("blue", 3)
+rule_042 = make_shields_in_row_and_col_rule("green", 3)
+rule_062 = make_shields_in_row_and_col_rule("pink", 2)
+rule_065 = make_shields_in_row_and_col_rule("red", 3)
+rule_080 = make_shields_in_row_and_col_rule("orange", 2)
+rule_092 = make_shields_in_row_and_col_rule("yellow", 2)
+
+# Position
+rule_003 = make_position_rule("top_row", 8)
+rule_007 = make_position_rule("bottom_row", 5)
+rule_021 = make_position_rule("left_col", 8)
+rule_030 = make_position_rule("left_col", 6)
+rule_031 = make_position_rule("right_col", 8)
+rule_047 = make_position_rule("top_row", 5)
+rule_049 = make_position_rule("right_col", 5)
+rule_052 = make_position_rule("middle_col", 6)
+rule_063 = make_position_rule("bottom_row", 7)
+rule_071 = make_position_rule("middle_row", 5)
+
+# Paires de boucliers
+rule_008 = make_pairs_rule("pink", "orange", 4)
+rule_022 = make_pairs_rule("blue", "red", 4)
+rule_068 = make_pairs_rule("green", "yellow", 4)
+
+# Trios de boucliers
+rule_018 = make_trios_rule(["blue", "green", "orange"], 10)
+rule_054 = make_trios_rule(["pink", "red", "yellow"], 7)
+
+# Aucun bouclier d'une couleur
+rule_026 = make_no_shield_rule("yellow", 10)
+rule_044 = make_no_shield_rule("orange", 10)
+rule_064 = make_no_shield_rule("pink", 9)
+rule_072 = make_no_shield_rule("green", 10)
+rule_083 = make_no_shield_rule("red", 10)
+rule_091 = make_no_shield_rule("blue", 9)
+
+# Pièces sur carte
+rule_014 = make_coins_on_card_rule(3, 2)
+rule_025 = make_coins_on_card_rule(5, 2)
+rule_036 = make_coins_on_card_rule(8, 2)
+rule_041 = make_coins_on_card_rule(4, 2)
+rule_050 = make_coins_on_card_rule(4, 2)
+rule_051 = make_coins_on_card_rule(5, 2)
+rule_053 = make_coins_on_card_rule(9, 2)
+rule_058 = make_coins_on_card_rule(6, 2)
+rule_059 = make_coins_on_card_rule(4, 2)
+rule_061 = make_coins_on_card_rule(7, 2)
+rule_081 = make_coins_on_card_rule(5, 2)
+
+# Seuil minimum de boucliers
+rule_002 = make_threshold_rule("green", "col", 1, 5)
+rule_035 = make_threshold_rule("pink", "row", 1, 5)
+rule_075 = make_threshold_rule("red", "row", 1, 7)
+rule_088 = make_threshold_rule("blue", "col", 1, 3)
+
+# Comptage de catégories
+rule_006 = make_category_count_rule("village", 2)
+rule_046 = make_category_count_rule("castle", 2)
+rule_074 = make_category_count_rule("castle", 2)
+
+# Couleurs uniques
+rule_005 = make_unique_colors_rule("row", 4)
+rule_012 = make_unique_colors_rule("row", 2)
+rule_024 = make_unique_colors_rule("board", 2)
+rule_029 = make_unique_colors_rule("col", 4)
+rule_076 = make_unique_colors_rule("col", 2)
+
+# Caractéristiques (price_reduction, lock, coin_purse)
+rule_032 = make_feature_count_rule("price_reduction", 4)
+rule_070 = make_feature_count_rule("lock", 4)
+
+# Coût exact
+rule_040 = make_exact_value_rule(4, 3)
+rule_086 = make_exact_value_rule(0, 2)
+
+# Coût minimum
+rule_039 = make_min_value_rule(5, 5)
+
+# Cartes retournées
+rule_089 = make_flipped_card_rule()
+rule_090 = make_flipped_card_rule()
 
 
-def boucliers(n: int, color: str) -> str:
-    """Format shield count with color (handles plural for both noun and adjective)."""
-    # Pluralize both "bouclier" and the color adjective
-    if n <= 1:
-        return f"{n} bouclier {color}"
-    else:
-        return f"{n} boucliers {color}s"
-
-
-def rule_001(grid: Grid, position: int) -> tuple[int, str]:
-    """4 points for each blue shield on the same column."""
-    count = grid.count_shields_in_col(position, "blue")
-    score = count * 4
-    if count == 0:
-        explanation = "Tu n'as aucun bouclier bleu sur cette colonne."
-    else:
-        explanation = f"""Tu as {boucliers(count, 'bleu')} sur cette colonne.
-{count} x 4 = {score} points"""
-    return score, explanation
-
-
-def rule_002(grid: Grid, position: int) -> tuple[int, str]:
-    """5 points if at least one green shield on the same column."""
-    count = grid.count_shields_in_col(position, "green")
-    if count == 0:
-        return 0, "Tu n'as aucun bouclier vert sur cette colonne."
-    elif count == 1:
-        return 5, "Tu as au moins un bouclier vert sur cette colonne.\n5 points"
-    else:
-        return 5, f"Tu as au moins un bouclier vert sur cette colonne. Tu en as même {count}.\n5 points"
-
-
-def rule_003(grid: Grid, position: int) -> tuple[int, str]:
-    """8 points if this card is on the top row."""
-    if grid.is_top_row(position):
-        return 8, "Ta carte est bien sur la rangée du haut.\n8 points"
-    return 0, "Ta carte n'est pas sur la rangée du haut."
+# =============================================================================
+# Règles complexes (non factorisables)
+# =============================================================================
 
 
 def rule_004(grid: Grid, position: int) -> tuple[int, str]:
@@ -54,63 +147,6 @@ def rule_004(grid: Grid, position: int) -> tuple[int, str]:
     if grid.count_cards_with_price_reduction() == 0:
         return 8, "8 points (aucune carte avec réduction de prix)"
     return 0, "0 point (il y a des cartes avec réduction de prix)"
-
-
-def rule_005(grid: Grid, position: int) -> tuple[int, str]:
-    """4 points for each different shield color on the same row."""
-    colors = grid.get_unique_colors_in_row(position)
-    count = len(colors)
-    score = count * 4
-    if count == 0:
-        explanation = "Tu n'as aucune couleur de bouclier sur cette rangée."
-    else:
-        explanation = f"""Tu as {count} {pluriel(count, 'couleur')} différente{'' if count <= 1 else 's'} sur cette rangée.
-{count} x 4 = {score} points"""
-    return score, explanation
-
-
-def rule_006(grid: Grid, position: int) -> tuple[int, str]:
-    """2 points for each card from village."""
-    count = grid.count_village_cards()
-    score = count * 2
-    if count == 0:
-        explanation = "Tu n'as aucune carte village."
-    else:
-        explanation = f"""Tu as {count} {pluriel(count, 'carte')} village.
-{count} x 2 = {score} points"""
-    return score, explanation
-
-
-def rule_007(grid: Grid, position: int) -> tuple[int, str]:
-    """5 points if this card is on the bottom row."""
-    if grid.is_bottom_row(position):
-        return 5, "Ta carte est bien sur la rangée du bas.\n5 points"
-    return 0, "Ta carte n'est pas sur la rangée du bas."
-
-
-def rule_008(grid: Grid, position: int) -> tuple[int, str]:
-    """4 points for each pair of pink/orange shields."""
-    violet = grid.count_shields_on_board("pink")
-    orange = grid.count_shields_on_board("orange")
-    pairs = min(violet, orange)
-    score = pairs * 4
-    explanation = f"""- {boucliers(violet, 'violet')}
-- {boucliers(orange, 'orange')}
-Tu as {pairs} {pluriel(pairs, 'paire')} de boucliers violet/orange.
-{pairs} x 4 = {score} points"""
-    return score, explanation
-
-
-def rule_009(grid: Grid, position: int) -> tuple[int, str]:
-    """3 points for each blue shield on the same column."""
-    count = grid.count_shields_in_col(position, "blue")
-    score = count * 3
-    if count == 0:
-        explanation = "Tu n'as aucun bouclier bleu sur cette colonne."
-    else:
-        explanation = f"""Tu as {boucliers(count, 'bleu')} sur cette colonne.
-{count} x 3 = {score} points"""
-    return score, explanation
 
 
 def rule_010(grid: Grid, position: int) -> tuple[int, str]:
@@ -123,56 +159,6 @@ def rule_010(grid: Grid, position: int) -> tuple[int, str]:
     else:
         explanation = f"""Tu as {count} {pluriel(count, 'coût')} différent{'' if count <= 1 else 's'} sur le plateau.
 {count} x 3 = {score} points"""
-    return score, explanation
-
-
-def rule_011(grid: Grid, position: int) -> tuple[int, str]:
-    """3 points for each green shield on the same row."""
-    count = grid.count_shields_in_row(position, "green")
-    score = count * 3
-    if count == 0:
-        explanation = "Tu n'as aucun bouclier vert sur cette rangée."
-    else:
-        explanation = f"""Tu as {boucliers(count, 'vert')} sur cette rangée.
-{count} x 3 = {score} points"""
-    return score, explanation
-
-
-def rule_012(grid: Grid, position: int) -> tuple[int, str]:
-    """2 points for each different shield color on the same row."""
-    colors = grid.get_unique_colors_in_row(position)
-    count = len(colors)
-    score = count * 2
-    if count == 0:
-        explanation = "Tu n'as aucune couleur de bouclier sur cette rangée."
-    else:
-        explanation = f"""Tu as {count} {pluriel(count, 'couleur')} différente{'' if count <= 1 else 's'} sur cette rangée.
-{count} x 2 = {score} points"""
-    return score, explanation
-
-
-def rule_013(grid: Grid, position: int) -> tuple[int, str]:
-    """4 points for each blue shield on the same row."""
-    count = grid.count_shields_in_row(position, "blue")
-    score = count * 4
-    if count == 0:
-        explanation = "Tu n'as aucun bouclier bleu sur cette rangée."
-    else:
-        explanation = f"""Tu as {boucliers(count, 'bleu')} sur cette rangée.
-{count} x 4 = {score} points"""
-    return score, explanation
-
-
-def rule_014(grid: Grid, position: int) -> tuple[int, str]:
-    """2 points for each coin on this card. Maximum 3 coins."""
-    card_id = grid.get_card_at(position)
-    coins = min(grid.get_coins_on_card(card_id), 3)
-    score = coins * 2
-    if coins == 0:
-        explanation = "Tu n'as aucune pièce sur cette carte."
-    else:
-        explanation = f"""Tu as {coins} {pluriel(coins, 'pièce')} sur cette carte (max 3).
-{coins} x 2 = {score} points"""
     return score, explanation
 
 
@@ -207,42 +193,9 @@ def rule_017(grid: Grid, position: int, keys: int) -> tuple[int, str]:
     if keys == 0:
         explanation = "Tu n'as pas de clés."
     elif keys == 1:
-        explanation = f"Tu as 1 clé.\n1 x 1 = 1 point"
+        explanation = "Tu as 1 clé.\n1 x 1 = 1 point"
     else:
         explanation = f"Tu as {keys} clés.\n{keys} x 1 = {score} points"
-    return score, explanation
-
-
-def rule_018(grid: Grid, position: int) -> tuple[int, str]:
-    """10 points for each trio of blue/green/orange shields."""
-    bleu = grid.count_shields_on_board("blue")
-    vert = grid.count_shields_on_board("green")
-    orange = grid.count_shields_on_board("orange")
-    trios = min(bleu, vert, orange)
-    score = trios * 10
-    explanation = f"""- {boucliers(bleu, 'bleu')}
-- {boucliers(vert, 'vert')}
-- {boucliers(orange, 'orange')}
-Tu as {trios} {pluriel(trios, 'trio')} de boucliers bleu/vert/orange.
-{trios} x 10 = {score} points"""
-    return score, explanation
-
-
-def rule_019(grid: Grid, position: int) -> tuple[int, str]:
-    """2 points for each blue shield on the same row and the same column."""
-    row_count = grid.count_shields_in_row(position, "blue")
-    col_count = grid.count_shields_in_col(position, "blue")
-    self_count = grid.count_shields_on_card(position, "blue")
-    count = row_count + col_count - self_count  # Avoid counting card twice
-    score = count * 2
-    if count == 0:
-        explanation = "Tu n'as aucun bouclier bleu. Ni sur cette rangée, ni sur cette colonne."
-    else:
-        row_text = f"Tu as {boucliers(row_count, 'bleu')} sur cette rangée" if row_count > 0 else "Tu n'as aucun bouclier bleu sur cette rangée"
-        col_text = f"Tu as {boucliers(col_count, 'bleu')} sur cette colonne" if col_count > 0 else "Tu n'as aucun bouclier bleu sur cette colonne"
-        explanation = f"""- {row_text}
-- {col_text}
-{count} x 2 = {score} points"""
     return score, explanation
 
 
@@ -263,84 +216,8 @@ def rule_020(grid: Grid, position: int) -> tuple[int, str]:
     return score, explanation
 
 
-def rule_021(grid: Grid, position: int) -> tuple[int, str]:
-    """8 points if the card is on the left column."""
-    if grid.is_left_col(position):
-        return 8, "Ta carte est bien sur la colonne de gauche.\n8 points"
-    return 0, "Ta carte n'est pas sur la colonne de gauche."
-
-
-def rule_022(grid: Grid, position: int) -> tuple[int, str]:
-    """4 points for each pair of blue/red shields."""
-    bleu = grid.count_shields_on_board("blue")
-    rouge = grid.count_shields_on_board("red")
-    paires = min(bleu, rouge)
-    score = paires * 4
-    explanation = f"""- {boucliers(bleu, 'bleu')}
-- {boucliers(rouge, 'rouge')}
-Tu as {paires} {pluriel(paires, 'paire')} de boucliers bleu/rouge.
-{paires} x 4 = {score} points"""
-    return score, explanation
-
-
-def rule_023(grid: Grid, position: int) -> tuple[int, str]:
-    """3 points for each blue shield on the same row and the same column."""
-    row_count = grid.count_shields_in_row(position, "blue")
-    col_count = grid.count_shields_in_col(position, "blue")
-    self_count = grid.count_shields_on_card(position, "blue")
-    count = row_count + col_count - self_count  # Avoid counting card twice
-    score = count * 3
-    if count == 0:
-        explanation = "Tu n'as aucun bouclier bleu. Ni sur cette rangée, ni sur cette colonne."
-    else:
-        row_text = f"Tu as {boucliers(row_count, 'bleu')} sur cette rangée" if row_count > 0 else "Tu n'as aucun bouclier bleu sur cette rangée"
-        col_text = f"Tu as {boucliers(col_count, 'bleu')} sur cette colonne" if col_count > 0 else "Tu n'as aucun bouclier bleu sur cette colonne"
-        explanation = f"""- {row_text}
-- {col_text}
-{count} x 3 = {score} points"""
-    return score, explanation
-
-
-def rule_024(grid: Grid, position: int) -> tuple[int, str]:
-    """2 points for each different shield color on the board."""
-    colors = grid.get_unique_colors_on_board()
-    count = len(colors)
-    score = count * 2
-    if count == 0:
-        explanation = "Tu n'as aucune couleur de bouclier sur le plateau."
-    else:
-        explanation = f"""Tu as {count} {pluriel(count, 'couleur')} différente{'' if count <= 1 else 's'} sur le plateau.
-{count} x 2 = {score} points"""
-    return score, explanation
-
-
-def rule_025(grid: Grid, position: int) -> tuple[int, str]:
-    """2 points for each coin on this card. Maximum 5 coins."""
-    card_id = grid.get_card_at(position)
-    coins = min(grid.get_coins_on_card(card_id), 5)
-    score = coins * 2
-    if coins == 0:
-        explanation = "Tu n'as aucune pièce sur cette carte."
-    else:
-        explanation = f"""Tu as {coins} {pluriel(coins, 'pièce')} sur cette carte (max 5).
-{coins} x 2 = {score} points"""
-    return score, explanation
-
-
-def rule_026(grid: Grid, position: int) -> tuple[int, str]:
-    """10 points if the board has no yellow shield."""
-    count = grid.count_shields_on_board("yellow")
-    if count == 0:
-        return 10, "Tu n'as aucun bouclier jaune sur le plateau.\n10 points"
-    return 0, f"Tu as {boucliers(count, 'jaune')} sur le plateau."
-
-
 def rule_027(grid: Grid, position: int) -> tuple[int, str]:
     """6 points for each time 3 shields of the same color can be counted on the board."""
-    color_names = {
-        "blue": "bleu", "green": "vert", "orange": "orange",
-        "pink": "violet", "red": "rouge", "yellow": "jaune"
-    }
     total_sets = 0
     details = []
     for color in Grid.COLORS:
@@ -348,77 +225,13 @@ def rule_027(grid: Grid, position: int) -> tuple[int, str]:
         sets = count // 3
         total_sets += sets
         if sets > 0:
-            french_color = color_names[color]
-            plural_suffix = "s" if sets > 1 else ""
+            french_color = COLOR_NAMES.get(color, (color, color))[0]
             details.append(f"- Tu as {sets} {pluriel(sets, 'lot')} de 3 boucliers {french_color}s")
     score = total_sets * 6
     if total_sets == 0:
         explanation = "Tu n'as aucun lot de 3 boucliers de même couleur."
     else:
         explanation = "\n".join(details) + f"\n{total_sets} x 6 = {score} points"
-    return score, explanation
-
-
-def rule_028(grid: Grid, position: int) -> tuple[int, str]:
-    """3 points for each blue shield on the same row."""
-    count = grid.count_shields_in_row(position, "blue")
-    score = count * 3
-    if count == 0:
-        explanation = "Tu n'as aucun bouclier bleu sur cette rangée."
-    else:
-        explanation = f"""Tu as {boucliers(count, 'bleu')} sur cette rangée.
-{count} x 3 = {score} points"""
-    return score, explanation
-
-
-def rule_029(grid: Grid, position: int) -> tuple[int, str]:
-    """4 points for each different shield color on the same column."""
-    colors = grid.get_unique_colors_in_col(position)
-    count = len(colors)
-    score = count * 4
-    if count == 0:
-        explanation = "Tu n'as aucune couleur de bouclier sur cette colonne."
-    else:
-        explanation = f"""Tu as {count} {pluriel(count, 'couleur')} différente{'' if count <= 1 else 's'} sur cette colonne.
-{count} x 4 = {score} points"""
-    return score, explanation
-
-
-def rule_030(grid: Grid, position: int) -> tuple[int, str]:
-    """6 points if the card is on the left column."""
-    if grid.is_left_col(position):
-        return 6, "Ta carte est bien sur la colonne de gauche.\n6 points"
-    return 0, "Ta carte n'est pas sur la colonne de gauche."
-
-
-def rule_031(grid: Grid, position: int) -> tuple[int, str]:
-    """8 points if the card is on the right column."""
-    if grid.is_right_col(position):
-        return 8, "Ta carte est bien sur la colonne de droite.\n8 points"
-    return 0, "Ta carte n'est pas sur la colonne de droite."
-
-
-def rule_032(grid: Grid, position: int) -> tuple[int, str]:
-    """4 points for each card with a price reduction on the board."""
-    count = grid.count_cards_with_price_reduction()
-    score = count * 4
-    if count == 0:
-        explanation = "Tu n'as aucune carte avec réduction de prix."
-    else:
-        explanation = f"""Tu as {count} {pluriel(count, 'carte')} avec réduction de prix.
-{count} x 4 = {score} points"""
-    return score, explanation
-
-
-def rule_033(grid: Grid, position: int) -> tuple[int, str]:
-    """3 points for each green shield on the same column."""
-    count = grid.count_shields_in_col(position, "green")
-    score = count * 3
-    if count == 0:
-        explanation = "Tu n'as aucun bouclier vert sur cette colonne."
-    else:
-        explanation = f"""Tu as {boucliers(count, 'vert')} sur cette colonne.
-{count} x 3 = {score} points"""
     return score, explanation
 
 
@@ -441,48 +254,8 @@ def rule_034(grid: Grid, position: int) -> tuple[int, str]:
     return total, explanation
 
 
-def rule_035(grid: Grid, position: int) -> tuple[int, str]:
-    """5 points if at least one shield is pink on the same row."""
-    count = grid.count_shields_in_row(position, "pink")
-    if count == 0:
-        return 0, "Tu n'as aucun bouclier violet sur cette rangée."
-    elif count == 1:
-        return 5, "Tu as au moins un bouclier violet sur cette rangée.\n5 points"
-    else:
-        return 5, f"Tu as au moins un bouclier violet sur cette rangée. Tu en as même {count}.\n5 points"
-
-
-def rule_036(grid: Grid, position: int) -> tuple[int, str]:
-    """2 points for each coin on this card. Maximum 8 coins."""
-    card_id = grid.get_card_at(position)
-    coins = min(grid.get_coins_on_card(card_id), 8)
-    score = coins * 2
-    if coins == 0:
-        explanation = "Tu n'as aucune pièce sur cette carte."
-    else:
-        explanation = f"""Tu as {coins} {pluriel(coins, 'pièce')} sur cette carte (max 8).
-{coins} x 2 = {score} points"""
-    return score, explanation
-
-
-def rule_037(grid: Grid, position: int) -> tuple[int, str]:
-    """3 points for each pink shield on the same column."""
-    count = grid.count_shields_in_col(position, "pink")
-    score = count * 3
-    if count == 0:
-        explanation = "Tu n'as aucun bouclier violet sur cette colonne."
-    else:
-        explanation = f"""Tu as {boucliers(count, 'violet')} sur cette colonne.
-{count} x 3 = {score} points"""
-    return score, explanation
-
-
 def rule_038(grid: Grid, position: int) -> tuple[int, str]:
     """6 points for each different shield NOT on the board."""
-    color_names = {
-        "blue": "bleu", "green": "vert", "orange": "orange",
-        "pink": "violet", "red": "rouge", "yellow": "jaune"
-    }
     present_colors = grid.get_unique_colors_on_board()
     missing_colors = [c for c in Grid.COLORS if c not in present_colors]
     missing = len(missing_colors)
@@ -493,214 +266,16 @@ def rule_038(grid: Grid, position: int) -> tuple[int, str]:
     elif missing == 6:
         explanation = f"Il te manque les 6 boucliers.\n{missing} x 6 = {score} points"
     elif missing == 1:
-        color = color_names[missing_colors[0]]
+        color = COLOR_NAMES.get(missing_colors[0], (missing_colors[0], ""))[0]
         explanation = f"Il te manque le bouclier {color}.\n{missing} x 6 = {score} points"
     else:
-        french_colors = [color_names[c] + "s" for c in missing_colors]
+        french_colors = [COLOR_NAMES.get(c, (c, c))[0] + "s" for c in missing_colors]
         if len(french_colors) == 2:
             colors_str = f"{french_colors[0]} et {french_colors[1]}"
         else:
             colors_str = ", ".join(french_colors[:-1]) + f" et {french_colors[-1]}"
         explanation = f"Il te manque les boucliers {colors_str}.\n{missing} x 6 = {score} points"
 
-    return score, explanation
-
-
-def rule_039(grid: Grid, position: int) -> tuple[int, str]:
-    """5 points for each card with 5 price or more."""
-    count = grid.count_cards_with_value_or_more(5)
-    score = count * 5
-    if count == 0:
-        explanation = "Tu n'as aucune carte avec un coût de 5 ou plus."
-    else:
-        explanation = f"""Tu as {count} {pluriel(count, 'carte')} avec un coût de 5 ou plus.
-{count} x 5 = {score} points"""
-    return score, explanation
-
-
-def rule_040(grid: Grid, position: int) -> tuple[int, str]:
-    """3 points for each card with a price of exactly 4."""
-    count = grid.count_cards_with_exact_value(4)
-    score = count * 3
-    if count == 0:
-        explanation = "Tu n'as aucune carte avec un coût de 4."
-    else:
-        explanation = f"""Tu as {count} {pluriel(count, 'carte')} avec un coût de 4.
-{count} x 3 = {score} points"""
-    return score, explanation
-
-
-def rule_041(grid: Grid, position: int) -> tuple[int, str]:
-    """2 points for each coin on this card. Maximum 4 coins."""
-    card_id = grid.get_card_at(position)
-    coins = min(grid.get_coins_on_card(card_id), 4)
-    score = coins * 2
-    if coins == 0:
-        explanation = "Tu n'as aucune pièce sur cette carte."
-    else:
-        explanation = f"""Tu as {coins} {pluriel(coins, 'pièce')} sur cette carte (max 4).
-{coins} x 2 = {score} points"""
-    return score, explanation
-
-
-def rule_042(grid: Grid, position: int) -> tuple[int, str]:
-    """3 points for each green shield on the same row and same column."""
-    row_count = grid.count_shields_in_row(position, "green")
-    col_count = grid.count_shields_in_col(position, "green")
-    self_count = grid.count_shields_on_card(position, "green")
-    count = row_count + col_count - self_count  # Avoid counting card twice
-    score = count * 3
-    if count == 0:
-        explanation = "Tu n'as aucun bouclier vert. Ni sur cette rangée, ni sur cette colonne."
-    else:
-        row_text = f"Tu as {boucliers(row_count, 'vert')} sur cette rangée" if row_count > 0 else "Tu n'as aucun bouclier vert sur cette rangée"
-        col_text = f"Tu as {boucliers(col_count, 'vert')} sur cette colonne" if col_count > 0 else "Tu n'as aucun bouclier vert sur cette colonne"
-        explanation = f"""- {row_text}
-- {col_text}
-{count} x 3 = {score} points"""
-    return score, explanation
-
-
-def rule_043(grid: Grid, position: int) -> tuple[int, str]:
-    """3 points for each red shield on the same row."""
-    count = grid.count_shields_in_row(position, "red")
-    score = count * 3
-    if count == 0:
-        explanation = "Tu n'as aucun bouclier rouge sur cette rangée."
-    else:
-        explanation = f"""Tu as {boucliers(count, 'rouge')} sur cette rangée.
-{count} x 3 = {score} points"""
-    return score, explanation
-
-
-def rule_044(grid: Grid, position: int) -> tuple[int, str]:
-    """10 points if the board has no orange shield."""
-    count = grid.count_shields_on_board("orange")
-    if count == 0:
-        return 10, "Tu n'as aucun bouclier orange sur le plateau.\n10 points"
-    return 0, f"Tu as {boucliers(count, 'orange')} sur le plateau."
-
-
-def rule_045(grid: Grid, position: int) -> tuple[int, str]:
-    """3 points for each red shield on the same column."""
-    count = grid.count_shields_in_col(position, "red")
-    score = count * 3
-    if count == 0:
-        explanation = "Tu n'as aucun bouclier rouge sur cette colonne."
-    else:
-        explanation = f"""Tu as {boucliers(count, 'rouge')} sur cette colonne.
-{count} x 3 = {score} points"""
-    return score, explanation
-
-
-def rule_046(grid: Grid, position: int) -> tuple[int, str]:
-    """2 points for each card from castle on the board."""
-    count = grid.count_castle_cards()
-    score = count * 2
-    if count == 0:
-        explanation = "Tu n'as aucune carte château."
-    else:
-        explanation = f"""Tu as {count} {pluriel(count, 'carte')} château.
-{count} x 2 = {score} points"""
-    return score, explanation
-
-
-def rule_047(grid: Grid, position: int) -> tuple[int, str]:
-    """5 points if this card is on the top row."""
-    if grid.is_top_row(position):
-        return 5, "Ta carte est bien sur la rangée du haut.\n5 points"
-    return 0, "Ta carte n'est pas sur la rangée du haut."
-
-
-def rule_048(grid: Grid, position: int) -> tuple[int, str]:
-    """3 points for each pink shield on the same row."""
-    count = grid.count_shields_in_row(position, "pink")
-    score = count * 3
-    if count == 0:
-        explanation = "Tu n'as aucun bouclier violet sur cette rangée."
-    else:
-        explanation = f"""Tu as {boucliers(count, 'violet')} sur cette rangée.
-{count} x 3 = {score} points"""
-    return score, explanation
-
-
-def rule_049(grid: Grid, position: int) -> tuple[int, str]:
-    """5 points if this card is on the right column."""
-    if grid.is_right_col(position):
-        return 5, "Ta carte est bien sur la colonne de droite.\n5 points"
-    return 0, "Ta carte n'est pas sur la colonne de droite."
-
-
-def rule_050(grid: Grid, position: int) -> tuple[int, str]:
-    """2 points for each coin on this card. Maximum 4 coins."""
-    card_id = grid.get_card_at(position)
-    coins = min(grid.get_coins_on_card(card_id), 4)
-    score = coins * 2
-    if coins == 0:
-        explanation = "Tu n'as aucune pièce sur cette carte."
-    else:
-        explanation = f"""Tu as {coins} {pluriel(coins, 'pièce')} sur cette carte (max 4).
-{coins} x 2 = {score} points"""
-    return score, explanation
-
-
-def rule_051(grid: Grid, position: int) -> tuple[int, str]:
-    """2 points for each coin on this card. Maximum 5 coins."""
-    card_id = grid.get_card_at(position)
-    coins = min(grid.get_coins_on_card(card_id), 5)
-    score = coins * 2
-    if coins == 0:
-        explanation = "Tu n'as aucune pièce sur cette carte."
-    else:
-        explanation = f"""Tu as {coins} {pluriel(coins, 'pièce')} sur cette carte (max 5).
-{coins} x 2 = {score} points"""
-    return score, explanation
-
-
-def rule_052(grid: Grid, position: int) -> tuple[int, str]:
-    """6 points if this card is on the middle column."""
-    if grid.is_middle_col(position):
-        return 6, "Ta carte est bien sur la colonne du milieu.\n6 points"
-    return 0, "Ta carte n'est pas sur la colonne du milieu."
-
-
-def rule_053(grid: Grid, position: int) -> tuple[int, str]:
-    """2 points for each coin on this card. Maximum 9 coins."""
-    card_id = grid.get_card_at(position)
-    coins = min(grid.get_coins_on_card(card_id), 9)
-    score = coins * 2
-    if coins == 0:
-        explanation = "Tu n'as aucune pièce sur cette carte."
-    else:
-        explanation = f"""Tu as {coins} {pluriel(coins, 'pièce')} sur cette carte (max 9).
-{coins} x 2 = {score} points"""
-    return score, explanation
-
-
-def rule_054(grid: Grid, position: int) -> tuple[int, str]:
-    """7 points for each trio of pink/red/yellow shields."""
-    violet = grid.count_shields_on_board("pink")
-    rouge = grid.count_shields_on_board("red")
-    jaune = grid.count_shields_on_board("yellow")
-    trios = min(violet, rouge, jaune)
-    score = trios * 7
-    explanation = f"""- {boucliers(violet, 'violet')}
-- {boucliers(rouge, 'rouge')}
-- {boucliers(jaune, 'jaune')}
-Tu as {trios} {pluriel(trios, 'trio')} de boucliers violet/rouge/jaune.
-{trios} x 7 = {score} points"""
-    return score, explanation
-
-
-def rule_055(grid: Grid, position: int) -> tuple[int, str]:
-    """3 points for each yellow shield on the same column."""
-    count = grid.count_shields_in_col(position, "yellow")
-    score = count * 3
-    if count == 0:
-        explanation = "Tu n'as aucun bouclier jaune sur cette colonne."
-    else:
-        explanation = f"""Tu as {boucliers(count, 'jaune')} sur cette colonne.
-{count} x 3 = {score} points"""
     return score, explanation
 
 
@@ -727,142 +302,15 @@ def rule_057(grid: Grid, position: int) -> tuple[int, str]:
     return score, explanation
 
 
-def rule_058(grid: Grid, position: int) -> tuple[int, str]:
-    """2 points for each coin on this card. Maximum 6 coins."""
-    card_id = grid.get_card_at(position)
-    coins = min(grid.get_coins_on_card(card_id), 6)
-    score = coins * 2
-    if coins == 0:
-        explanation = "Tu n'as aucune pièce sur cette carte."
-    else:
-        explanation = f"""Tu as {coins} {pluriel(coins, 'pièce')} sur cette carte (max 6).
-{coins} x 2 = {score} points"""
-    return score, explanation
-
-
-def rule_059(grid: Grid, position: int) -> tuple[int, str]:
-    """2 points for each coin on this card. Maximum 4 coins."""
-    card_id = grid.get_card_at(position)
-    coins = min(grid.get_coins_on_card(card_id), 4)
-    score = coins * 2
-    if coins == 0:
-        explanation = "Tu n'as aucune pièce sur cette carte."
-    else:
-        explanation = f"""Tu as {coins} {pluriel(coins, 'pièce')} sur cette carte (max 4).
-{coins} x 2 = {score} points"""
-    return score, explanation
-
-
-def rule_060(grid: Grid, position: int) -> tuple[int, str]:
-    """3 points for each orange shield on the same row."""
-    count = grid.count_shields_in_row(position, "orange")
-    score = count * 3
-    if count == 0:
-        explanation = "Tu n'as aucun bouclier orange sur cette rangée."
-    else:
-        explanation = f"""Tu as {boucliers(count, 'orange')} sur cette rangée.
-{count} x 3 = {score} points"""
-    return score, explanation
-
-
-def rule_061(grid: Grid, position: int) -> tuple[int, str]:
-    """2 points for each coin on this card. Maximum 7 coins."""
-    card_id = grid.get_card_at(position)
-    coins = min(grid.get_coins_on_card(card_id), 7)
-    score = coins * 2
-    if coins == 0:
-        explanation = "Tu n'as aucune pièce sur cette carte."
-    else:
-        explanation = f"""Tu as {coins} {pluriel(coins, 'pièce')} sur cette carte (max 7).
-{coins} x 2 = {score} points"""
-    return score, explanation
-
-
-def rule_062(grid: Grid, position: int) -> tuple[int, str]:
-    """2 points for each pink shield on the same row and the same column."""
-    row_count = grid.count_shields_in_row(position, "pink")
-    col_count = grid.count_shields_in_col(position, "pink")
-    self_count = grid.count_shields_on_card(position, "pink")
-    count = row_count + col_count - self_count  # Avoid counting card twice
-    score = count * 2
-    if count == 0:
-        explanation = "Tu n'as aucun bouclier violet. Ni sur cette rangée, ni sur cette colonne."
-    else:
-        row_text = f"Tu as {boucliers(row_count, 'violet')} sur cette rangée" if row_count > 0 else "Tu n'as aucun bouclier violet sur cette rangée"
-        col_text = f"Tu as {boucliers(col_count, 'violet')} sur cette colonne" if col_count > 0 else "Tu n'as aucun bouclier violet sur cette colonne"
-        explanation = f"""- {row_text}
-- {col_text}
-{count} x 2 = {score} points"""
-    return score, explanation
-
-
-def rule_063(grid: Grid, position: int) -> tuple[int, str]:
-    """7 points if this card is on the bottom row."""
-    if grid.is_bottom_row(position):
-        return 7, "Ta carte est bien sur la rangée du bas.\n7 points"
-    return 0, "Ta carte n'est pas sur la rangée du bas."
-
-
-def rule_064(grid: Grid, position: int) -> tuple[int, str]:
-    """9 points if there is no pink shield on the board."""
-    count = grid.count_shields_on_board("pink")
-    if count == 0:
-        return 9, "Tu n'as aucun bouclier violet sur le plateau.\n9 points"
-    return 0, f"Tu as {boucliers(count, 'violet')} sur le plateau."
-
-
-def rule_065(grid: Grid, position: int) -> tuple[int, str]:
-    """3 points for each red shield on the same row and the same column."""
-    row_count = grid.count_shields_in_row(position, "red")
-    col_count = grid.count_shields_in_col(position, "red")
-    self_count = grid.count_shields_on_card(position, "red")
-    count = row_count + col_count - self_count  # Avoid counting card twice
-    score = count * 3
-    if count == 0:
-        explanation = "Tu n'as aucun bouclier rouge. Ni sur cette rangée, ni sur cette colonne."
-    else:
-        row_text = f"Tu as {boucliers(row_count, 'rouge')} sur cette rangée" if row_count > 0 else "Tu n'as aucun bouclier rouge sur cette rangée"
-        col_text = f"Tu as {boucliers(col_count, 'rouge')} sur cette colonne" if col_count > 0 else "Tu n'as aucun bouclier rouge sur cette colonne"
-        explanation = f"""- {row_text}
-- {col_text}
-{count} x 3 = {score} points"""
-    return score, explanation
-
-
 def rule_066(grid: Grid, position: int, keys: int) -> tuple[int, str]:
     """1 point for each key the player owns."""
     score = keys
     if keys == 0:
         explanation = "Tu n'as pas de clés."
     elif keys == 1:
-        explanation = f"Tu as 1 clé.\n1 x 1 = 1 point"
+        explanation = "Tu as 1 clé.\n1 x 1 = 1 point"
     else:
         explanation = f"Tu as {keys} clés.\n{keys} x 1 = {score} points"
-    return score, explanation
-
-
-def rule_067(grid: Grid, position: int) -> tuple[int, str]:
-    """3 points for each yellow shield on the same row."""
-    count = grid.count_shields_in_row(position, "yellow")
-    score = count * 3
-    if count == 0:
-        explanation = "Tu n'as aucun bouclier jaune sur cette rangée."
-    else:
-        explanation = f"""Tu as {boucliers(count, 'jaune')} sur cette rangée.
-{count} x 3 = {score} points"""
-    return score, explanation
-
-
-def rule_068(grid: Grid, position: int) -> tuple[int, str]:
-    """4 points for each pair of green/yellow shields."""
-    vert = grid.count_shields_on_board("green")
-    jaune = grid.count_shields_on_board("yellow")
-    paires = min(vert, jaune)
-    score = paires * 4
-    explanation = f"""- {boucliers(vert, 'vert')}
-- {boucliers(jaune, 'jaune')}
-Tu as {paires} {pluriel(paires, 'paire')} de boucliers vert/jaune.
-{paires} x 4 = {score} points"""
     return score, explanation
 
 
@@ -876,81 +324,6 @@ def rule_069(grid: Grid, position: int) -> tuple[int, str]:
     else:
         explanation = f"""Tu as {village_count} {pluriel(village_count, 'carte')} village, soit {sets} {pluriel(sets, 'lot')} de 3.
 {sets} x 7 = {score} points"""
-    return score, explanation
-
-
-def rule_070(grid: Grid, position: int) -> tuple[int, str]:
-    """4 points for each card with a lock."""
-    count = grid.count_cards_with_lock()
-    score = count * 4
-    if count == 0:
-        explanation = "Tu n'as aucune carte avec cadenas."
-    else:
-        explanation = f"""Tu as {count} {pluriel(count, 'carte')} avec cadenas.
-{count} x 4 = {score} points"""
-    return score, explanation
-
-
-def rule_071(grid: Grid, position: int) -> tuple[int, str]:
-    """5 points if this card is on the middle row."""
-    if grid.is_middle_row(position):
-        return 5, "Ta carte est bien sur la rangée du milieu.\n5 points"
-    return 0, "Ta carte n'est pas sur la rangée du milieu."
-
-
-def rule_072(grid: Grid, position: int) -> tuple[int, str]:
-    """10 points if there is no green shield on the board."""
-    count = grid.count_shields_on_board("green")
-    if count == 0:
-        return 10, "Tu n'as aucun bouclier vert sur le plateau.\n10 points"
-    return 0, f"Tu as {boucliers(count, 'vert')} sur le plateau."
-
-
-def rule_073(grid: Grid, position: int) -> tuple[int, str]:
-    """3 points for each orange shield on the same row."""
-    count = grid.count_shields_in_row(position, "orange")
-    score = count * 3
-    if count == 0:
-        explanation = "Tu n'as aucun bouclier orange sur cette rangée."
-    else:
-        explanation = f"""Tu as {boucliers(count, 'orange')} sur cette rangée.
-{count} x 3 = {score} points"""
-    return score, explanation
-
-
-def rule_074(grid: Grid, position: int) -> tuple[int, str]:
-    """2 points for each card from castle."""
-    count = grid.count_castle_cards()
-    score = count * 2
-    if count == 0:
-        explanation = "Tu n'as aucune carte château."
-    else:
-        explanation = f"""Tu as {count} {pluriel(count, 'carte')} château.
-{count} x 2 = {score} points"""
-    return score, explanation
-
-
-def rule_075(grid: Grid, position: int) -> tuple[int, str]:
-    """7 points if there is at least one red shield on the same row."""
-    count = grid.count_shields_in_row(position, "red")
-    if count == 0:
-        return 0, "Tu n'as aucun bouclier rouge sur cette rangée."
-    elif count == 1:
-        return 7, "Tu as au moins un bouclier rouge sur cette rangée.\n7 points"
-    else:
-        return 7, f"Tu as au moins un bouclier rouge sur cette rangée. Tu en as même {count}.\n7 points"
-
-
-def rule_076(grid: Grid, position: int) -> tuple[int, str]:
-    """2 points for each different shield color on the same column."""
-    colors = grid.get_unique_colors_in_col(position)
-    count = len(colors)
-    score = count * 2
-    if count == 0:
-        explanation = "Tu n'as aucune couleur de bouclier sur cette colonne."
-    else:
-        explanation = f"""Tu as {count} {pluriel(count, 'couleur')} différente{'' if count <= 1 else 's'} sur cette colonne.
-{count} x 2 = {score} points"""
     return score, explanation
 
 
@@ -992,37 +365,6 @@ def rule_079(grid: Grid, position: int) -> tuple[int, str]:
     return 0, "0 point (il y a des cartes avec bourse)"
 
 
-def rule_080(grid: Grid, position: int) -> tuple[int, str]:
-    """2 points for each orange shield on the same row and the same column."""
-    row_count = grid.count_shields_in_row(position, "orange")
-    col_count = grid.count_shields_in_col(position, "orange")
-    self_count = grid.count_shields_on_card(position, "orange")
-    count = row_count + col_count - self_count  # Avoid counting card twice
-    score = count * 2
-    if count == 0:
-        explanation = "Tu n'as aucun bouclier orange. Ni sur cette rangée, ni sur cette colonne."
-    else:
-        row_text = f"Tu as {boucliers(row_count, 'orange')} sur cette rangée" if row_count > 0 else "Tu n'as aucun bouclier orange sur cette rangée"
-        col_text = f"Tu as {boucliers(col_count, 'orange')} sur cette colonne" if col_count > 0 else "Tu n'as aucun bouclier orange sur cette colonne"
-        explanation = f"""- {row_text}
-- {col_text}
-{count} x 2 = {score} points"""
-    return score, explanation
-
-
-def rule_081(grid: Grid, position: int) -> tuple[int, str]:
-    """2 points for each coin on this card. Maximum 5 coins."""
-    card_id = grid.get_card_at(position)
-    coins = min(grid.get_coins_on_card(card_id), 5)
-    score = coins * 2
-    if coins == 0:
-        explanation = "Tu n'as aucune pièce sur cette carte."
-    else:
-        explanation = f"""Tu as {coins} {pluriel(coins, 'pièce')} sur cette carte (max 5).
-{coins} x 2 = {score} points"""
-    return score, explanation
-
-
 def rule_082(grid: Grid, position: int) -> tuple[int, str]:
     """8 points if the board contains at least one 089 card or one 090 card."""
     count = grid.cards.count("089") + grid.cards.count("090")
@@ -1032,14 +374,6 @@ def rule_082(grid: Grid, position: int) -> tuple[int, str]:
         return 8, "Tu as 1 carte retournée.\n8 points"
     else:
         return 8, f"Tu as {count} cartes retournées.\n8 points"
-
-
-def rule_083(grid: Grid, position: int) -> tuple[int, str]:
-    """10 points if there is no red shield on the board."""
-    count = grid.count_shields_on_board("red")
-    if count == 0:
-        return 10, "Tu n'as aucun bouclier rouge sur le plateau.\n10 points"
-    return 0, f"Tu as {boucliers(count, 'rouge')} sur le plateau."
 
 
 def rule_084(grid: Grid, position: int) -> tuple[int, str]:
@@ -1063,18 +397,6 @@ def rule_085(grid: Grid, position: int) -> tuple[int, str]:
     return 0, "Ta carte n'est pas sur un côté."
 
 
-def rule_086(grid: Grid, position: int) -> tuple[int, str]:
-    """2 points for each card with price of exactly 0."""
-    count = grid.count_cards_with_exact_value(0)
-    score = count * 2
-    if count == 0:
-        explanation = "Tu n'as aucune carte avec un coût de 0."
-    else:
-        explanation = f"""Tu as {count} {pluriel(count, 'carte')} avec un coût de 0.
-{count} x 2 = {score} points"""
-    return score, explanation
-
-
 def rule_087(grid: Grid, position: int) -> tuple[int, str]:
     """4 points if the card is placed on corners (not borders or center)."""
     if grid.is_corner(position):
@@ -1084,54 +406,10 @@ def rule_087(grid: Grid, position: int) -> tuple[int, str]:
     return 0, "Ta carte n'est pas dans un coin."
 
 
-def rule_088(grid: Grid, position: int) -> tuple[int, str]:
-    """3 points if there is at least one blue shield on the same column."""
-    count = grid.count_shields_in_col(position, "blue")
-    if count == 0:
-        return 0, "Tu n'as aucun bouclier bleu sur cette colonne."
-    elif count == 1:
-        return 3, "Tu as au moins un bouclier bleu sur cette colonne.\n3 points"
-    else:
-        return 3, f"Tu as au moins un bouclier bleu sur cette colonne. Tu en as même {count}.\n3 points"
-
-
-def rule_089(grid: Grid, position: int) -> tuple[int, str]:
-    """This card doesn't give any points."""
-    return 0, "Cette carte est retournée et ne rapporte pas de points."
-
-
-def rule_090(grid: Grid, position: int) -> tuple[int, str]:
-    """This card doesn't give any points."""
-    return 0, "Cette carte est retournée et ne rapporte pas de points."
-
-
-def rule_091(grid: Grid, position: int) -> tuple[int, str]:
-    """9 points if there is no blue shield on the board."""
-    count = grid.count_shields_on_board("blue")
-    if count == 0:
-        return 9, "Tu n'as aucun bouclier bleu sur le plateau.\n9 points"
-    return 0, f"Tu as {boucliers(count, 'bleu')} sur le plateau."
-
-
-def rule_092(grid: Grid, position: int) -> tuple[int, str]:
-    """2 points for each yellow shield on the same row and the same column."""
-    row_count = grid.count_shields_in_row(position, "yellow")
-    col_count = grid.count_shields_in_col(position, "yellow")
-    self_count = grid.count_shields_on_card(position, "yellow")
-    count = row_count + col_count - self_count  # Avoid counting card twice
-    score = count * 2
-    if count == 0:
-        explanation = "Tu n'as aucun bouclier jaune. Ni sur cette rangée, ni sur cette colonne."
-    else:
-        row_text = f"Tu as {boucliers(row_count, 'jaune')} sur cette rangée" if row_count > 0 else "Tu n'as aucun bouclier jaune sur cette rangée"
-        col_text = f"Tu as {boucliers(col_count, 'jaune')} sur cette colonne" if col_count > 0 else "Tu n'as aucun bouclier jaune sur cette colonne"
-        explanation = f"""- {row_text}
-- {col_text}
-{count} x 2 = {score} points"""
-    return score, explanation
-
-
+# =============================================================================
 # Mapping from card ID to rule function
+# =============================================================================
+
 RULES: dict[str, callable] = {
     "001": rule_001,
     "002": rule_002,
