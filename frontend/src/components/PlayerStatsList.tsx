@@ -86,34 +86,36 @@ export function PlayerStatsList({ players, loading }: PlayerStatsListProps) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-max">
+    <div className="p-4">
+      <table className="w-full table-fixed">
         {/* Header */}
         <thead>
           <tr className="border-b border-white/10">
             <th
-              className="p-3 text-left text-white/60 text-sm font-medium cursor-pointer hover:text-white"
+              className="p-2 text-left text-white/60 text-sm font-medium cursor-pointer hover:text-white"
               onClick={() => handleSort('name')}
             >
               Joueur
               <SortIndicator columnKey="name" />
             </th>
             <th
-              className="p-3 text-center text-white/60 text-sm font-medium cursor-pointer hover:text-white"
+              className="p-2 w-14 text-center text-white/60 text-xs font-medium cursor-pointer hover:text-white"
               onClick={() => handleSort('games_count')}
             >
-              Parties
+              <span className="hidden sm:inline">Parties</span>
+              <span className="sm:hidden">P</span>
               <SortIndicator columnKey="games_count" />
             </th>
             <th
-              className="p-3 text-center text-white/60 text-sm font-medium cursor-pointer hover:text-white"
+              className="p-2 w-14 text-center text-white/60 text-xs font-medium cursor-pointer hover:text-white"
               onClick={() => handleSort('wins_count')}
             >
-              Victoires
+              <span className="hidden sm:inline">Victoires</span>
+              <span className="sm:hidden">V</span>
               <SortIndicator columnKey="wins_count" />
             </th>
             <th
-              className="p-3 text-center text-white/60 text-sm font-medium cursor-pointer hover:text-white"
+              className="p-2 w-20 text-center text-white/60 text-xs font-medium cursor-pointer hover:text-white"
               onClick={() => handleSort('win_percentage')}
             >
               Taux
@@ -130,51 +132,45 @@ export function PlayerStatsList({ players, loading }: PlayerStatsListProps) {
               className="border-b border-white/5 hover:bg-white/5"
             >
               {/* Player name with avatar */}
-              <td className="p-3">
-                <div className="flex items-center gap-3">
+              <td className="p-2">
+                <div className="flex items-center gap-2">
                   <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"
                     style={{ backgroundColor: player.color }}
                   >
                     {player.name.charAt(0).toUpperCase()}
                   </div>
-                  <span className="text-white font-medium truncate">
+                  <span className="text-white font-medium text-sm truncate">
                     {player.name}
                   </span>
                 </div>
               </td>
 
               {/* Games count */}
-              <td className="p-3 text-center text-white/80 font-mono">
+              <td className="p-2 text-center text-white/80 font-mono text-sm">
                 {player.games_count}
               </td>
 
               {/* Wins count */}
-              <td className="p-3 text-center text-gold font-mono font-medium">
+              <td className="p-2 text-center text-gold font-mono font-medium text-sm">
                 {player.wins_count}
               </td>
 
-              {/* Win percentage with bar */}
-              <td className="p-3">
-                <div className="flex items-center justify-center gap-2">
-                  <div className="w-16 h-2 bg-white/10 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${player.win_percentage}%`,
-                        backgroundColor:
-                          player.win_percentage >= 50
-                            ? '#d4af37' // gold
-                            : player.win_percentage >= 25
-                            ? '#f59e0b' // amber
-                            : '#ef4444', // red
-                      }}
-                    />
-                  </div>
-                  <span className="text-white/80 font-mono text-sm w-12 text-right">
-                    {player.win_percentage.toFixed(0)}%
-                  </span>
-                </div>
+              {/* Win percentage */}
+              <td className="p-2 text-center">
+                <span
+                  className="font-mono text-sm"
+                  style={{
+                    color:
+                      player.win_percentage >= 50
+                        ? '#d4af37' // gold
+                        : player.win_percentage >= 25
+                        ? '#f59e0b' // amber
+                        : '#ef4444', // red
+                  }}
+                >
+                  {player.win_percentage.toFixed(0)}%
+                </span>
               </td>
             </tr>
           ))}
