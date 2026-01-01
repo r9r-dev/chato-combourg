@@ -9,6 +9,9 @@ services:
       # Required: trained YOLO model weights
       - ./models:/app/models:ro
 
+      # Required: Card images (PNG + thumbs)
+      - ./cards:/app/cards:ro
+
       # Required: Python dependencies cache (installed at first startup)
       # First run takes ~5-10 minutes, subsequent starts are instant
       - deps-cache:/app/deps
