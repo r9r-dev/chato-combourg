@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.4.0 (2026-01-01)
+
+- Ajout d'un geste swipe pour revenir au menu principal
+
 ## v2.3.5 (2026-01-01)
 
 - Ajouter long press pour agrandir les cartes dans les statistiques
