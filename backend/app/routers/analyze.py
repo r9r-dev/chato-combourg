@@ -1,4 +1,6 @@
 import logging
+import platform
+import subprocess
 import time
 
 from fastapi import APIRouter, File, UploadFile, Depends
@@ -136,10 +138,49 @@ async def analyze_photo(
     return AnalyzeResponse(success=True, cards=results, capture_id=capture_id)
 
 
+def _get_cpu_model() -> str:
+    """Get CPU model name."""
+    system = platform.system()
+
+    if system == "Darwin":  # macOS
+        try:
+            result = subprocess.run(
+                ["sysctl", "-n", "machdep.cpu.brand_string"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            if result.returncode == 0:
+                return result.stdout.strip()
+        except Exception:
+            pass
+    elif system == "Linux":
+        try:
+            with open("/proc/cpuinfo") as f:
+                for line in f:
+                    if line.startswith("model name"):
+                        return line.split(":")[1].strip()
+        except Exception:
+            pass
+
+    # Fallback
+    return platform.processor() or "Unknown"
+
+
 @router.get("/health")
 async def health_check():
-    """Health check endpoint."""
-    return {"status": "healthy"}
+    """Health check endpoint with system info."""
+    available_models = yolo_detector.get_available_models()
+    default_model = yolo_detector.get_default_model_type()
+
+    return {
+        "status": "healthy",
+        "inference": {
+            "framework": default_model,
+            "available": available_models,
+        },
+        "cpu": _get_cpu_model(),
+    }
 
 
 @router.get("/cards")

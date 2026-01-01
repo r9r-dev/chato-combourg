@@ -15,6 +15,15 @@ Avec un entrainement sur 5000 photos précalculées (génération automatique de
 
 Le modèle n'a pas été entrainé sur des photos réelles (trop long !) donc dans la réalité il n'est pas aussi performant mais se trompe malgré tout très rarement.
 
+Le projet propose trois modes d'analyse :
+- Un mode local offline avec un modèle réduit au format ONNX (FP16, FP32, INT8)
+- Un mode linux qui utilise le serveur déployé sur serveur Intel sur un modèle au format OpenVINO
+- Un mode Mac qui fait un rebond vers un service qui tourne sur un Mac mini M4 sur un modèle au format PyTorch
+
+En mode offline, les résultats sont assez peu probants même en FP32. Ça fonctionne mais assez mal. Le calcul se fait en 3-4 secondes sur iPhone 17 Pro.
+En mode linux, mon vieux serveur Intel calcule en 7-8 secondes.
+En mode Mac, en 1 seconde on a le résultat, rendant l'application beaucoup plus fluide.
+
 ## Ressources requises
 
 Ce dépôt ne contient pas les images des cartes ni les modèles d'IA. Vous devrez les générer vous-même :

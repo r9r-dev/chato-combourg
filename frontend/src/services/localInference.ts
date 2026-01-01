@@ -380,6 +380,14 @@ class LocalInferenceService {
   }
 
   /**
+   * Get the variant of the stored model (fp32, fp16, int8)
+   */
+  async getModelVariant(): Promise<string | null> {
+    const info = await modelStorage.getModelInfo();
+    return info?.variant ?? null;
+  }
+
+  /**
    * Clean up resources
    */
   async dispose(): Promise<void> {

@@ -386,6 +386,23 @@ export interface ModelInfo {
   variants: ModelVariantInfo[];
 }
 
+export interface ServerHealth {
+  status: string;
+  inference: {
+    framework: string;
+    available: string[];
+  };
+  cpu: string;
+}
+
+export async function getServerHealth(): Promise<ServerHealth> {
+  const response = await fetch(`${API_BASE}/health`);
+  if (!response.ok) {
+    await handleApiError(response, 'Erreur lors de la vérification du serveur');
+  }
+  return response.json();
+}
+
 export async function getModelInfo(): Promise<ModelInfo> {
   const response = await fetch(`${API_BASE}/model/info`);
   if (!response.ok) {

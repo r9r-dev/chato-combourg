@@ -301,6 +301,11 @@ class YOLOCardDetector:
             available.append("pytorch")
         return available
 
+    def get_default_model_type(self) -> str:
+        """Return the default model type."""
+        self.initialize()
+        return self._default_model_type
+
     def _get_model(self, model_type: str | None = None) -> YOLO:
         """Get the requested model, falling back to default if unavailable."""
         self.initialize()

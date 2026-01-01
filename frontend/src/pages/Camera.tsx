@@ -3,7 +3,7 @@ import { useCamera } from '../hooks/useCamera';
 import { useGame } from '../context/GameContext';
 import { GridOverlay } from '../components/GridOverlay';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import { analyzeImage, finalizeCapture, deleteCapture, getSettings } from '../services/api';
+import { analyzeImage, finalizeCapture, deleteCapture, getSettings, getServerHealth, type ServerHealth } from '../services/api';
 import { localInference } from '../services/localInference';
 import type { GameCard, CardResult, BoundingBox, OfflineMode, AnalyzeResponse } from '../types';
 
@@ -13,6 +13,36 @@ interface DetectionResult {
 }
 
 const CONFIDENCE_THRESHOLD = 0.75;
+
+/**
+ * Tente d'extraire le modèle de l'appareil depuis le userAgent.
+ */
+function getDeviceModel(): string {
+  const ua = navigator.userAgent;
+
+  // iOS: "iPhone14,5" ou "iPad13,4" dans le userAgent (rarement exposé directement)
+  // On cherche plutôt "iPhone" ou "iPad"
+  if (/iPhone/.test(ua)) {
+    return 'iPhone';
+  }
+  if (/iPad/.test(ua)) {
+    return 'iPad';
+  }
+
+  // Android: cherche le modèle entre ";" et "Build/"
+  // Ex: "Linux; Android 13; SM-G998B Build/..."
+  const androidMatch = ua.match(/;\s*([^;]+)\s+Build\//);
+  if (androidMatch) {
+    return androidMatch[1].trim();
+  }
+
+  // Fallback: nombre de cores
+  if (navigator.hardwareConcurrency) {
+    return `${navigator.hardwareConcurrency} cores`;
+  }
+
+  return 'Unknown';
+}
 
 export function Camera() {
   const { videoRef, isReady, error, startCamera, stopCamera, captureFrameAsync, getDebugInfo, restartWithConstraints } =
@@ -36,6 +66,8 @@ export function Camera() {
   // Offline mode
   const [offlineMode, setOfflineMode] = useState<OfflineMode>('never');
   const [inferenceMode, setInferenceMode] = useState<'server' | 'local' | null>(null);
+  const [serverHealth, setServerHealth] = useState<ServerHealth | null>(null);
+  const [localModelVariant, setLocalModelVariant] = useState<string | null>(null);
 
   // Developer mode
   const [developerMode, setDeveloperMode] = useState(false);
@@ -274,7 +306,7 @@ export function Camera() {
     }
   }, [capturedImageUrl, videoRef, startCamera]);
 
-  // Load settings on mount
+  // Load settings and server health on mount
   useEffect(() => {
     const loadSettings = async () => {
       try {
@@ -289,7 +321,28 @@ export function Camera() {
         // Ignore - will use defaults
       }
     };
+
+    const loadServerHealth = async () => {
+      try {
+        const health = await getServerHealth();
+        setServerHealth(health);
+      } catch {
+        // Server unreachable
+      }
+    };
+
+    const loadLocalModelInfo = async () => {
+      try {
+        const variant = await localInference.getModelVariant();
+        setLocalModelVariant(variant);
+      } catch {
+        // No local model
+      }
+    };
+
     loadSettings();
+    loadServerHealth();
+    loadLocalModelInfo();
   }, []);
 
   // Start camera on mount
@@ -425,9 +478,22 @@ export function Camera() {
             </div>
             <p className="text-white/60 text-sm">Detection des cartes en cours</p>
             {inferenceMode && (
-              <p className="text-white/40 text-xs">
-                Mode: {inferenceMode === 'local' ? 'Hors ligne' : 'Serveur'}
-              </p>
+              <div className="text-xs text-center">
+                {inferenceMode === 'local' ? (
+                  <>
+                    <p className="text-red-400 font-medium">Offline</p>
+                    <p className="text-white/40">
+                      ONNX {localModelVariant?.toUpperCase() ?? 'FP16'} - {getDeviceModel()}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-white/40">
+                    {serverHealth?.inference.framework === 'openvino'
+                      ? 'OpenVINO - Intel Core i5-6500 @3.2Ghz'
+                      : 'PyTorch - Apple M4 @4.46Ghz'}
+                  </p>
+                )}
+              </div>
             )}
           </div>
         ) : (
