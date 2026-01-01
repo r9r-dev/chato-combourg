@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { GameProvider, useGame } from './context/GameContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Landing } from './pages/Landing';
 import { Players } from './pages/Players';
 import { Keys } from './pages/Keys';
@@ -56,12 +57,14 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <GameProvider>
-        <AppContent />
-        <InstallPrompt />
-      </GameProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <GameProvider>
+          <AppContent />
+          <InstallPrompt />
+        </GameProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

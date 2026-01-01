@@ -18,6 +18,65 @@ import type {
 
 const API_BASE = '/api';
 
+// =============================================================================
+// API Error Handling
+// =============================================================================
+
+/**
+ * Erreur API avec code et détail extraits de la réponse.
+ */
+export class ApiError extends Error {
+  readonly status: number;
+  readonly code: string;
+  readonly detail: string;
+
+  constructor(status: number, code: string, detail: string) {
+    super(detail);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+    this.detail = detail;
+  }
+
+  /** Vérifie si c'est une erreur de ressource non trouvée */
+  get isNotFound(): boolean {
+    return this.status === 404;
+  }
+
+  /** Vérifie si c'est une erreur d'authentification */
+  get isUnauthorized(): boolean {
+    return this.status === 401;
+  }
+
+  /** Vérifie si c'est une erreur de validation */
+  get isValidationError(): boolean {
+    return this.status === 400 || this.status === 422;
+  }
+}
+
+/**
+ * Parse une réponse d'erreur API et lève une ApiError.
+ */
+async function handleApiError(response: Response, fallbackMessage: string): Promise<never> {
+  let code = 'UNKNOWN_ERROR';
+  let detail = fallbackMessage;
+
+  try {
+    const data = await response.json();
+    if (data.code) code = data.code;
+    if (data.detail) detail = data.detail;
+  } catch {
+    // Si le parsing JSON échoue, utiliser le message par défaut
+    detail = response.statusText || fallbackMessage;
+  }
+
+  throw new ApiError(response.status, code, detail);
+}
+
+// =============================================================================
+// API Functions
+// =============================================================================
+
 export async function analyzeImage(imageBlob: Blob): Promise<AnalyzeResponse> {
   const formData = new FormData();
   formData.append('photo', imageBlob, 'capture.jpg');
@@ -28,7 +87,7 @@ export async function analyzeImage(imageBlob: Blob): Promise<AnalyzeResponse> {
   });
 
   if (!response.ok) {
-    throw new Error(`Analyze failed: ${response.statusText}`);
+    await handleApiError(response, "Erreur lors de l'analyse");
   }
 
   return response.json();
@@ -46,7 +105,7 @@ export async function calculateScore(
   });
 
   if (!response.ok) {
-    throw new Error(`Calculate failed: ${response.statusText}`);
+    await handleApiError(response, 'Erreur lors du calcul du score');
   }
 
   return response.json();
@@ -56,7 +115,7 @@ export async function getCards(): Promise<Card[]> {
   const response = await fetch(`${API_BASE}/cards`);
 
   if (!response.ok) {
-    throw new Error(`Get cards failed: ${response.statusText}`);
+    await handleApiError(response, 'Erreur lors du chargement des cartes');
   }
 
   const data = await response.json();
@@ -89,7 +148,7 @@ export function preloadCardImages(): Promise<void[]> {
 export async function getCurrentUser(): Promise<User> {
   const response = await fetch(`${API_BASE}/me`);
   if (!response.ok) {
-    throw new Error(`Get user failed: ${response.statusText}`);
+    await handleApiError(response, 'Erreur lors du chargement du profil');
   }
   return response.json();
 }
@@ -98,7 +157,7 @@ export async function getCurrentUser(): Promise<User> {
 export async function getPlayers(): Promise<Player[]> {
   const response = await fetch(`${API_BASE}/players`);
   if (!response.ok) {
-    throw new Error(`Get players failed: ${response.statusText}`);
+    await handleApiError(response, 'Erreur lors du chargement des joueurs');
   }
   return response.json();
 }
@@ -110,7 +169,7 @@ export async function createPlayer(name: string): Promise<Player> {
     body: JSON.stringify({ name }),
   });
   if (!response.ok) {
-    throw new Error(`Create player failed: ${response.statusText}`);
+    await handleApiError(response, 'Erreur lors de la création du joueur');
   }
   return response.json();
 }
@@ -120,7 +179,7 @@ export async function deletePlayer(playerId: number): Promise<void> {
     method: 'DELETE',
   });
   if (!response.ok) {
-    throw new Error(`Delete player failed: ${response.statusText}`);
+    await handleApiError(response, 'Erreur lors de la suppression du joueur');
   }
 }
 
@@ -136,7 +195,7 @@ export async function getGames(
   }
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error(`Get games failed: ${response.statusText}`);
+    await handleApiError(response, 'Erreur lors du chargement des parties');
   }
   return response.json();
 }
@@ -144,7 +203,7 @@ export async function getGames(
 export async function getGame(gameId: number): Promise<GameDetail> {
   const response = await fetch(`${API_BASE}/games/${gameId}`);
   if (!response.ok) {
-    throw new Error(`Get game failed: ${response.statusText}`);
+    await handleApiError(response, 'Erreur lors du chargement de la partie');
   }
   return response.json();
 }
@@ -156,7 +215,7 @@ export async function createGame(data: GameCreate): Promise<GameDetail> {
     body: JSON.stringify(data),
   });
   if (!response.ok) {
-    throw new Error(`Create game failed: ${response.statusText}`);
+    await handleApiError(response, 'Erreur lors de la sauvegarde de la partie');
   }
   return response.json();
 }
@@ -168,7 +227,7 @@ export async function createLegacyGame(data: LegacyGameCreate): Promise<GameDeta
     body: JSON.stringify(data),
   });
   if (!response.ok) {
-    throw new Error(`Create legacy game failed: ${response.statusText}`);
+    await handleApiError(response, 'Erreur lors de la sauvegarde de la partie');
   }
   return response.json();
 }
@@ -178,7 +237,7 @@ export async function deleteGame(gameId: number): Promise<void> {
     method: 'DELETE',
   });
   if (!response.ok) {
-    throw new Error(`Delete game failed: ${response.statusText}`);
+    await handleApiError(response, 'Erreur lors de la suppression de la partie');
   }
 }
 
@@ -186,7 +245,7 @@ export async function deleteGame(gameId: number): Promise<void> {
 export async function getPlayersWithStats(): Promise<PlayerWithStats[]> {
   const response = await fetch(`${API_BASE}/players?with_stats=true`);
   if (!response.ok) {
-    throw new Error(`Get players failed: ${response.statusText}`);
+    await handleApiError(response, 'Erreur lors du chargement des joueurs');
   }
   return response.json();
 }
@@ -195,7 +254,7 @@ export async function getPlayersWithStats(): Promise<PlayerWithStats[]> {
 export async function getPlayersWithFullStats(): Promise<PlayerWithFullStats[]> {
   const response = await fetch(`${API_BASE}/players?with_stats=true`);
   if (!response.ok) {
-    throw new Error(`Get players failed: ${response.statusText}`);
+    await handleApiError(response, 'Erreur lors du chargement des joueurs');
   }
   return response.json();
 }
@@ -204,7 +263,7 @@ export async function getPlayersWithFullStats(): Promise<PlayerWithFullStats[]> 
 export async function getStatistics(): Promise<Statistics> {
   const response = await fetch(`${API_BASE}/statistics`);
   if (!response.ok) {
-    throw new Error(`Get statistics failed: ${response.statusText}`);
+    await handleApiError(response, 'Erreur lors du chargement des statistiques');
   }
   return response.json();
 }
@@ -216,7 +275,7 @@ export async function updatePlayer(playerId: number, data: { name?: string; colo
     body: JSON.stringify(data),
   });
   if (!response.ok) {
-    throw new Error(`Update player failed: ${response.statusText}`);
+    await handleApiError(response, 'Erreur lors de la mise à jour du joueur');
   }
   return response.json();
 }
@@ -225,7 +284,7 @@ export async function updatePlayer(playerId: number, data: { name?: string; colo
 export async function getSettings(): Promise<Record<string, string>> {
   const response = await fetch(`${API_BASE}/settings`);
   if (!response.ok) {
-    throw new Error(`Get settings failed: ${response.statusText}`);
+    await handleApiError(response, 'Erreur lors du chargement des paramètres');
   }
   const data = await response.json();
   return data.settings;
@@ -238,7 +297,7 @@ export async function updateSettings(settings: Record<string, string | null>): P
     body: JSON.stringify({ settings }),
   });
   if (!response.ok) {
-    throw new Error(`Update settings failed: ${response.statusText}`);
+    await handleApiError(response, 'Erreur lors de la mise à jour des paramètres');
   }
   const data = await response.json();
   return data.settings;
@@ -248,7 +307,7 @@ export async function updateSettings(settings: Record<string, string | null>): P
 export async function exportGames(format: 'json' | 'csv'): Promise<Blob> {
   const response = await fetch(`${API_BASE}/games/export?format=${format}`);
   if (!response.ok) {
-    throw new Error(`Export games failed: ${response.statusText}`);
+    await handleApiError(response, "Erreur lors de l'export des parties");
   }
   return response.blob();
 }
@@ -272,7 +331,7 @@ export async function createManualGame(data: ManualGameCreate): Promise<GameDeta
     body: JSON.stringify(data),
   });
   if (!response.ok) {
-    throw new Error(`Create manual game failed: ${response.statusText}`);
+    await handleApiError(response, 'Erreur lors de la sauvegarde de la partie');
   }
   return response.json();
 }
@@ -330,7 +389,7 @@ export interface ModelInfo {
 export async function getModelInfo(): Promise<ModelInfo> {
   const response = await fetch(`${API_BASE}/model/info`);
   if (!response.ok) {
-    throw new Error(`Get model info failed: ${response.statusText}`);
+    await handleApiError(response, 'Erreur lors du chargement des informations du modèle');
   }
   return response.json();
 }
@@ -341,7 +400,7 @@ export async function downloadModel(
 ): Promise<ArrayBuffer> {
   const response = await fetch(`${API_BASE}/model/download?variant=${variant}`);
   if (!response.ok) {
-    throw new Error(`Download model failed: ${response.statusText}`);
+    await handleApiError(response, 'Erreur lors du téléchargement du modèle');
   }
 
   const contentLength = response.headers.get('content-length');
