@@ -37,5 +37,10 @@ def get_db():
 
 
 def init_db():
-    """Initialize database tables."""
+    """Initialize database tables and run migrations."""
+    # Create all tables from models
     Base.metadata.create_all(bind=engine)
+
+    # Run pending migrations
+    from app.database.migrations import run_migrations
+    run_migrations(engine)
