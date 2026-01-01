@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.4.3 (2026-01-01)
+
+- Afficher le mode d'inference pendant l'analyse
+
 ## v2.4.2 (2026-01-01)
 
 Corrections et améliorations mineures
