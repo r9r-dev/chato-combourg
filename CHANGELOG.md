@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.3.5 (2026-01-01)
+
+- Ajouter long press pour agrandir les cartes dans les statistiques
+
 ## v2.3.4 (2026-01-01)
 
 Corrections et améliorations mineures
