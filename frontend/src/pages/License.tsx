@@ -85,22 +85,22 @@ export function License() {
           <h3 className="text-white text-lg font-semibold mb-3">Permissions</h3>
           <ul className="text-white/60 text-sm space-y-1 mb-6">
             <li>- Utilisation, copie et distribution du logiciel</li>
-            <li>- Modification et creation de versions derivees</li>
-            <li>- Utilisation privee et commerciale</li>
+            <li>- Modification et creation de versions derivées</li>
+            <li>- Utilisation privée et commerciale</li>
           </ul>
 
           <h3 className="text-white text-lg font-semibold mb-3">Conditions</h3>
           <ul className="text-white/60 text-sm space-y-1 mb-6">
-            <li>- Fournir le code source aux utilisateurs (y compris via reseau)</li>
+            <li>- Fournir le code source aux utilisateurs (y compris via réseau)</li>
             <li>- Conserver les notices de copyright et la licence</li>
-            <li>- Distribuer les modifications sous la meme licence AGPL v3</li>
-            <li>- Documenter les modifications apportees</li>
+            <li>- Distribuer les modifications sous la même licence AGPL v3</li>
+            <li>- Documenter les modifications apportées</li>
           </ul>
 
           <h3 className="text-white text-lg font-semibold mb-3">Limitations</h3>
           <ul className="text-white/60 text-sm space-y-1 mb-6">
             <li>- Aucune garantie fournie</li>
-            <li>- Aucune responsabilite des auteurs</li>
+            <li>- Aucune responsabilité des auteurs</li>
           </ul>
 
           <div className="border-t border-white/10 pt-6">
