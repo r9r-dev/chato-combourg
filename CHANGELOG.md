@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.3.2 (2026-01-01)
+
+- Correction des erreurs TypeScript dans CardStatistics et Developer
+
 ## v2.3.1 (2026-01-01)
 
 - Refonte de l'onglet statistiques avec une meilleure disposition
