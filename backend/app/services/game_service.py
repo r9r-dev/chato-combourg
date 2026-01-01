@@ -128,7 +128,7 @@ def create_game_with_players(
         tuple: (Game créée, liste des GamePlayer, dict player_id -> Player)
 
     Raises:
-        HTTPException: 400 si des joueurs sont invalides
+        InvalidPlayerOwnershipError: Si des joueurs sont invalides
     """
     # Valider que tous les joueurs appartiennent à l'utilisateur
     player_ids = [p["player_id"] for p in players_data]

@@ -4,10 +4,12 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.exceptions import RequestValidationError
 
 from app.config import settings
+from app.exceptions import AppException
 from app.routers import analyze, calculator, players, games, users, captures, model, statistics
 from app.services.card_database import card_database
 from app.services.yolo_detector import (
@@ -166,6 +168,62 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# =============================================================================
+# Exception handlers
+# =============================================================================
+
+
+@app.exception_handler(AppException)
+async def app_exception_handler(request: Request, exc: AppException):
+    """Handler pour les exceptions métier personnalisées."""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "success": False,
+            "code": exc.code,
+            "detail": exc.detail,
+        },
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Handler pour les erreurs de validation Pydantic."""
+    errors = exc.errors()
+    # Extraire le premier message d'erreur lisible
+    if errors:
+        first_error = errors[0]
+        field = " -> ".join(str(loc) for loc in first_error.get("loc", []))
+        message = first_error.get("msg", "Erreur de validation")
+        detail = f"{field}: {message}" if field else message
+    else:
+        detail = "Erreur de validation des données"
+
+    return JSONResponse(
+        status_code=422,
+        content={
+            "success": False,
+            "code": "VALIDATION_ERROR",
+            "detail": detail,
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    """Handler pour les exceptions non gérées."""
+    logger.error(f"Erreur non gérée sur {request.method} {request.url.path}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "success": False,
+            "code": "INTERNAL_ERROR",
+            "detail": "Une erreur interne est survenue",
+        },
+    )
+
 
 # Include routers
 app.include_router(analyze.router)

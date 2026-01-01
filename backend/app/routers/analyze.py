@@ -1,7 +1,7 @@
 import logging
 import time
 
-from fastapi import APIRouter, File, UploadFile, HTTPException, Depends
+from fastapi import APIRouter, File, UploadFile, Depends
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -10,6 +10,12 @@ from app.services.image_processor import load_image_from_bytes
 from app.services.yolo_detector import yolo_detector
 from app.auth import get_current_user_optional
 from app.database import get_db, User, Setting
+from app.exceptions import (
+    InvalidImageError,
+    ImageTooLargeError,
+    ImageProcessingError,
+    CardDetectionError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -49,25 +55,22 @@ async def analyze_photo(
 
     # Validate file type
     if not photo.content_type or not photo.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="File must be an image")
+        raise InvalidImageError()
 
     # Read and process image
     try:
         content = await photo.read()
         if len(content) > settings.max_upload_size:
-            raise HTTPException(
-                status_code=400,
-                detail=f"File too large. Max size: {settings.max_upload_size // (1024*1024)}MB",
-            )
+            raise ImageTooLargeError(settings.max_upload_size // (1024 * 1024))
 
         # Load image with EXIF correction
         image = load_image_from_bytes(content)
 
-    except HTTPException:
+    except (InvalidImageError, ImageTooLargeError):
         raise
     except Exception as e:
         logger.error(f"Erreur image: {e}")
-        raise HTTPException(status_code=400, detail=f"Failed to process image: {str(e)}")
+        raise ImageProcessingError(detail=f"Impossible de traiter l'image : {e}")
 
     # Detect and identify cards using YOLO11
     try:
@@ -101,7 +104,7 @@ async def analyze_photo(
 
     except Exception as e:
         logger.error(f"Erreur analyse: {e}")
-        raise HTTPException(status_code=400, detail=f"Failed to analyze cards: {str(e)}")
+        raise CardDetectionError(detail=f"Erreur lors de la détection : {e}")
 
     # Convert to response models
     results = []

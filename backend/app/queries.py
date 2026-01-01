@@ -4,10 +4,14 @@ Ce module fournit des fonctions utilitaires pour récupérer des entités
 de la base de données avec gestion automatique des erreurs 404.
 """
 
-from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import Player, Game, GamePlayer
+from app.exceptions import (
+    PlayerNotFoundError,
+    GameNotFoundError,
+    InvalidPlayerOwnershipError,
+)
 
 
 def get_player_or_404(db: Session, player_id: int, user_id: str) -> Player:
@@ -23,7 +27,7 @@ def get_player_or_404(db: Session, player_id: int, user_id: str) -> Player:
         Player: Le joueur trouvé
 
     Raises:
-        HTTPException: 404 si le joueur n'existe pas ou n'appartient pas à l'utilisateur
+        PlayerNotFoundError: Si le joueur n'existe pas ou n'appartient pas à l'utilisateur
     """
     player = (
         db.query(Player)
@@ -31,7 +35,7 @@ def get_player_or_404(db: Session, player_id: int, user_id: str) -> Player:
         .first()
     )
     if not player:
-        raise HTTPException(status_code=404, detail="Joueur introuvable")
+        raise PlayerNotFoundError()
     return player
 
 
@@ -48,7 +52,7 @@ def get_game_or_404(db: Session, game_id: int, user_id: str) -> Game:
         Game: La partie trouvée
 
     Raises:
-        HTTPException: 404 si la partie n'existe pas ou n'appartient pas à l'utilisateur
+        GameNotFoundError: Si la partie n'existe pas ou n'appartient pas à l'utilisateur
     """
     game = (
         db.query(Game)
@@ -56,7 +60,7 @@ def get_game_or_404(db: Session, game_id: int, user_id: str) -> Game:
         .first()
     )
     if not game:
-        raise HTTPException(status_code=404, detail="Partie introuvable")
+        raise GameNotFoundError()
     return game
 
 
@@ -77,7 +81,7 @@ def validate_players_ownership(
         dict[int, Player]: Mapping player_id -> Player
 
     Raises:
-        HTTPException: 400 si certains joueurs sont invalides
+        InvalidPlayerOwnershipError: Si certains joueurs sont invalides
     """
     players = (
         db.query(Player)
@@ -88,10 +92,7 @@ def validate_players_ownership(
     if len(players) != len(player_ids):
         found_ids = {p.id for p in players}
         invalid_ids = [pid for pid in player_ids if pid not in found_ids]
-        raise HTTPException(
-            status_code=400,
-            detail=f"Joueurs invalides : {invalid_ids}"
-        )
+        raise InvalidPlayerOwnershipError(invalid_ids)
 
     return {p.id: p for p in players}
 

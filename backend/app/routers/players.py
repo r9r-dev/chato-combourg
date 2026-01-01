@@ -2,7 +2,7 @@
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -10,6 +10,7 @@ from sqlalchemy import func
 from app.auth import get_current_user
 from app.database import get_db, User, Player, GamePlayer, Game
 from app.queries import get_player_or_404, count_player_games
+from app.exceptions import PlayerHasGamesError
 
 logger = logging.getLogger(__name__)
 
@@ -184,10 +185,7 @@ def delete_player(
     games_count = count_player_games(db, player.id)
 
     if games_count > 0:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Impossible de supprimer ce joueur : {games_count} partie(s) enregistrée(s)"
-        )
+        raise PlayerHasGamesError(games_count)
 
     db.delete(player)
     db.commit()

@@ -1,9 +1,10 @@
 """Calculator router for score calculation endpoint."""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 from app.services.calculator import CalculateRequest, CalculateResponse, calculate_score
 from app.services.calculator.grid import CARD_ATTRIBUTES
+from app.exceptions import InvalidCardError, InvalidCoinsError
 
 router = APIRouter(prefix="/api", tags=["calculator"])
 
@@ -46,10 +47,7 @@ async def calculate(request: CalculateRequest) -> CalculateResponse:
     # Validate all card IDs exist
     for card_id in request.cards:
         if card_id not in CARD_ATTRIBUTES:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Carte inconnue: {card_id}",
-            )
+            raise InvalidCardError(card_id)
 
     # Auto-distribute coins if total_coins is provided
     if request.total_coins is not None:
@@ -59,21 +57,18 @@ async def calculate(request: CalculateRequest) -> CalculateResponse:
         # Validate manually provided coins
         for card_id, coins in coins_on_cards.items():
             if card_id not in request.cards:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Pièces placées sur une carte absente du plateau: {card_id}",
+                raise InvalidCoinsError(
+                    detail=f"Pièces placées sur une carte absente du plateau : {card_id}"
                 )
             if coins < 0:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Nombre de pièces invalide pour {card_id}: {coins}",
+                raise InvalidCoinsError(
+                    detail=f"Nombre de pièces invalide pour {card_id} : {coins}"
                 )
             # Check max coins for the card
             max_coins = CARD_ATTRIBUTES[card_id].get("max_coins", 0)
             if coins > max_coins:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Trop de pièces sur {card_id}: {coins} (max {max_coins})",
+                raise InvalidCoinsError(
+                    detail=f"Trop de pièces sur {card_id} : {coins} (max {max_coins})"
                 )
 
     # Create modified request with distributed coins

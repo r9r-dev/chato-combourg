@@ -1,10 +1,11 @@
 import logging
 from dataclasses import dataclass
-from fastapi import Request, Depends, HTTPException
+from fastapi import Request, Depends
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db, User
+from app.exceptions import MissingAuthHeaderError
 
 logger = logging.getLogger(__name__)
 
@@ -36,10 +37,7 @@ def get_current_user_info(request: Request) -> CurrentUser:
 
     user_id = request.headers.get("Remote-User")
     if not user_id:
-        raise HTTPException(
-            status_code=401,
-            detail="Not authenticated. Missing Remote-User header.",
-        )
+        raise MissingAuthHeaderError()
 
     return CurrentUser(
         id=user_id,
