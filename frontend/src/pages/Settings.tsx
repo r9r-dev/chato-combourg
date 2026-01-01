@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useGame } from '../context/GameContext';
 import { useAuth } from '../context/AuthContext';
+import { useSwipeBack } from '../hooks/useSwipeBack';
 import {
   updatePlayer,
   deletePlayer,
@@ -40,6 +41,15 @@ const MODEL_OPTIONS: { value: DetectionModel; label: string; description: string
 
 export function Settings() {
   const { setStep, setLegacyMode } = useGame();
+
+  const handleBack = useCallback(() => {
+    setStep('landing');
+  }, [setStep]);
+
+  const { containerStyle } = useSwipeBack({
+    onSwipeBack: handleBack,
+  });
+
   const {
     playersWithStats,
     playerOrder,
@@ -293,10 +303,10 @@ export function Settings() {
   });
 
   return (
-    <div className="flex flex-col h-dvh bg-dark">
+    <div className="flex flex-col h-dvh bg-dark" style={containerStyle}>
       {/* Header */}
       <header className="flex items-center justify-between p-4 border-b border-white/10">
-        <button onClick={() => setStep('landing')} className="text-white/60 hover:text-white">
+        <button onClick={handleBack} className="text-white/60 hover:text-white">
           Retour
         </button>
         <h1 className="text-lg font-semibold text-white">Paramètres</h1>

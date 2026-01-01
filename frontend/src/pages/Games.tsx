@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useGame } from '../context/GameContext';
+import { useSwipeBack } from '../hooks/useSwipeBack';
 import {
   getGames,
   getGame,
@@ -35,6 +36,15 @@ interface MockGamesData {
 
 export function Games() {
   const { setStep } = useGame();
+
+  // Swipe back to landing
+  const handleBack = useCallback(() => {
+    setStep('landing');
+  }, [setStep]);
+
+  const { containerStyle } = useSwipeBack({
+    onSwipeBack: handleBack,
+  });
 
   // Check for mock data from developer mode
   const [mockData, setMockData] = useState<MockGamesData | null>(null);
@@ -345,17 +355,17 @@ export function Games() {
     );
   };
 
-  // Handle close in dev mode
-  const handleClose = () => {
+  // Handle close (clears dev mode state before navigating)
+  const handleClose = useCallback(() => {
     if (isDevMode) {
       setMockData(null);
       setIsDevMode(false);
     }
-    setStep('landing');
-  };
+    handleBack();
+  }, [isDevMode, handleBack]);
 
   return (
-    <div className="flex flex-col h-dvh">
+    <div className="flex flex-col h-dvh bg-dark" style={containerStyle}>
       {/* Header */}
       <header className={`flex items-center justify-between p-4 border-b ${
         isDevMode ? 'bg-red-950/30 border-red-900/50' : 'border-white/10'
