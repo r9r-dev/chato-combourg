@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.3.4 (2026-01-01)
+
+Corrections et améliorations mineures
+
 ## v2.3.3 (2026-01-01)
 
 - Ajout d'un système de migration de base de données
