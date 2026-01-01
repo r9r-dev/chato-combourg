@@ -59,6 +59,7 @@ export function Settings() {
 
   // Delete confirmation
   const [deletingPlayer, setDeletingPlayer] = useState<PlayerWithStats | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Export state
   const [exporting, setExporting] = useState(false);
@@ -143,6 +144,7 @@ export function Settings() {
   // Delete player
   const confirmDeletePlayer = async () => {
     if (!deletingPlayer) return;
+    setDeleteError(null);
     try {
       await deletePlayer(deletingPlayer.id);
       setPlayers(players.filter(p => p.id !== deletingPlayer.id));
@@ -150,6 +152,12 @@ export function Settings() {
       refreshPlayers();
     } catch (err) {
       console.error('Failed to delete player:', err);
+      // Extract error message from API response
+      if (err instanceof Error && err.message.includes('partie')) {
+        setDeleteError(err.message);
+      } else {
+        setDeleteError('Impossible de supprimer ce joueur');
+      }
     }
   };
 
@@ -645,11 +653,17 @@ export function Settings() {
       <ConfirmDialog
         isOpen={!!deletingPlayer}
         title="Supprimer le joueur ?"
-        message={`${deletingPlayer?.name} sera supprimé définitivement.`}
-        confirmLabel="Supprimer"
-        cancelLabel="Annuler"
-        onConfirm={confirmDeletePlayer}
-        onCancel={() => setDeletingPlayer(null)}
+        message={
+          deleteError
+            ? deleteError
+            : deletingPlayer?.games_count && deletingPlayer.games_count > 0
+            ? `${deletingPlayer.name} a ${deletingPlayer.games_count} partie(s) enregistrée(s) et ne peut pas être supprimé.`
+            : `${deletingPlayer?.name} sera supprimé définitivement.`
+        }
+        confirmLabel={deletingPlayer?.games_count && deletingPlayer.games_count > 0 ? undefined : "Supprimer"}
+        cancelLabel={deletingPlayer?.games_count && deletingPlayer.games_count > 0 ? "Fermer" : "Annuler"}
+        onConfirm={deletingPlayer?.games_count && deletingPlayer.games_count > 0 ? undefined : confirmDeletePlayer}
+        onCancel={() => { setDeletingPlayer(null); setDeleteError(null); }}
       />
     </div>
   );

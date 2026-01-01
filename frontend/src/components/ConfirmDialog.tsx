@@ -4,7 +4,7 @@ interface ConfirmDialogProps {
   message: string;
   confirmLabel?: string;
   cancelLabel?: string;
-  onConfirm: () => void;
+  onConfirm?: () => void;
   onCancel: () => void;
 }
 
@@ -12,12 +12,14 @@ export function ConfirmDialog({
   isOpen = true,
   title,
   message,
-  confirmLabel = 'Confirmer',
+  confirmLabel,
   cancelLabel = 'Annuler',
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
   if (!isOpen) return null;
+
+  const showConfirmButton = onConfirm && confirmLabel;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -44,13 +46,15 @@ export function ConfirmDialog({
           >
             {cancelLabel}
           </button>
-          <button
-            onClick={onConfirm}
-            className="flex-1 py-4 text-gold font-medium border-l border-gold/20
-                       hover:bg-dark-card transition-colors"
-          >
-            {confirmLabel}
-          </button>
+          {showConfirmButton && (
+            <button
+              onClick={onConfirm}
+              className="flex-1 py-4 text-gold font-medium border-l border-gold/20
+                         hover:bg-dark-card transition-colors"
+            >
+              {confirmLabel}
+            </button>
+          )}
         </div>
       </div>
     </div>

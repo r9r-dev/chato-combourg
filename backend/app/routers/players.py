@@ -185,5 +185,18 @@ def delete_player(
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
 
+    # Check if player has registered games
+    games_count = (
+        db.query(func.count(GamePlayer.id))
+        .filter(GamePlayer.player_id == player.id)
+        .scalar()
+    ) or 0
+
+    if games_count > 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Impossible de supprimer ce joueur: {games_count} partie(s) enregistrée(s)"
+        )
+
     db.delete(player)
     db.commit()
