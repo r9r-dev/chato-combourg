@@ -1,5 +1,14 @@
 # Changelog
 
+## v2.4.1 (2026-01-01)
+
+- Refactorisation des pages Keys et Coins pour meilleure réutilisabilité
+- Amélioration de la gestion des erreurs au niveau frontend avec gestion centralisée
+- Centralisation de la gestion des erreurs backend pour une meilleure cohérence
+- Refactorisation de GameContext avec useReducer pour une gestion d'état plus robuste
+- Extraction de la logique métier dans services et helpers dédiés
+- Refactorisation des règles de scoring avec utilisation de factories pour plus de maintenabilité
+
 ## v2.4.0 (2026-01-01)
 
 - Ajout d'un geste swipe pour revenir au menu principal
