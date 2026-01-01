@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.1.0 (2026-01-01)
+
+- Ajout d'un worker PyTorch pour l'inférence distante sur Mac M4
+
 ## v2.0.7 (2025-12-31)
 
 - Changement de licence de GPL v3 vers AGPL v3
