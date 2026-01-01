@@ -24,6 +24,10 @@ Thumbs.db
 # Build outputs
 dist/
 
+# Card images (large assets)
+backend/cards/*.png
+backend/cards/thumbs/*
+
 # Logs
 *.log
 npm-debug.log*
