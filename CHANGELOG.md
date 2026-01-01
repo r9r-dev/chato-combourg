@@ -1,5 +1,15 @@
 # Changelog
 
+## v2.3.1 (2026-01-01)
+
+- Refonte de l'onglet statistiques avec une meilleure disposition
+- Affichage du nombre de parties jouées pour les cartes favorites des joueurs
+- Affichage de tous les joueurs dans l'historique des parties au lieu du seul gagnant
+- Déplacement du bouton Quitter vers l'en-tête sous forme d'icône X
+- Correction : caméra n'apparaissait pas après clic sur Reprendre
+- Correction : défilement horizontal dans l'onglet Joueurs
+- Prévention de la suppression des joueurs ayant des parties enregistrées
+
 ## v2.3.0 (2026-01-01)
 
 - Simplification du mode legacy pour la saisie manuelle de parties
