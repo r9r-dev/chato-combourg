@@ -15,6 +15,42 @@ Avec un entrainement sur 5000 photos précalculées (génération automatique de
 
 Le modèle n'a pas été entrainé sur des photos réelles (trop long !) donc dans la réalité il n'est pas aussi performant mais se trompe malgré tout très rarement.
 
+## Ressources requises
+
+Ce dépôt ne contient pas les images des cartes ni les modèles d'IA. Vous devrez les générer vous-même :
+
+### Images des cartes
+
+Les visuels des cartes sont la propriété de **Catch Up Games** et ne peuvent pas être redistribués. Pour utiliser cette application, vous devez posséder le jeu **Château Combo** et scanner vos propres cartes :
+
+1. Scannez les 92 cartes de votre jeu en PNG (630x880px recommandé)
+2. Nommez-les `carte_001.png` à `carte_092.png`
+3. Placez-les dans `backend/cards/`
+4. Générez les miniatures WebP avec le script fourni :
+   ```bash
+   cd backend && python scripts/generate_thumbs.py
+   ```
+
+### Modèle de reconnaissance
+
+Le modèle YOLO doit être entraîné à partir de vos cartes scannées :
+
+1. Générez le dataset d'entraînement :
+   ```bash
+   cd training
+   python generate_dataset.py
+   ```
+
+2. Lancez l'entraînement (nécessite un GPU ou MPS sur Mac) :
+   ```bash
+   python train.py
+   ```
+
+3. Copiez le modèle entraîné :
+   ```bash
+   cp runs/detect/train/weights/best.pt ../models/card_detector/yolo11/model.pt
+   ```
+
 ## Installation
 
 ### Avec Docker (recommandé)
@@ -25,7 +61,7 @@ git clone https://github.com/r9r-dev/chato-combourg.git
 cd chato-combourg
 ```
 
-2. Téléchargez le modèle YOLO entraîné et placez-le dans `./models/card_detector/yolo11/model.pt`
+2. Assurez-vous d'avoir généré les cartes et entraîné le modèle (voir [Ressources requises](#ressources-requises))
 
 3. Lancez l'application :
 ```bash
