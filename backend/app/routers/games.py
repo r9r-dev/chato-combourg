@@ -78,6 +78,15 @@ class GameResponse(BaseModel):
     players: list[GamePlayerResponse]
 
 
+class GamePlayerSummary(BaseModel):
+    """Player summary for game list view."""
+
+    player_name: str
+    player_color: str
+    score: int
+    rank: int | None
+
+
 class GameListItem(BaseModel):
     """Simplified game for list view."""
 
@@ -90,6 +99,7 @@ class GameListItem(BaseModel):
     winner_name: str | None
     winner_score: int | None
     is_legacy: bool = False
+    players: list[GamePlayerSummary] = []
 
 
 class ManualGamePlayerCreate(BaseModel):
@@ -181,10 +191,23 @@ def list_games(
     result = []
     for game in games:
         winner = None
-        for gp in game.game_players:
+        players_summary = []
+
+        # Sort by rank for display
+        sorted_players = sorted(game.game_players, key=lambda gp: (gp.rank or 999, gp.position))
+
+        for gp in sorted_players:
             if gp.rank == 1:
                 winner = gp
-                break
+
+            players_summary.append(
+                GamePlayerSummary(
+                    player_name=gp.player.name,
+                    player_color=gp.player.color,
+                    score=gp.score,
+                    rank=gp.rank,
+                )
+            )
 
         # Check if any player is legacy (game is legacy if any player is)
         is_legacy = any(gp.is_legacy for gp in game.game_players)
@@ -198,6 +221,7 @@ def list_games(
                 winner_name=winner.player.name if winner else None,
                 winner_score=winner.score if winner else None,
                 is_legacy=is_legacy,
+                players=players_summary,
             )
         )
 

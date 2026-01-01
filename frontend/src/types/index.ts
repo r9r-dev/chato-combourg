@@ -135,6 +135,13 @@ export interface SelectedPlayer extends Player {
 }
 
 // Games (from API)
+export interface GamePlayerSummary {
+  player_name: string;
+  player_color: string;
+  score: number;
+  rank: number | null;
+}
+
 export interface GameListItem {
   id: number;
   played_at: string;
@@ -143,6 +150,7 @@ export interface GameListItem {
   winner_name: string | null;
   winner_score: number | null;
   is_legacy: boolean;
+  players: GamePlayerSummary[];
 }
 
 export interface GamePlayerData {
