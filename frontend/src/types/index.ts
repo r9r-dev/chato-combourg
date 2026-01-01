@@ -132,6 +132,7 @@ export interface SelectedPlayer extends Player {
   score: CalculateResponse | null;
   captureId?: string;
   originalCards?: GameCard[];  // Cards as detected, before corrections
+  legacyCardScores?: number[]; // 9 individual card scores (for legacy mode)
 }
 
 // Games (from API)

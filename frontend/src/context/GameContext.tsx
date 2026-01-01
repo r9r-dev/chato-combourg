@@ -1,7 +1,17 @@
+/**
+ * Game Context - Gestion de l'état du jeu multi-joueurs.
+ *
+ * Ce contexte gère :
+ * - La navigation entre les étapes (landing, players, keys, coins, camera, review, summary)
+ * - Le plateau du joueur courant (cartes, clés, pièces, score)
+ * - Le flux multi-joueurs (sélection, sauvegarde, passage au suivant)
+ * - Le mode legacy (import d'anciennes parties)
+ */
+
 import {
   createContext,
   useContext,
-  useState,
+  useReducer,
   useCallback,
   type ReactNode,
 } from 'react';
@@ -12,113 +22,77 @@ import type {
   SelectedPlayer,
   Player,
   CalculateResponse,
-  LegacyPlayerCreate,
   GameDetail,
 } from '../types';
-import { calculateScore, createGame, createLegacyGame } from '../services/api';
+import { calculateScore, createGame } from '../services/api';
+import { gameReducer, initialGameState } from './gameReducer';
+import { useLegacyMode } from '../hooks/useLegacyMode';
+
+// =============================================================================
+// Types du contexte
+// =============================================================================
 
 interface GameContextType {
   state: GameState;
+  // Navigation
   setStep: (step: GameState['step']) => void;
-  // Player selection
+  reset: () => void;
+  // Sélection des joueurs
   setSelectedPlayers: (players: Player[]) => void;
-  setSelectedPlayersAndContinue: (players: Player[]) => void; // Sets players and navigates based on mode
+  setSelectedPlayersAndContinue: (players: Player[]) => void;
   getCurrentPlayer: () => SelectedPlayer | null;
-  // Current player's board
+  // Plateau du joueur courant
   setCards: (cards: GameCard[], captureId?: string) => void;
   updateCard: (position: number, cardId: string, alternatives?: CardMatch[]) => void;
   setKeys: (keys: number) => void;
   setCoins: (coins: number) => void;
-  // Capture management
+  // Capture
   setCaptureId: (captureId: string) => void;
   getPreviousCaptureId: () => string | undefined;
-  // Flow control
-  saveCurrentPlayerAndNext: () => Promise<boolean>; // Returns true if more players
+  // Flux multi-joueurs
+  saveCurrentPlayerAndNext: () => Promise<boolean>;
   recalculateCurrentPlayerScore: () => Promise<void>;
-  // Game management
   saveGame: () => Promise<void>;
-  reset: () => void;
-  // Legacy mode
+  // Mode legacy
   setLegacyMode: (isLegacy: boolean) => void;
   setLegacyCardScores: (scores: number[]) => void;
-  saveLegacyPlayerAndNext: () => Promise<boolean>; // Returns true if more players
-  saveLegacyGame: () => Promise<GameDetail | null>; // Save all legacy players and return game
+  saveLegacyPlayerAndNext: () => Promise<boolean>;
+  saveLegacyGame: () => Promise<GameDetail | null>;
 }
-
-const initialState: GameState = {
-  step: 'landing',
-  cards: [],
-  keys: 0,
-  coins: 0,
-  score: null,
-  selectedPlayers: [],
-  currentPlayerIndex: 0,
-  captureId: undefined,
-  originalCards: undefined,
-  isLegacyMode: false,
-  legacyCardScores: undefined,
-};
 
 const GameContext = createContext<GameContextType | null>(null);
 
+// =============================================================================
+// Provider
+// =============================================================================
+
 export function GameProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<GameState>(initialState);
+  const [state, dispatch] = useReducer(gameReducer, initialGameState);
 
-  const setStep = useCallback((step: GameState['step']) => {
-    setState((prev) => ({ ...prev, step }));
-  }, []);
+  // Hook pour le mode legacy
+  const legacy = useLegacyMode({ state, dispatch });
 
-  const setSelectedPlayers = useCallback((players: Player[]) => {
-    const selectedPlayers: SelectedPlayer[] = players.map((p) => ({
-      ...p,
-      keys: 0,
-      coins: 0,
-      cards: [],
-      score: null,
-      captureId: undefined,
-      originalCards: undefined,
-    }));
-    setState((prev) => ({
-      ...prev,
-      selectedPlayers,
-      currentPlayerIndex: 0,
-      // Reset current player's board
-      cards: [],
-      keys: 0,
-      coins: 0,
-      score: null,
-      captureId: undefined,
-      originalCards: undefined,
-    }));
-  }, []);
+  // Navigation
+  const setStep = useCallback(
+    (step: GameState['step']) => dispatch({ type: 'SET_STEP', step }),
+    []
+  );
 
-  // Combined function that sets players and navigates based on legacy mode
-  // This ensures we read isLegacyMode from the latest state
-  const setSelectedPlayersAndContinue = useCallback((players: Player[]) => {
-    const selectedPlayers: SelectedPlayer[] = players.map((p) => ({
-      ...p,
-      keys: 0,
-      coins: 0,
-      cards: [],
-      score: null,
-      captureId: undefined,
-      originalCards: undefined,
-    }));
-    setState((prev) => ({
-      ...prev,
-      selectedPlayers,
-      currentPlayerIndex: 0,
-      // Reset current player's board
-      cards: [],
-      keys: 0,
-      coins: 0,
-      score: null,
-      captureId: undefined,
-      originalCards: undefined,
-      // Navigate based on mode - using prev ensures we get the latest isLegacyMode
-      step: prev.isLegacyMode ? 'legacy-scores' : 'keys',
-    }));
-  }, []);
+  const reset = useCallback(() => dispatch({ type: 'RESET' }), []);
+
+  // Sélection des joueurs
+  const setSelectedPlayers = useCallback(
+    (players: Player[]) => dispatch({ type: 'SET_SELECTED_PLAYERS', players }),
+    []
+  );
+
+  const setSelectedPlayersAndContinue = useCallback(
+    (players: Player[]) => {
+      const navigateTo = state.isLegacyMode ? 'legacy-scores' : 'keys';
+      dispatch({ type: 'SET_SELECTED_PLAYERS', players, navigateTo });
+    },
+    [state.isLegacyMode]
+  );
 
   const getCurrentPlayer = useCallback((): SelectedPlayer | null => {
     if (state.selectedPlayers.length === 0) return null;
@@ -126,51 +100,41 @@ export function GameProvider({ children }: { children: ReactNode }) {
     return state.selectedPlayers[state.currentPlayerIndex];
   }, [state.selectedPlayers, state.currentPlayerIndex]);
 
-  const setCards = useCallback((cards: GameCard[], captureId?: string) => {
-    setState((prev) => ({
-      ...prev,
-      cards,
-      captureId: captureId ?? prev.captureId,
-      // Store original cards for comparison later (deep copy)
-      originalCards: cards.map(c => ({ ...c })),
-    }));
-  }, []);
-
-  const setCaptureId = useCallback((captureId: string) => {
-    setState((prev) => ({ ...prev, captureId }));
-  }, []);
-
-  const getPreviousCaptureId = useCallback((): string | undefined => {
-    return state.captureId;
-  }, [state.captureId]);
-
-  const updateCard = useCallback(
-    (position: number, cardId: string, alternatives?: CardMatch[]) => {
-      setState((prev) => ({
-        ...prev,
-        cards: prev.cards.map((card) =>
-          card.position === position
-            ? {
-                ...card,
-                cardId,
-                confidence: 1.0,
-                alternatives: alternatives ?? card.alternatives,
-              }
-            : card
-        ),
-      }));
-    },
+  // Plateau du joueur courant
+  const setCards = useCallback(
+    (cards: GameCard[], captureId?: string) =>
+      dispatch({ type: 'SET_CARDS', cards, captureId }),
     []
   );
 
-  const setKeys = useCallback((keys: number) => {
-    setState((prev) => ({ ...prev, keys: Math.max(0, keys) }));
-  }, []);
+  const updateCard = useCallback(
+    (position: number, cardId: string, alternatives?: CardMatch[]) =>
+      dispatch({ type: 'UPDATE_CARD', position, cardId, alternatives }),
+    []
+  );
 
-  const setCoins = useCallback((coins: number) => {
-    setState((prev) => ({ ...prev, coins: Math.max(0, coins) }));
-  }, []);
+  const setKeys = useCallback(
+    (keys: number) => dispatch({ type: 'SET_KEYS', keys }),
+    []
+  );
 
+  const setCoins = useCallback(
+    (coins: number) => dispatch({ type: 'SET_COINS', coins }),
+    []
+  );
+
+  // Capture
+  const setCaptureId = useCallback(
+    (captureId: string) => dispatch({ type: 'SET_CAPTURE_ID', captureId }),
+    []
+  );
+
+  const getPreviousCaptureId = useCallback(
+    (): string | undefined => state.captureId,
+    [state.captureId]
+  );
+
+  // Flux multi-joueurs
   const recalculateCurrentPlayerScore = useCallback(async () => {
     if (state.cards.length !== 9) return;
 
@@ -184,14 +148,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
         keys: state.keys,
         total_coins: state.coins,
       });
-      setState((prev) => ({ ...prev, score }));
+      dispatch({ type: 'SET_SCORE', score });
     } catch (error) {
       console.error('Failed to calculate score:', error);
     }
   }, [state.cards, state.keys, state.coins]);
 
   const saveCurrentPlayerAndNext = useCallback(async (): Promise<boolean> => {
-    // Calculate score for current player
     if (state.cards.length !== 9) return false;
 
     const cardIds = state.cards
@@ -210,41 +173,21 @@ export function GameProvider({ children }: { children: ReactNode }) {
       return false;
     }
 
-    // Update current player with their data
-    const updatedPlayers = [...state.selectedPlayers];
-    updatedPlayers[state.currentPlayerIndex] = {
-      ...updatedPlayers[state.currentPlayerIndex],
-      keys: state.keys,
-      coins: state.coins,
-      cards: [...state.cards],
-      score,
-      captureId: state.captureId,
-      originalCards: state.originalCards ? [...state.originalCards] : undefined,
-    };
+    // Sauvegarder le joueur courant
+    dispatch({ type: 'SAVE_CURRENT_PLAYER', score });
 
     const nextIndex = state.currentPlayerIndex + 1;
     const hasMorePlayers = nextIndex < state.selectedPlayers.length;
 
-    setState((prev) => ({
-      ...prev,
-      selectedPlayers: updatedPlayers,
-      currentPlayerIndex: nextIndex,
-      // Reset for next player
-      cards: [],
-      keys: 0,
-      coins: 0,
-      score: null,
-      captureId: undefined,
-      originalCards: undefined,
-    }));
+    // Passer au joueur suivant
+    dispatch({ type: 'NEXT_PLAYER' });
 
     return hasMorePlayers;
-  }, [state]);
+  }, [state.cards, state.keys, state.coins, state.currentPlayerIndex, state.selectedPlayers.length]);
 
   const saveGame = useCallback(async () => {
     if (state.selectedPlayers.length < 2) return;
 
-    // Ensure all players have complete data
     const allComplete = state.selectedPlayers.every(
       (p) => p.cards.length === 9 && p.score !== null
     );
@@ -270,132 +213,44 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }
   }, [state.selectedPlayers]);
 
-  const reset = useCallback(() => {
-    setState(initialState);
-  }, []);
-
-  // Legacy mode functions
-  const setLegacyMode = useCallback((isLegacy: boolean) => {
-    setState((prev) => ({
-      ...prev,
-      isLegacyMode: isLegacy,
-      legacyCardScores: isLegacy ? [0, 0, 0, 0, 0, 0, 0, 0, 0] : undefined,
-    }));
-  }, []);
-
-  const setLegacyCardScores = useCallback((scores: number[]) => {
-    setState((prev) => ({ ...prev, legacyCardScores: scores }));
-  }, []);
-
-  const saveLegacyPlayerAndNext = useCallback(async (): Promise<boolean> => {
-    const cardScores = state.legacyCardScores ?? [0, 0, 0, 0, 0, 0, 0, 0, 0];
-    const totalScore = cardScores.reduce((sum, s) => sum + s, 0) + state.keys;
-
-    // Update current player with their data
-    const updatedPlayers = [...state.selectedPlayers];
-    updatedPlayers[state.currentPlayerIndex] = {
-      ...updatedPlayers[state.currentPlayerIndex],
-      keys: state.keys,
-      coins: 0,
-      cards: [], // No cards in legacy mode
-      score: {
-        total_score: totalScore,
-        keys_bonus: state.keys,
-        cards_score: cardScores.reduce((sum, s) => sum + s, 0),
-        details: cardScores.map((score, position) => ({
-          position,
-          card_id: '',
-          score,
-          explanation: 'Score saisi manuellement',
-        })),
-      },
-      // Store card scores in a custom property (we'll need this for the API)
-      legacyCardScores: cardScores,
-    } as SelectedPlayer & { legacyCardScores: number[] };
-
-    const nextIndex = state.currentPlayerIndex + 1;
-    const hasMorePlayers = nextIndex < state.selectedPlayers.length;
-
-    if (hasMorePlayers) {
-      setState((prev) => ({
-        ...prev,
-        selectedPlayers: updatedPlayers,
-        currentPlayerIndex: nextIndex,
-        keys: 0,
-        legacyCardScores: [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      }));
-    } else {
-      // Last player - save game and go to summary
-      setState((prev) => ({
-        ...prev,
-        selectedPlayers: updatedPlayers,
-        currentPlayerIndex: nextIndex,
-      }));
-
-      // Save the game to backend
-      try {
-        const players: LegacyPlayerCreate[] = updatedPlayers.map((p) => ({
-          player_id: p.id,
-          keys: p.keys,
-          card_scores: (p as SelectedPlayer & { legacyCardScores?: number[] }).legacyCardScores ?? [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        }));
-        await createLegacyGame({ players });
-      } catch (error) {
-        console.error('Failed to save legacy game:', error);
-      }
-
-      // Go to summary
-      setState((prev) => ({ ...prev, step: 'summary' }));
-    }
-
-    return hasMorePlayers;
-  }, [state]);
-
-  const saveLegacyGame = useCallback(async (): Promise<GameDetail | null> => {
-    if (state.selectedPlayers.length < 2) return null;
-
-    try {
-      const players: LegacyPlayerCreate[] = state.selectedPlayers.map((p) => ({
-        player_id: p.id,
-        keys: p.keys,
-        card_scores: (p as SelectedPlayer & { legacyCardScores?: number[] }).legacyCardScores ?? [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      }));
-
-      return await createLegacyGame({ players });
-    } catch (error) {
-      console.error('Failed to save legacy game:', error);
-      return null;
-    }
-  }, [state.selectedPlayers]);
-
   return (
     <GameContext.Provider
       value={{
         state,
+        // Navigation
         setStep,
+        reset,
+        // Sélection des joueurs
         setSelectedPlayers,
         setSelectedPlayersAndContinue,
         getCurrentPlayer,
+        // Plateau du joueur courant
         setCards,
         updateCard,
         setKeys,
         setCoins,
+        // Capture
         setCaptureId,
         getPreviousCaptureId,
+        // Flux multi-joueurs
         saveCurrentPlayerAndNext,
         recalculateCurrentPlayerScore,
         saveGame,
-        reset,
-        setLegacyMode,
-        setLegacyCardScores,
-        saveLegacyPlayerAndNext,
-        saveLegacyGame,
+        // Mode legacy (délégué au hook)
+        setLegacyMode: legacy.setLegacyMode,
+        setLegacyCardScores: legacy.setLegacyCardScores,
+        saveLegacyPlayerAndNext: legacy.saveLegacyPlayerAndNext,
+        saveLegacyGame: legacy.saveLegacyGame,
       }}
     >
       {children}
     </GameContext.Provider>
   );
 }
+
+// =============================================================================
+// Hook
+// =============================================================================
 
 // eslint-disable-next-line react-refresh/only-export-components
 export function useGame() {
