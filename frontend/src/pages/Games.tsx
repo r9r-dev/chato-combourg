@@ -269,7 +269,7 @@ export function Games() {
                   className="w-full text-left p-4 rounded-xl bg-dark-lighter border border-white/10 hover:border-gold/50 transition-colors"
                 >
                   {/* Date and Legacy badge */}
-                  <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center gap-2 mb-2">
                     <span className="text-white/40 text-sm">
                       {formatDate(game.played_at)}
                     </span>
@@ -280,37 +280,29 @@ export function Games() {
                     )}
                   </div>
 
-                  {/* All players with scores */}
-                  <div className="space-y-1.5">
-                    {game.players.map((player, index) => (
-                      <div
-                        key={index}
-                        className={`flex items-center gap-2 ${
-                          player.rank === 1 ? 'text-gold' : 'text-white/70'
-                        }`}
-                      >
-                        <div
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"
-                          style={{ backgroundColor: player.player_color }}
-                        >
-                          {player.player_name.charAt(0).toUpperCase()}
-                        </div>
-                        <span className={`flex-1 text-sm ${player.rank === 1 ? 'font-medium' : ''}`}>
-                          {player.player_name}
+                  {/* Players and winner */}
+                  <div className="flex items-center justify-between">
+                    {/* All player names on the left */}
+                    <div className="text-white text-sm">
+                      {game.players.map(p => p.player_name).join(', ')}
+                    </div>
+
+                    {/* Winner on the right */}
+                    {game.winner_name && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-gold font-medium">
+                          {game.winner_name}
                         </span>
-                        <span className={`text-sm font-mono ${player.rank === 1 ? 'font-bold' : ''}`}>
-                          {player.score} pts
+                        <span className="px-2 py-1 rounded bg-gold/20 text-gold text-sm font-bold">
+                          {game.winner_score} pts
                         </span>
-                        {player.rank === 1 && (
-                          <span className="text-gold text-xs">1er</span>
-                        )}
                       </div>
-                    ))}
+                    )}
                   </div>
 
                   {/* Notes */}
                   {game.notes && (
-                    <div className="text-white/40 text-sm mt-3 italic">
+                    <div className="text-white/40 text-sm mt-2 italic">
                       {game.notes}
                     </div>
                   )}

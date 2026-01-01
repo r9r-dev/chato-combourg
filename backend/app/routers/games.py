@@ -158,13 +158,34 @@ class LegacyGameCreate(BaseModel):
 
 
 def compute_ranks(players: list[GamePlayerCreate]) -> list[int]:
-    """Compute ranks based on scores (highest score = rank 1)."""
+    """
+    Compute ranks based on scores (highest score = rank 1).
+    Tiebreaker: most remaining coins wins.
+    If still tied (same score and coins), players share the same rank.
+    """
+    # Sort by score (descending), then by coins (descending) for tiebreaking
     sorted_indices = sorted(
-        range(len(players)), key=lambda i: players[i].score, reverse=True
+        range(len(players)),
+        key=lambda i: (players[i].score, players[i].coins),
+        reverse=True
     )
+
     ranks = [0] * len(players)
-    for rank, idx in enumerate(sorted_indices, start=1):
-        ranks[idx] = rank
+    current_rank = 1
+
+    for i, idx in enumerate(sorted_indices):
+        if i == 0:
+            ranks[idx] = current_rank
+        else:
+            prev_idx = sorted_indices[i - 1]
+            # If same score and same coins, share the rank
+            if (players[idx].score == players[prev_idx].score and
+                players[idx].coins == players[prev_idx].coins):
+                ranks[idx] = ranks[prev_idx]
+            else:
+                current_rank = i + 1
+                ranks[idx] = current_rank
+
     return ranks
 
 
@@ -402,13 +423,23 @@ def create_manual_game(
     # Create player lookup for response
     player_lookup = {p.id: p for p in players}
 
-    # Compute ranks based on scores
+    # Compute ranks based on scores (with ties allowed for same score)
     sorted_indices = sorted(
         range(len(data.players)), key=lambda i: data.players[i].score, reverse=True
     )
     ranks = [0] * len(data.players)
-    for rank, idx in enumerate(sorted_indices, start=1):
-        ranks[idx] = rank
+    current_rank = 1
+    for i, idx in enumerate(sorted_indices):
+        if i == 0:
+            ranks[idx] = current_rank
+        else:
+            prev_idx = sorted_indices[i - 1]
+            # If same score, share the rank
+            if data.players[idx].score == data.players[prev_idx].score:
+                ranks[idx] = ranks[prev_idx]
+            else:
+                current_rank = i + 1
+                ranks[idx] = current_rank
 
     # Create game
     game = Game(
@@ -566,15 +597,25 @@ def create_legacy_game(
             "is_legacy": True,
         })
 
-    # Compute ranks based on total scores
+    # Compute ranks based on total scores (with ties allowed for same score)
     sorted_indices = sorted(
         range(len(player_boards)),
         key=lambda i: player_boards[i]["score"],
         reverse=True,
     )
     ranks = [0] * len(player_boards)
-    for rank, idx in enumerate(sorted_indices, start=1):
-        ranks[idx] = rank
+    current_rank = 1
+    for i, idx in enumerate(sorted_indices):
+        if i == 0:
+            ranks[idx] = current_rank
+        else:
+            prev_idx = sorted_indices[i - 1]
+            # If same score, share the rank (no coin tiebreaker for legacy)
+            if player_boards[idx]["score"] == player_boards[prev_idx]["score"]:
+                ranks[idx] = ranks[prev_idx]
+            else:
+                current_rank = i + 1
+                ranks[idx] = current_rank
 
     # Create game
     game = Game(

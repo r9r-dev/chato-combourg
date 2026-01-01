@@ -115,10 +115,10 @@ export function PlayerStatsList({ players, loading }: PlayerStatsListProps) {
               <SortIndicator columnKey="wins_count" />
             </th>
             <th
-              className="p-2 w-20 text-center text-white/60 text-xs font-medium cursor-pointer hover:text-white"
+              className="p-2 w-16 text-center text-white/60 text-xs font-medium cursor-pointer hover:text-white"
               onClick={() => handleSort('win_percentage')}
             >
-              Taux
+              %
               <SortIndicator columnKey="win_percentage" />
             </th>
           </tr>
