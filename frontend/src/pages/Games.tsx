@@ -268,9 +268,16 @@ export function Games() {
                   onClick={() => handleGameClick(game.id)}
                   className="w-full text-left p-4 rounded-xl bg-dark-lighter border border-white/10 hover:border-gold/50 transition-colors"
                 >
-                  {/* Date */}
-                  <div className="text-white/40 text-sm mb-2">
-                    {formatDate(game.played_at)}
+                  {/* Date and Legacy badge */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-white/40 text-sm">
+                      {formatDate(game.played_at)}
+                    </span>
+                    {game.is_legacy && (
+                      <span className="px-2 py-0.5 text-xs bg-amber-900/50 text-amber-400 rounded">
+                        Legacy
+                      </span>
+                    )}
                   </div>
 
                   {/* Players count and winner */}

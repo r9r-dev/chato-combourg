@@ -36,13 +36,13 @@ export function Summary() {
     (a, b) => (b.score?.total_score ?? 0) - (a.score?.total_score ?? 0)
   );
 
-  // Save game automatically on mount (only for real games)
+  // Save game automatically on mount (only for real games, not legacy - that's saved in LegacyProcessing)
   useEffect(() => {
-    if (!isDevMode && !hasSavedRef.current && state.selectedPlayers.length >= 2) {
+    if (!isDevMode && !hasSavedRef.current && state.selectedPlayers.length >= 2 && !state.isLegacyMode) {
       hasSavedRef.current = true;
       saveGame();
     }
-  }, [state.selectedPlayers, saveGame, isDevMode]);
+  }, [state.selectedPlayers, state.isLegacyMode, saveGame, isDevMode]);
 
   // Handle viewing a player's board
   const handleViewPlayer = useCallback((player: SelectedPlayer) => {

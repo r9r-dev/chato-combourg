@@ -8,6 +8,7 @@ import type {
   GameListItem,
   GameDetail,
   GameCreate,
+  LegacyGameCreate,
   PlayerWithStats,
   PlayerWithFullStats,
   Statistics,
@@ -156,6 +157,18 @@ export async function createGame(data: GameCreate): Promise<GameDetail> {
   });
   if (!response.ok) {
     throw new Error(`Create game failed: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function createLegacyGame(data: LegacyGameCreate): Promise<GameDetail> {
+  const response = await fetch(`${API_BASE}/games/legacy`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    throw new Error(`Create legacy game failed: ${response.statusText}`);
   }
   return response.json();
 }

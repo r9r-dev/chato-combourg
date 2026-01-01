@@ -61,8 +61,10 @@ class GamePlayerResponse(BaseModel):
     keys: int
     coins: int
     cards: list[str]
+    card_scores: list[int] | None = None
     score: int
     rank: int | None
+    is_legacy: bool = False
 
 
 class GameResponse(BaseModel):
@@ -87,6 +89,7 @@ class GameListItem(BaseModel):
     player_count: int
     winner_name: str | None
     winner_score: int | None
+    is_legacy: bool = False
 
 
 class ManualGamePlayerCreate(BaseModel):
@@ -100,6 +103,39 @@ class ManualGameCreate(BaseModel):
     """Request to create a manual game (scores only, no cards)."""
 
     players: list[ManualGamePlayerCreate]  # 2-5 players
+    notes: str | None = None
+    played_at: datetime | None = None
+
+    @field_validator("players")
+    @classmethod
+    def validate_players(cls, v):
+        if len(v) < 2 or len(v) > 5:
+            raise ValueError("A game must have between 2 and 5 players")
+        return v
+
+
+# ========== Legacy game models ==========
+
+
+class LegacyPlayerCreate(BaseModel):
+    """Player data for legacy game creation (with card scores)."""
+
+    player_id: int
+    keys: int = 0
+    card_scores: list[int]  # 9 individual card scores
+
+    @field_validator("card_scores")
+    @classmethod
+    def validate_card_scores(cls, v):
+        if len(v) != 9:
+            raise ValueError("card_scores must contain exactly 9 scores")
+        return v
+
+
+class LegacyGameCreate(BaseModel):
+    """Request to create a legacy game (card scores only, no card identification)."""
+
+    players: list[LegacyPlayerCreate]  # 2-5 players
     notes: str | None = None
     played_at: datetime | None = None
 
@@ -150,6 +186,9 @@ def list_games(
                 winner = gp
                 break
 
+        # Check if any player is legacy (game is legacy if any player is)
+        is_legacy = any(gp.is_legacy for gp in game.game_players)
+
         result.append(
             GameListItem(
                 id=game.id,
@@ -158,6 +197,7 @@ def list_games(
                 player_count=len(game.game_players),
                 winner_name=winner.player.name if winner else None,
                 winner_score=winner.score if winner else None,
+                is_legacy=is_legacy,
             )
         )
 
@@ -236,8 +276,10 @@ def create_game(
                 keys=gp.keys,
                 coins=gp.coins,
                 cards=gp.cards,
+                card_scores=gp.card_scores,
                 score=gp.score,
                 rank=gp.rank,
+                is_legacy=gp.is_legacy or False,
             )
             for gp in game_players
         ],
@@ -393,8 +435,10 @@ def create_manual_game(
                 keys=gp.keys,
                 coins=gp.coins,
                 cards=gp.cards,
+                card_scores=gp.card_scores,
                 score=gp.score,
                 rank=gp.rank,
+                is_legacy=gp.is_legacy or False,
             )
             for gp in game_players
         ],
@@ -430,8 +474,10 @@ def get_game(
                 keys=gp.keys,
                 coins=gp.coins,
                 cards=gp.cards,
+                card_scores=gp.card_scores,
                 score=gp.score,
                 rank=gp.rank,
+                is_legacy=gp.is_legacy or False,
             )
             for gp in game.game_players
         ],
@@ -455,3 +501,116 @@ def delete_game(
 
     db.delete(game)
     db.commit()
+
+
+@router.post("/legacy", response_model=GameResponse, status_code=201)
+def create_legacy_game(
+    data: LegacyGameCreate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Create a legacy game with card scores only (no card identification).
+
+    Legacy games store individual card scores and keys, but no card IDs.
+    They are flagged as is_legacy=True and excluded from card-based statistics.
+    """
+    # Validate all players belong to the user
+    player_ids = [p.player_id for p in data.players]
+    players = (
+        db.query(Player)
+        .filter(Player.id.in_(player_ids), Player.user_id == user.id)
+        .all()
+    )
+    if len(players) != len(player_ids):
+        raise HTTPException(status_code=400, detail="Invalid player IDs")
+
+    # Create player lookup
+    player_lookup = {p.id: p for p in players}
+
+    # Build player boards
+    player_boards: list[dict] = []
+    for player_data in data.players:
+        total_score = sum(player_data.card_scores) + player_data.keys
+        player_boards.append({
+            "player_id": player_data.player_id,
+            "keys": player_data.keys,
+            "coins": 0,
+            "cards": [],  # No cards in legacy mode
+            "card_scores": player_data.card_scores,
+            "score": total_score,
+            "is_legacy": True,
+        })
+
+    # Compute ranks based on total scores
+    sorted_indices = sorted(
+        range(len(player_boards)),
+        key=lambda i: player_boards[i]["score"],
+        reverse=True,
+    )
+    ranks = [0] * len(player_boards)
+    for rank, idx in enumerate(sorted_indices, start=1):
+        ranks[idx] = rank
+
+    # Create game
+    game = Game(
+        user_id=user.id,
+        played_at=data.played_at or datetime.utcnow(),
+        notes=data.notes,
+    )
+    db.add(game)
+    db.flush()
+
+    # Create game players
+    game_players = []
+    for position, (board, rank) in enumerate(zip(player_boards, ranks), start=1):
+        gp = GamePlayer(
+            game_id=game.id,
+            player_id=board["player_id"],
+            position=position,
+            keys=board["keys"],
+            coins=board["coins"],
+            cards=board["cards"],
+            card_scores=board["card_scores"],
+            score=board["score"],
+            rank=rank,
+            is_legacy=board["is_legacy"],
+        )
+        db.add(gp)
+        game_players.append(gp)
+
+    db.commit()
+    db.refresh(game)
+
+    # Log game creation
+    winner = next((gp for gp in game_players if ranks[game_players.index(gp)] == 1), None)
+    winner_name = player_lookup[winner.player_id].name if winner else "?"
+    player_names = [player_lookup[gp.player_id].name for gp in game_players]
+    logger.info(
+        f"Legacy game: {', '.join(player_names)} -> {winner_name} wins "
+        f"({winner.score if winner else 0} pts)"
+    )
+
+    # Build response
+    return GameResponse(
+        id=game.id,
+        played_at=game.played_at,
+        notes=game.notes,
+        players=[
+            GamePlayerResponse(
+                id=gp.id,
+                player_id=gp.player_id,
+                player_name=player_lookup[gp.player_id].name,
+                player_color=player_lookup[gp.player_id].color,
+                position=gp.position,
+                keys=gp.keys,
+                coins=gp.coins,
+                cards=gp.cards,
+                card_scores=gp.card_scores,
+                score=gp.score,
+                rank=gp.rank,
+                is_legacy=gp.is_legacy,
+            )
+            for gp in game_players
+        ],
+    )

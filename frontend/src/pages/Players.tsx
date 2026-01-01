@@ -5,7 +5,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import type { Player } from '../types';
 
 export function Players() {
-  const { setStep, setSelectedPlayers } = useGame();
+  const { setStep, setSelectedPlayersAndContinue } = useGame();
   const { sortedPlayers, addPlayer, loading } = useAuth();
   const [selected, setSelected] = useState<Player[]>([]);
   const [newPlayerName, setNewPlayerName] = useState('');
@@ -38,8 +38,9 @@ export function Players() {
 
   const handleNext = () => {
     if (selected.length < 2) return;
-    setSelectedPlayers(selected);
-    setStep('keys');
+    // This combined function reads isLegacyMode from the latest state
+    // and navigates to 'legacy-scores' or 'keys' accordingly
+    setSelectedPlayersAndContinue(selected);
   };
 
   const handleQuit = () => {

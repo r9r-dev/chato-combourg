@@ -99,7 +99,7 @@ export interface GameCard {
 }
 
 export interface GameState {
-  step: 'landing' | 'players' | 'keys' | 'coins' | 'camera' | 'review' | 'summary' | 'games' | 'settings' | 'license' | 'developer';
+  step: 'landing' | 'players' | 'keys' | 'coins' | 'camera' | 'review' | 'summary' | 'games' | 'settings' | 'license' | 'developer' | 'legacy-scores';
   cards: GameCard[];
   keys: number;
   coins: number;
@@ -108,6 +108,8 @@ export interface GameState {
   currentPlayerIndex: number; // Which player's board we're capturing
   captureId?: string; // Current capture ID for finalization
   originalCards?: GameCard[]; // Original cards before corrections
+  isLegacyMode?: boolean; // True when importing legacy games
+  legacyCardScores?: number[]; // 9 individual card scores for current player
 }
 
 // User & Players (from API)
@@ -140,6 +142,7 @@ export interface GameListItem {
   player_count: number;
   winner_name: string | null;
   winner_score: number | null;
+  is_legacy: boolean;
 }
 
 export interface GamePlayerData {
@@ -151,8 +154,10 @@ export interface GamePlayerData {
   keys: number;
   coins: number;
   cards: string[];
+  card_scores: number[] | null;  // 9 individual card scores (for legacy games)
   score: number;
   rank: number | null;
+  is_legacy: boolean;  // True for manually entered games without cards
 }
 
 export interface GameDetail {
@@ -172,6 +177,19 @@ export interface GamePlayerCreate {
 
 export interface GameCreate {
   players: GamePlayerCreate[];
+  notes?: string;
+}
+
+// Legacy game types (for importing old games)
+export interface LegacyPlayerCreate {
+  player_id: number;
+  keys: number;
+  card_scores: number[]; // 9 individual card scores
+}
+
+export interface LegacyGameCreate {
+  players: LegacyPlayerCreate[];
+  played_at?: string;
   notes?: string;
 }
 

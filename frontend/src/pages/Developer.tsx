@@ -137,8 +137,10 @@ function generateMockGamesData() {
         keys: Math.floor(Math.random() * 4),
         coins: Math.floor(Math.random() * 10),
         cards,
+        card_scores: null,
         score,
         rank: 0,
+        is_legacy: false,
       };
     });
 
@@ -157,6 +159,7 @@ function generateMockGamesData() {
       player_count: numPlayers,
       winner_name: winner.player_name,
       winner_score: winner.score,
+      is_legacy: false,
     });
 
     gameDetails[i] = {

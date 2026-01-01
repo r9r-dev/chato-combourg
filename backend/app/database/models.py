@@ -1,5 +1,6 @@
 from datetime import datetime
 from sqlalchemy import (
+    Boolean,
     Column,
     String,
     Integer,
@@ -98,8 +99,10 @@ class GamePlayer(Base):
     keys = Column(Integer, default=0)
     coins = Column(Integer, default=0)
     cards = Column(JSON, nullable=False)  # Array of 9 card IDs
+    card_scores = Column(JSON, nullable=True)  # Array of 9 individual card scores
     score = Column(Integer, default=0)
     rank = Column(Integer, nullable=True)  # Ranking in the game (1 = winner)
+    is_legacy = Column(Boolean, default=False)  # True for imported games without cards
 
     # Relationships
     game = relationship("Game", back_populates="game_players")

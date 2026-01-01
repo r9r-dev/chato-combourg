@@ -22,7 +22,19 @@ export function GameDetailModal({ game, onClose }: GameDetailModalProps) {
       const scores = new Map<number, CardScoreDetail[]>();
 
       for (const player of game.players) {
-        // Skip players without cards (manual games)
+        // For legacy games, use card_scores directly
+        if (player.is_legacy && player.card_scores) {
+          const details: CardScoreDetail[] = player.card_scores.map((score, position) => ({
+            position,
+            card_id: '',
+            score,
+            explanation: 'Score saisi manuellement',
+          }));
+          scores.set(player.id, details);
+          continue;
+        }
+
+        // Skip players without cards (manual games without card_scores)
         if (!player.cards || player.cards.length === 0) continue;
 
         try {
@@ -61,6 +73,7 @@ export function GameDetailModal({ game, onClose }: GameDetailModalProps) {
   if (viewingPlayer) {
     const details = playerScores.get(viewingPlayer.id) ?? [];
     const hasCards = viewingPlayer.cards && viewingPlayer.cards.length > 0;
+    const isLegacy = viewingPlayer.is_legacy;
 
     return (
       <div className="fixed inset-0 z-50 bg-dark flex flex-col">
@@ -80,23 +93,30 @@ export function GameDetailModal({ game, onClose }: GameDetailModalProps) {
               {viewingPlayer.player_name.charAt(0).toUpperCase()}
             </div>
             <span className="text-white font-medium">{viewingPlayer.player_name}</span>
+            {isLegacy && (
+              <span className="px-2 py-0.5 text-xs bg-amber-900/50 text-amber-400 rounded">
+                Legacy
+              </span>
+            )}
           </div>
           <div className="w-16" />
         </div>
 
-        {/* Keys and coins display */}
+        {/* Keys display (no coins for legacy) */}
         <div className="flex justify-center gap-8 py-3 bg-dark-lighter border-b border-gold/20">
           <div className="flex items-center gap-2">
-            <span className="text-white/60">Clés</span>
+            <span className="text-white/60">Cles</span>
             <span className="text-xl font-bold text-gold">{viewingPlayer.keys}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-white/60">Pièces</span>
-            <span className="text-xl font-bold text-gold">{viewingPlayer.coins}</span>
-          </div>
+          {!isLegacy && (
+            <div className="flex items-center gap-2">
+              <span className="text-white/60">Pieces</span>
+              <span className="text-xl font-bold text-gold">{viewingPlayer.coins}</span>
+            </div>
+          )}
         </div>
 
-        {/* Card grid */}
+        {/* Card grid or Legacy score grid */}
         {hasCards ? (
           <div className="flex-1 min-h-0 p-2 flex items-center justify-center">
             <div className="grid grid-cols-3 gap-1.5 w-full max-w-sm" style={{ aspectRatio: '3/4.5' }}>
@@ -127,6 +147,31 @@ export function GameDetailModal({ game, onClose }: GameDetailModalProps) {
               })}
             </div>
           </div>
+        ) : isLegacy && details.length > 0 ? (
+          <div className="flex-1 min-h-0 p-4 flex items-center justify-center">
+            <div className="w-full max-w-xs">
+              {/* Legacy score grid - shows scores without cards */}
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                {details.map((detail, index) => (
+                  <div
+                    key={index}
+                    className="aspect-square bg-dark-card rounded-xl flex flex-col items-center justify-center border border-gold/20"
+                  >
+                    <span className="text-white/40 text-xs mb-1">{index + 1}</span>
+                    <span className="text-2xl font-bold text-gold tabular-nums">
+                      {detail.score}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="bg-dark-card rounded-xl p-4 flex items-center justify-between border border-gold/20">
+                <span className="text-white/60">Total cartes</span>
+                <span className="text-2xl font-bold text-gold tabular-nums">
+                  {details.reduce((sum, d) => sum + d.score, 0)}
+                </span>
+              </div>
+            </div>
+          </div>
         ) : (
           <div className="flex-1 flex items-center justify-center">
             <p className="text-white/40">Partie manuelle (sans cartes)</p>
@@ -139,6 +184,11 @@ export function GameDetailModal({ game, onClose }: GameDetailModalProps) {
             <div className="text-3xl font-bold text-gold">
               {viewingPlayer.score} pts
             </div>
+            {isLegacy && (
+              <div className="text-white/40 text-sm mt-1">
+                Cartes: {details.reduce((sum, d) => sum + d.score, 0)} + Cles: {Math.min(viewingPlayer.keys, 3) * 10}
+              </div>
+            )}
           </div>
         </div>
       </div>

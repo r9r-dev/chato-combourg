@@ -12,6 +12,7 @@ import { Games } from './pages/Games';
 import { Settings } from './pages/Settings';
 import { License } from './pages/License';
 import { Developer } from './pages/Developer';
+import { LegacyScores } from './pages/LegacyScores';
 import { InstallPrompt } from './components/InstallPrompt';
 import { preloadCardImages } from './services/api';
 
@@ -46,6 +47,8 @@ function AppContent() {
       return <License />;
     case 'developer':
       return <Developer />;
+    case 'legacy-scores':
+      return <LegacyScores />;
     default:
       return <Landing />;
   }

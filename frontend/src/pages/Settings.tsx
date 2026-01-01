@@ -5,7 +5,6 @@ import {
   updatePlayer,
   deletePlayer,
   exportGames,
-  createManualGame,
   getModelInfo,
   updateSettings,
   getSettings,
@@ -40,7 +39,7 @@ const MODEL_OPTIONS: { value: DetectionModel; label: string; description: string
 ];
 
 export function Settings() {
-  const { setStep } = useGame();
+  const { setStep, setLegacyMode } = useGame();
   const {
     playersWithStats,
     playerOrder,
@@ -60,12 +59,6 @@ export function Settings() {
 
   // Delete confirmation
   const [deletingPlayer, setDeletingPlayer] = useState<PlayerWithStats | null>(null);
-
-  // Manual game state
-  const [showManualGame, setShowManualGame] = useState(false);
-  const [manualGameDate, setManualGameDate] = useState(new Date().toISOString().split('T')[0]);
-  const [manualGameScores, setManualGameScores] = useState<Record<number, string>>({});
-  const [manualGamePlayers, setManualGamePlayers] = useState<number[]>([]);
 
   // Export state
   const [exporting, setExporting] = useState(false);
@@ -188,36 +181,6 @@ export function Settings() {
       console.error('Export failed:', err);
     } finally {
       setExporting(false);
-    }
-  };
-
-  // Manual game
-  const toggleManualGamePlayer = (playerId: number) => {
-    if (manualGamePlayers.includes(playerId)) {
-      setManualGamePlayers(manualGamePlayers.filter(id => id !== playerId));
-      const newScores = { ...manualGameScores };
-      delete newScores[playerId];
-      setManualGameScores(newScores);
-    } else if (manualGamePlayers.length < 5) {
-      setManualGamePlayers([...manualGamePlayers, playerId]);
-    }
-  };
-
-  const saveManualGame = async () => {
-    if (manualGamePlayers.length < 2) return;
-    try {
-      await createManualGame({
-        players: manualGamePlayers.map(id => ({
-          player_id: id,
-          score: parseInt(manualGameScores[id] || '0', 10),
-        })),
-        played_at: new Date(manualGameDate).toISOString(),
-      });
-      setShowManualGame(false);
-      setManualGamePlayers([]);
-      setManualGameScores({});
-    } catch (err) {
-      console.error('Failed to create manual game:', err);
     }
   };
 
@@ -581,7 +544,10 @@ export function Settings() {
           <h2 className="text-gold font-semibold mb-3">Données</h2>
           <div className="space-y-2">
             <button
-              onClick={() => setShowManualGame(true)}
+              onClick={() => {
+                setLegacyMode(true);
+                setStep('players');
+              }}
               className="w-full p-3 bg-dark-lighter rounded-xl text-white/70 hover:bg-dark-card text-left"
             >
               Ajouter une partie manuellement
@@ -667,86 +633,6 @@ export function Settings() {
               <button
                 onClick={savePlayer}
                 className="flex-1 p-3 bg-gold rounded-xl text-dark font-semibold"
-              >
-                Enregistrer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Manual Game Modal */}
-      {showManualGame && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70" onClick={() => setShowManualGame(false)} />
-          <div className="relative w-full max-w-sm bg-dark-lighter rounded-2xl p-6 max-h-[80vh] overflow-auto">
-            <h3 className="text-lg font-semibold text-white mb-4">Ajouter une partie</h3>
-
-            <div className="mb-4">
-              <label className="text-white/60 text-sm mb-1 block">Date</label>
-              <input
-                type="date"
-                value={manualGameDate}
-                onChange={(e) => setManualGameDate(e.target.value)}
-                className="w-full p-3 bg-dark-card rounded-xl text-white border border-white/10 focus:border-gold focus:outline-none"
-              />
-            </div>
-
-            <div className="mb-4">
-              <label className="text-white/60 text-sm mb-2 block">
-                Joueurs et scores ({manualGamePlayers.length}/5)
-              </label>
-              <div className="space-y-2">
-                {players.map(player => {
-                  const isSelected = manualGamePlayers.includes(player.id);
-                  return (
-                    <div
-                      key={player.id}
-                      className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
-                        isSelected ? 'bg-gold/20 border border-gold' : 'bg-dark-card border border-transparent'
-                      }`}
-                    >
-                      <button
-                        onClick={() => toggleManualGamePlayer(player.id)}
-                        className="flex items-center gap-2 flex-1"
-                      >
-                        <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                          style={{ backgroundColor: player.color }}
-                        >
-                          {player.name.charAt(0).toUpperCase()}
-                        </div>
-                        <span className="text-white">{player.name}</span>
-                      </button>
-                      {isSelected && (
-                        <input
-                          type="number"
-                          placeholder="Score"
-                          value={manualGameScores[player.id] || ''}
-                          onChange={(e) => setManualGameScores({
-                            ...manualGameScores,
-                            [player.id]: e.target.value,
-                          })}
-                          className="w-20 p-2 bg-dark rounded-lg text-white text-center border border-white/10 focus:border-gold focus:outline-none"
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowManualGame(false)}
-                className="flex-1 p-3 bg-dark-card rounded-xl text-white/70"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={saveManualGame}
-                disabled={manualGamePlayers.length < 2}
-                className="flex-1 p-3 bg-gold rounded-xl text-dark font-semibold disabled:opacity-50"
               >
                 Enregistrer
               </button>

@@ -12,14 +12,17 @@ import type {
   SelectedPlayer,
   Player,
   CalculateResponse,
+  LegacyPlayerCreate,
+  GameDetail,
 } from '../types';
-import { calculateScore, createGame } from '../services/api';
+import { calculateScore, createGame, createLegacyGame } from '../services/api';
 
 interface GameContextType {
   state: GameState;
   setStep: (step: GameState['step']) => void;
   // Player selection
   setSelectedPlayers: (players: Player[]) => void;
+  setSelectedPlayersAndContinue: (players: Player[]) => void; // Sets players and navigates based on mode
   getCurrentPlayer: () => SelectedPlayer | null;
   // Current player's board
   setCards: (cards: GameCard[], captureId?: string) => void;
@@ -35,6 +38,11 @@ interface GameContextType {
   // Game management
   saveGame: () => Promise<void>;
   reset: () => void;
+  // Legacy mode
+  setLegacyMode: (isLegacy: boolean) => void;
+  setLegacyCardScores: (scores: number[]) => void;
+  saveLegacyPlayerAndNext: () => Promise<boolean>; // Returns true if more players
+  saveLegacyGame: () => Promise<GameDetail | null>; // Save all legacy players and return game
 }
 
 const initialState: GameState = {
@@ -47,6 +55,8 @@ const initialState: GameState = {
   currentPlayerIndex: 0,
   captureId: undefined,
   originalCards: undefined,
+  isLegacyMode: false,
+  legacyCardScores: undefined,
 };
 
 const GameContext = createContext<GameContextType | null>(null);
@@ -79,6 +89,34 @@ export function GameProvider({ children }: { children: ReactNode }) {
       score: null,
       captureId: undefined,
       originalCards: undefined,
+    }));
+  }, []);
+
+  // Combined function that sets players and navigates based on legacy mode
+  // This ensures we read isLegacyMode from the latest state
+  const setSelectedPlayersAndContinue = useCallback((players: Player[]) => {
+    const selectedPlayers: SelectedPlayer[] = players.map((p) => ({
+      ...p,
+      keys: 0,
+      coins: 0,
+      cards: [],
+      score: null,
+      captureId: undefined,
+      originalCards: undefined,
+    }));
+    setState((prev) => ({
+      ...prev,
+      selectedPlayers,
+      currentPlayerIndex: 0,
+      // Reset current player's board
+      cards: [],
+      keys: 0,
+      coins: 0,
+      score: null,
+      captureId: undefined,
+      originalCards: undefined,
+      // Navigate based on mode - using prev ensures we get the latest isLegacyMode
+      step: prev.isLegacyMode ? 'legacy-scores' : 'keys',
     }));
   }, []);
 
@@ -236,12 +274,107 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setState(initialState);
   }, []);
 
+  // Legacy mode functions
+  const setLegacyMode = useCallback((isLegacy: boolean) => {
+    setState((prev) => ({
+      ...prev,
+      isLegacyMode: isLegacy,
+      legacyCardScores: isLegacy ? [0, 0, 0, 0, 0, 0, 0, 0, 0] : undefined,
+    }));
+  }, []);
+
+  const setLegacyCardScores = useCallback((scores: number[]) => {
+    setState((prev) => ({ ...prev, legacyCardScores: scores }));
+  }, []);
+
+  const saveLegacyPlayerAndNext = useCallback(async (): Promise<boolean> => {
+    const cardScores = state.legacyCardScores ?? [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    const totalScore = cardScores.reduce((sum, s) => sum + s, 0) + state.keys;
+
+    // Update current player with their data
+    const updatedPlayers = [...state.selectedPlayers];
+    updatedPlayers[state.currentPlayerIndex] = {
+      ...updatedPlayers[state.currentPlayerIndex],
+      keys: state.keys,
+      coins: 0,
+      cards: [], // No cards in legacy mode
+      score: {
+        total_score: totalScore,
+        keys_bonus: state.keys,
+        cards_score: cardScores.reduce((sum, s) => sum + s, 0),
+        details: cardScores.map((score, position) => ({
+          position,
+          card_id: '',
+          score,
+          explanation: 'Score saisi manuellement',
+        })),
+      },
+      // Store card scores in a custom property (we'll need this for the API)
+      legacyCardScores: cardScores,
+    } as SelectedPlayer & { legacyCardScores: number[] };
+
+    const nextIndex = state.currentPlayerIndex + 1;
+    const hasMorePlayers = nextIndex < state.selectedPlayers.length;
+
+    if (hasMorePlayers) {
+      setState((prev) => ({
+        ...prev,
+        selectedPlayers: updatedPlayers,
+        currentPlayerIndex: nextIndex,
+        keys: 0,
+        legacyCardScores: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+      }));
+    } else {
+      // Last player - save game and go to summary
+      setState((prev) => ({
+        ...prev,
+        selectedPlayers: updatedPlayers,
+        currentPlayerIndex: nextIndex,
+      }));
+
+      // Save the game to backend
+      try {
+        const players: LegacyPlayerCreate[] = updatedPlayers.map((p) => ({
+          player_id: p.id,
+          keys: p.keys,
+          card_scores: (p as SelectedPlayer & { legacyCardScores?: number[] }).legacyCardScores ?? [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        }));
+        await createLegacyGame({ players });
+      } catch (error) {
+        console.error('Failed to save legacy game:', error);
+      }
+
+      // Go to summary
+      setState((prev) => ({ ...prev, step: 'summary' }));
+    }
+
+    return hasMorePlayers;
+  }, [state]);
+
+  const saveLegacyGame = useCallback(async (): Promise<GameDetail | null> => {
+    if (state.selectedPlayers.length < 2) return null;
+
+    try {
+      const players: LegacyPlayerCreate[] = state.selectedPlayers.map((p) => ({
+        player_id: p.id,
+        keys: p.keys,
+        card_scores: (p as SelectedPlayer & { legacyCardScores?: number[] }).legacyCardScores ?? [0, 0, 0, 0, 0, 0, 0, 0, 0],
+      }));
+
+      return await createLegacyGame({ players });
+    } catch (error) {
+      console.error('Failed to save legacy game:', error);
+      return null;
+    }
+  }, [state.selectedPlayers]);
+
   return (
     <GameContext.Provider
       value={{
         state,
         setStep,
         setSelectedPlayers,
+        setSelectedPlayersAndContinue,
         getCurrentPlayer,
         setCards,
         updateCard,
@@ -253,6 +386,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
         recalculateCurrentPlayerScore,
         saveGame,
         reset,
+        setLegacyMode,
+        setLegacyCardScores,
+        saveLegacyPlayerAndNext,
+        saveLegacyGame,
       }}
     >
       {children}
