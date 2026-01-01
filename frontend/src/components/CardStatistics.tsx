@@ -1,56 +1,107 @@
-import { useState } from 'react';
-import { getCardImageUrl } from '../services/api';
-import type { Statistics, CardStatistic, PlayerCardStatistic } from '../types';
+import { useState, useEffect } from 'react';
+import { getCardImageUrl, getCards } from '../services/api';
+import type { Statistics, CardStatistic, PlayerCardStatistic, Card } from '../types';
 
 interface CardStatisticsProps {
   statistics: Statistics | null;
   loading?: boolean;
 }
 
-interface CardStatRowProps {
+// Featured card component with runner-ups
+function FeaturedCard({
+  cards,
+  title,
+  subtitle,
+  accent,
+  showWinRate = false,
+}: {
   cards: CardStatistic[];
   title: string;
   subtitle: string;
+  accent: 'gold' | 'red';
   showWinRate?: boolean;
-  showScore?: boolean;
+}) {
+  if (cards.length === 0) return null;
+
+  const mainCard = cards[0];
+  const runnerUps = cards.slice(1, 3);
+
+  const accentColor = accent === 'gold' ? 'border-gold/50 bg-gold/10' : 'border-red-500/50 bg-red-500/10';
+  const textColor = accent === 'gold' ? 'text-gold' : 'text-red-400';
+
+  return (
+    <div className={`rounded-xl border p-3 ${accentColor}`}>
+      <div className="text-center mb-2">
+        <h3 className={`font-bold ${textColor}`}>{title}</h3>
+        <p className="text-white/40 text-xs">{subtitle}</p>
+      </div>
+      {/* Main card */}
+      <div className="flex justify-center">
+        <div className="w-16 rounded-lg overflow-hidden border border-white/20">
+          <img
+            src={getCardImageUrl(mainCard.card_id)}
+            alt={`Carte ${mainCard.card_id}`}
+            className="w-full aspect-[630/880] object-cover"
+          />
+        </div>
+      </div>
+      <div className="text-center mt-2">
+        <div className={`text-lg font-bold ${textColor}`}>
+          {showWinRate ? `${mainCard.win_rate.toFixed(0)}%` : `${mainCard.play_count}x`}
+        </div>
+        <div className="text-white/40 text-xs">
+          {showWinRate ? `${mainCard.play_count} parties` : `${mainCard.win_rate.toFixed(0)}% vic.`}
+        </div>
+      </div>
+      {/* Runner-ups */}
+      {runnerUps.length > 0 && (
+        <div className="flex justify-center gap-2 mt-3 pt-3 border-t border-white/10">
+          {runnerUps.map((card) => (
+            <div key={card.card_id} className="w-10 rounded-lg overflow-hidden border border-white/10">
+              <img
+                src={getCardImageUrl(card.card_id)}
+                alt={`Carte ${card.card_id}`}
+                className="w-full aspect-[630/880] object-cover"
+              />
+              <div className="text-center py-0.5 text-xs text-white/40">
+                {showWinRate ? `${card.win_rate.toFixed(0)}%` : `${card.play_count}x`}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
-function CardStatRow({ cards, title, subtitle, showWinRate, showScore }: CardStatRowProps) {
+// Small card row (3-4 cards)
+function CardRow({
+  cards,
+  title,
+  maxCards = 4,
+}: {
+  cards: CardStatistic[];
+  title: string;
+  maxCards?: number;
+}) {
   if (cards.length === 0) return null;
 
   return (
-    <div className="mb-6">
-      <h3 className="text-white font-medium mb-1">{title}</h3>
-      <p className="text-white/40 text-sm mb-3">{subtitle}</p>
-      <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
-        {cards.map((card) => (
+    <div className="bg-dark-lighter rounded-xl border border-white/10 p-3">
+      <h3 className="text-white/60 text-sm mb-3 text-center">{title}</h3>
+      <div className="flex justify-center gap-2">
+        {cards.slice(0, maxCards).map((card) => (
           <div
             key={card.card_id}
-            className="shrink-0 w-20 bg-dark-lighter rounded-lg overflow-hidden border border-white/10"
+            className="w-14 rounded-lg overflow-hidden border border-white/10"
           >
             <img
               src={getCardImageUrl(card.card_id)}
               alt={`Carte ${card.card_id}`}
               className="w-full aspect-[630/880] object-cover"
             />
-            <div className="p-1.5 text-center">
-              <div className="text-white/60 text-xs">
-                {card.play_count}x
-              </div>
-              {showWinRate && (
-                <div
-                  className={`text-xs font-medium ${
-                    card.win_rate >= 50 ? 'text-gold' : 'text-red-400'
-                  }`}
-                >
-                  {card.win_rate.toFixed(0)}% vic.
-                </div>
-              )}
-              {showScore && (
-                <div className="text-gold text-xs font-medium">
-                  ~{card.avg_score_impact.toFixed(0)} pts
-                </div>
-              )}
+            <div className="text-center py-1 text-xs text-white/60">
+              {card.play_count}x
             </div>
           </div>
         ))}
@@ -59,85 +110,152 @@ function CardStatRow({ cards, title, subtitle, showWinRate, showScore }: CardSta
   );
 }
 
-interface PlayerFavoritesProps {
-  favorites: PlayerCardStatistic[];
-}
-
-function PlayerFavorites({ favorites }: PlayerFavoritesProps) {
-  const [expanded, setExpanded] = useState<number | null>(null);
-
+// Player favorites - one card per player in a row
+function PlayerFavorites({ favorites }: { favorites: PlayerCardStatistic[] }) {
   if (favorites.length === 0) return null;
 
   return (
-    <div className="mb-6">
-      <h3 className="text-white font-medium mb-1">Cartes préférées par joueur</h3>
-      <p className="text-white/40 text-sm mb-3">Les 3 cartes les plus jouées par chaque joueur</p>
-      <div className="space-y-2">
-        {favorites.map((playerFav) => (
-          <div
-            key={playerFav.player_id}
-            className="bg-dark-lighter rounded-lg border border-white/10 overflow-hidden"
-          >
-            {/* Player header */}
-            <button
-              onClick={() => setExpanded(expanded === playerFav.player_id ? null : playerFav.player_id)}
-              className="w-full flex items-center justify-between p-3 hover:bg-white/5"
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                  style={{ backgroundColor: playerFav.player_color }}
-                >
-                  {playerFav.player_name.charAt(0).toUpperCase()}
-                </div>
-                <span className="text-white font-medium">{playerFav.player_name}</span>
-              </div>
-              <svg
-                className={`w-5 h-5 text-white/40 transition-transform ${
-                  expanded === playerFav.player_id ? 'rotate-180' : ''
-                }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
+    <div className="bg-dark-lighter rounded-xl border border-white/10 p-3">
+      <h3 className="text-white/60 text-sm mb-3 text-center">Carte préférée par joueur</h3>
+      <div className="flex flex-wrap justify-center gap-3">
+        {favorites.map((playerFav) => {
+          const topCard = playerFav.favorite_cards[0];
+          if (!topCard) return null;
 
-            {/* Favorite cards (expanded) */}
-            {expanded === playerFav.player_id && (
-              <div className="flex gap-2 p-3 pt-0 border-t border-white/5">
-                {playerFav.favorite_cards.map((card, index) => (
-                  <div
-                    key={card.card_id}
-                    className="relative w-16 rounded-lg overflow-hidden border border-white/20"
-                  >
+          return (
+            <div key={playerFav.player_id} className="flex flex-col items-center">
+              <div
+                className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold text-xs mb-1"
+                style={{ backgroundColor: playerFav.player_color }}
+                title={playerFav.player_name}
+              >
+                {playerFav.player_name.charAt(0).toUpperCase()}
+              </div>
+              <div className="w-12 rounded-lg overflow-hidden border border-white/20">
+                <img
+                  src={getCardImageUrl(topCard.card_id)}
+                  alt={`Carte ${topCard.card_id}`}
+                  className="w-full aspect-[630/880] object-cover"
+                />
+              </div>
+              <div className="text-white/40 text-xs mt-1">{topCard.play_count}x</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Card statistics table
+function CardStatsTable({ cards, cardNames }: { cards: CardStatistic[]; cardNames: Record<string, string> }) {
+  const [sortKey, setSortKey] = useState<'play_count' | 'win_rate' | 'avg_score_impact'>('play_count');
+  const [sortAsc, setSortAsc] = useState(false);
+
+  if (cards.length === 0) return null;
+
+  const sortedCards = [...cards].sort((a, b) => {
+    const multiplier = sortAsc ? 1 : -1;
+    return (a[sortKey] - b[sortKey]) * multiplier;
+  });
+
+  const handleSort = (key: typeof sortKey) => {
+    if (key === sortKey) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortKey(key);
+      setSortAsc(false);
+    }
+  };
+
+  const SortIcon = ({ column }: { column: typeof sortKey }) => {
+    if (column !== sortKey) return null;
+    return <span className="ml-1">{sortAsc ? '↑' : '↓'}</span>;
+  };
+
+  return (
+    <div className="bg-dark-lighter rounded-xl border border-white/10 overflow-hidden">
+      <h3 className="text-white/60 text-sm p-3 text-center border-b border-white/10">
+        Tableau des cartes
+      </h3>
+      <div className="max-h-64 overflow-y-auto">
+        <table className="w-full">
+          <thead className="sticky top-0 bg-dark-lighter">
+            <tr className="text-white/40 text-xs">
+              <th className="p-2 text-left">Carte</th>
+              <th
+                className="p-2 text-center cursor-pointer hover:text-white"
+                onClick={() => handleSort('play_count')}
+              >
+                Joué<SortIcon column="play_count" />
+              </th>
+              <th
+                className="p-2 text-center cursor-pointer hover:text-white"
+                onClick={() => handleSort('win_rate')}
+              >
+                Vic.<SortIcon column="win_rate" />
+              </th>
+              <th
+                className="p-2 text-center cursor-pointer hover:text-white"
+                onClick={() => handleSort('avg_score_impact')}
+              >
+                Moy.<SortIcon column="avg_score_impact" />
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedCards.map((card) => (
+              <tr key={card.card_id} className="border-t border-white/5 hover:bg-white/5">
+                <td className="p-2">
+                  <div className="flex items-center gap-2">
                     <img
                       src={getCardImageUrl(card.card_id)}
-                      alt={`Carte ${card.card_id}`}
-                      className="w-full aspect-[630/880] object-cover"
+                      alt={cardNames[card.card_id] || `Carte ${card.card_id}`}
+                      className="w-8 h-11 rounded object-cover shrink-0"
                     />
-                    <div className="absolute top-1 left-1 w-5 h-5 rounded-full bg-gold text-dark text-xs font-bold flex items-center justify-center">
-                      {index + 1}
-                    </div>
-                    <div className="absolute bottom-0 inset-x-0 bg-black/70 text-white text-xs text-center py-0.5">
-                      {card.play_count}x
-                    </div>
+                    <span className="text-white text-xs truncate">
+                      {cardNames[card.card_id] || `#${card.card_id}`}
+                    </span>
                   </div>
-                ))}
-                {playerFav.favorite_cards.length === 0 && (
-                  <p className="text-white/40 text-sm">Aucune donnee</p>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
+                </td>
+                <td className="p-2 text-center text-white/80 text-sm font-mono">
+                  {card.play_count}
+                </td>
+                <td className="p-2 text-center">
+                  <span className={`text-sm font-mono ${
+                    card.win_rate >= 50 ? 'text-gold' : 'text-red-400'
+                  }`}>
+                    {card.win_rate.toFixed(0)}%
+                  </span>
+                </td>
+                <td className="p-2 text-center text-white/80 text-sm font-mono">
+                  {card.avg_score_impact.toFixed(0)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 }
 
 export function CardStatistics({ statistics, loading }: CardStatisticsProps) {
+  const [cardNames, setCardNames] = useState<Record<string, string>>({});
+
+  // Load card names
+  useEffect(() => {
+    getCards().then((cards) => {
+      const names: Record<string, string> = {};
+      cards.forEach((card) => {
+        names[card.id] = card.name;
+      });
+      setCardNames(names);
+    }).catch(() => {
+      // Ignore errors
+    });
+  }, []);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -171,9 +289,9 @@ export function CardStatistics({ statistics, loading }: CardStatisticsProps) {
   }
 
   return (
-    <div className="p-4">
+    <div className="p-4 space-y-4">
       {/* Summary */}
-      <div className="bg-gold/10 border border-gold/30 rounded-xl p-4 mb-6">
+      <div className="bg-gold/10 border border-gold/30 rounded-xl p-4">
         <div className="text-gold text-3xl font-bold text-center">
           {statistics.total_games}
         </div>
@@ -182,40 +300,41 @@ export function CardStatistics({ statistics, loading }: CardStatisticsProps) {
         </div>
       </div>
 
-      {/* Most played cards */}
-      <CardStatRow
-        cards={statistics.most_played_cards}
-        title="Cartes les plus jouées"
-        subtitle="Les cartes qui reviennent le plus souvent"
-        showScore
-      />
-
-      {/* Least played cards */}
-      <CardStatRow
-        cards={statistics.least_played_cards}
-        title="Cartes les moins jouées"
-        subtitle="Les cartes les plus rares dans vos parties"
-        showScore
-      />
-
-      {/* Win-correlated cards */}
-      <CardStatRow
-        cards={statistics.win_correlated_cards}
-        title="Cartes porte-bonheur"
-        subtitle="Les cartes avec le meilleur taux de victoire"
-        showWinRate
-      />
-
-      {/* Loss-correlated cards */}
-      <CardStatRow
-        cards={statistics.loss_correlated_cards}
-        title="Cartes maudites"
-        subtitle="Les cartes avec le plus faible taux de victoire"
-        showWinRate
-      />
+      {/* Featured cards: 2x2 grid */}
+      <div className="grid grid-cols-2 gap-3">
+        <FeaturedCard
+          cards={statistics.win_correlated_cards.slice(0, 3)}
+          title="L'élue"
+          subtitle="Meilleur taux de victoire"
+          accent="gold"
+          showWinRate
+        />
+        <FeaturedCard
+          cards={statistics.loss_correlated_cards.slice(0, 3)}
+          title="La maudite"
+          subtitle="Pire taux de victoire"
+          accent="red"
+          showWinRate
+        />
+        <FeaturedCard
+          cards={statistics.most_played_cards.slice(0, 3)}
+          title="La préférée"
+          subtitle="La plus jouée"
+          accent="gold"
+        />
+        <FeaturedCard
+          cards={statistics.least_played_cards.slice(0, 3)}
+          title="La détestée"
+          subtitle="La moins jouée"
+          accent="red"
+        />
+      </div>
 
       {/* Player favorites */}
       <PlayerFavorites favorites={statistics.player_favorites} />
+
+      {/* Card statistics table */}
+      <CardStatsTable cards={statistics.most_played_cards} cardNames={cardNames} />
     </div>
   );
 }

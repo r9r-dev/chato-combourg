@@ -85,15 +85,19 @@ def get_statistics(
     # Player favorite cards tracking
     player_card_counts: dict[int, dict[str, int]] = defaultdict(lambda: defaultdict(int))
 
+    # Cards to exclude from statistics
+    excluded_cards = {"089", "090"}
+
     for gp in game_players:
-        if not gp.cards:
+        # Skip legacy games (no cards) and empty card lists
+        if gp.is_legacy or not gp.cards:
             continue
 
         is_winner = gp.rank == 1
         is_loser = gp.rank == len([p for p in gp.game.game_players])
 
         for card_id in gp.cards:
-            if not card_id:
+            if not card_id or card_id in excluded_cards:
                 continue
             card_stats[card_id]["play_count"] += 1
             if is_winner:
