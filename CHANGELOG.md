@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.4.4 (2026-01-02)
+
+- Ajout des attributs Play mode dans les données des cartes
+- Restructuration du JSON des cartes
+- Ajout d'une carte décoration en fond sur la page d'accueil
+- Ajout du volume pour les images de cartes
+
 ## v2.4.3 (2026-01-01)
 
 - Afficher le mode d'inference pendant l'analyse
