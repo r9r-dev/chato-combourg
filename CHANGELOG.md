@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.5.0 (2026-01-03)
+
+- IA Difficile: Algorithme MCTS (Monte Carlo Tree Search) avec gestion adaptative du temps
+
 ## v3.4.0 (2026-01-03)
 
 - Refonte du système IA Normale avec un système de stratégies cohérent et amélioré
