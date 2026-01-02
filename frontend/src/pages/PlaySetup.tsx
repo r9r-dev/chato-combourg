@@ -345,20 +345,18 @@ export function PlaySetup() {
             ) : (
               <div className="bg-dark-card rounded-xl border border-white/10 overflow-hidden">
                 <p className="text-white/40 text-sm px-4 pt-3 pb-2">Choisir le niveau</p>
-                <div className="grid grid-cols-2 gap-2 p-2">
+                <div className="flex flex-col gap-2 p-2">
                   {AI_LEVELS.map((level) => (
                     <button
                       key={level.value}
                       onClick={() => handleAddAI(level.value)}
-                      className="py-3 px-4 rounded-lg bg-dark-lighter hover:bg-white/10 transition-colors text-left flex items-start gap-3"
+                      className="py-3 px-4 rounded-lg bg-dark-lighter hover:bg-white/10 transition-colors text-left flex items-center gap-3"
                     >
-                      <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center flex-shrink-0">
                         <AIIcon level={level.value} className="w-5 h-5 text-white" />
                       </div>
-                      <div>
-                        <span className="text-white font-medium block">{level.label}</span>
-                        <span className="text-white/40 text-xs">{level.description}</span>
-                      </div>
+                      <span className="text-white font-medium">{level.label}</span>
+                      <span className="text-white/40 text-xs flex-1">{level.description}</span>
                     </button>
                   ))}
                 </div>

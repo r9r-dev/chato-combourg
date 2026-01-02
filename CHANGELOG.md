@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.5.1 (2026-01-03)
+
+- UI: Affichage des niveaux IA en colonne au lieu d'une grille 2x2
+
 ## v3.5.0 (2026-01-03)
 
 - IA Difficile: Algorithme MCTS (Monte Carlo Tree Search) avec gestion adaptative du temps
