@@ -1,5 +1,10 @@
 # Changelog
 
+## v3.2.3 (2026-01-02)
+
+- Améliorations de l'interface utilisateur
+- Refonte de PlaySetup avec interface unifiée et sélection de joueurs
+
 ## v3.2.2 (2026-01-02)
 
 - Ajout de la page GameDate pour afficher et gérer la date de partie
