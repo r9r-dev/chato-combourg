@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.3.1 (2026-01-02)
+
+Corrections et ameliorations mineures
+
 ## v3.3.0 (2026-01-02)
 
 - Refonte de l'interface IA avec wrapper sécurisé et méthodes typées
