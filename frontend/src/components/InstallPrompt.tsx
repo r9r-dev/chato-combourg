@@ -77,7 +77,7 @@ export function InstallPrompt() {
           <div className="flex-1 min-w-0">
             <h3 className="text-white font-semibold">Installer l'application</h3>
             <p className="text-white/60 text-sm mt-1">
-              Ajoutez Chato Combourg sur votre écran d'accueil pour un accès rapide.
+              Ajoutez Châto Combourg sur votre écran d'accueil pour un accès rapide.
             </p>
           </div>
           <button

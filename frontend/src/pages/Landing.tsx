@@ -59,7 +59,7 @@ export function Landing() {
           />
 
           {/* Title */}
-          <h1 className="text-4xl font-bold text-gold mb-2">Chato Combourg</h1>
+          <h1 className="text-4xl font-bold text-gold mb-2">Château Combourg</h1>
           <p className="text-lg text-white/60 mb-12">Calculateur de score pour le jeu Château Combo</p>
 
           {/* Menu buttons */}

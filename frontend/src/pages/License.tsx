@@ -46,7 +46,7 @@ export function License() {
           <h2 className="text-gold text-xl font-bold mb-4">GNU Affero General Public License v3.0</h2>
 
           <p className="text-white/80 text-sm mb-4">
-            Chato Combourg - Image Processing for Chateau Combo boardgame
+            Châto Combourg - Image Processing for Chateau Combo boardgame
           </p>
 
           <p className="text-white/60 text-sm mb-4">
