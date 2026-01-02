@@ -51,6 +51,13 @@ export function Landing() {
       {/* Main content - centered */}
       <div className="flex-1 flex flex-col items-center justify-center">
         <div className="max-w-md w-full text-center">
+          {/* Castle logo */}
+          <img
+            src="/combourg.webp"
+            alt="Château de Combourg"
+            className="w-40 h-40 mx-auto mb-4 object-contain"
+          />
+
           {/* Title */}
           <h1 className="text-4xl font-bold text-gold mb-2">Chato Combourg</h1>
           <p className="text-lg text-white/60 mb-12">Calculateur de score pour le jeu Château Combo</p>
