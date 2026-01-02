@@ -43,6 +43,7 @@ import {
 } from '../services/play/gameEngine';
 import { createAI } from '../services/play/ai';
 import { executeCardEffect, executeDiscardEffect, executeLockEffect, executeReplaceLocationEffect } from '../services/play/effectExecutor';
+import { applyOptimalShift } from '../services/play/shiftHelper';
 import {
   playReducer,
   initialPlayUIState,
@@ -485,6 +486,20 @@ export function PlayProvider({ children }: { children: ReactNode }) {
 
       // Remplir les lieux apres le placement et les effets
       const refilledBoard = refillLocations(newState.board);
+
+      // Appliquer le shift helper pour optimiser les points de position
+      const currentPlayer = newState.players[newState.currentPlayerIndex];
+      const shiftResult = applyOptimalShift(currentPlayer.board, currentPlayer.lockedCards);
+      if (shiftResult.shifted) {
+        const players = [...newState.players];
+        players[newState.currentPlayerIndex] = {
+          ...currentPlayer,
+          board: shiftResult.board,
+          lockedCards: shiftResult.lockedCards,
+        };
+        newState = { ...newState, players };
+      }
+
       newState = { ...newState, board: refilledBoard, turnPhase: 'post_action' };
     }
 
@@ -516,6 +531,20 @@ export function PlayProvider({ children }: { children: ReactNode }) {
 
       // Remplir les lieux apres le choix d'effet
       const refilledBoard = refillLocations(newState.board);
+
+      // Appliquer le shift helper pour optimiser les points de position
+      const currentPlayer = newState.players[newState.currentPlayerIndex];
+      const shiftResult = applyOptimalShift(currentPlayer.board, currentPlayer.lockedCards);
+      if (shiftResult.shifted) {
+        const players = [...newState.players];
+        players[newState.currentPlayerIndex] = {
+          ...currentPlayer,
+          board: shiftResult.board,
+          lockedCards: shiftResult.lockedCards,
+        };
+        newState = { ...newState, players };
+      }
+
       newState = { ...newState, board: refilledBoard, turnPhase: 'post_action' };
 
       dispatch({ type: 'EFFECT_CHOICE_MADE', choiceIndex });
@@ -640,11 +669,25 @@ export function PlayProvider({ children }: { children: ReactNode }) {
       resourcesAfter: { gold: afterEffect.gold, keys: afterEffect.keys },
     });
 
+    // Appliquer le shift helper pour optimiser les points de position
+    let newState = result.newState;
+    const currentPlayer = newState.players[newState.currentPlayerIndex];
+    const shiftResult = applyOptimalShift(currentPlayer.board, currentPlayer.lockedCards);
+    if (shiftResult.shifted) {
+      const players = [...newState.players];
+      players[newState.currentPlayerIndex] = {
+        ...currentPlayer,
+        board: shiftResult.board,
+        lockedCards: shiftResult.lockedCards,
+      };
+      newState = { ...newState, players };
+    }
+
     // Passer a la phase post_action
-    const newState = { ...result.newState, turnPhase: 'post_action' as const };
+    const finalState = { ...newState, turnPhase: 'post_action' as const };
 
     dispatch({ type: 'DISCARD_CHOICE_MADE' });
-    dispatch({ type: 'SET_GAME_STATE', gameState: newState });
+    dispatch({ type: 'SET_GAME_STATE', gameState: finalState });
   }, [state.gameState, state.pendingDiscardChoice, addLogEntry]);
 
   // Selection d'un lieu a remplacer
@@ -675,11 +718,25 @@ export function PlayProvider({ children }: { children: ReactNode }) {
       resourcesAfter: { gold: afterEffect.gold, keys: afterEffect.keys },
     });
 
+    // Appliquer le shift helper pour optimiser les points de position
+    let newState = result.newState;
+    const currentPlayer = newState.players[newState.currentPlayerIndex];
+    const shiftResult = applyOptimalShift(currentPlayer.board, currentPlayer.lockedCards);
+    if (shiftResult.shifted) {
+      const players = [...newState.players];
+      players[newState.currentPlayerIndex] = {
+        ...currentPlayer,
+        board: shiftResult.board,
+        lockedCards: shiftResult.lockedCards,
+      };
+      newState = { ...newState, players };
+    }
+
     // Passer a la phase post_action (le cadenas a ete utilise)
-    const newState = { ...result.newState, turnPhase: 'post_action' as const };
+    const finalState = { ...newState, turnPhase: 'post_action' as const };
 
     dispatch({ type: 'REPLACE_LOCATION_CHOICE_MADE' });
-    dispatch({ type: 'SET_GAME_STATE', gameState: newState });
+    dispatch({ type: 'SET_GAME_STATE', gameState: finalState });
   }, [state.gameState, state.pendingReplaceLocationChoice, addLogEntry]);
 
   // Boucle IA
