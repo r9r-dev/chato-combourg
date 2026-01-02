@@ -1,12 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useGame } from '../context/GameContext';
 import { useAuth } from '../context/AuthContext';
 import { getSettings } from '../services/api';
+
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 export function Landing() {
   const { setStep } = useGame();
   const { user, loading } = useAuth();
   const [developerMode, setDeveloperMode] = useState(false);
+
+  // Random card for background decoration (1-92)
+  const backgroundCardNumber = useMemo(() => {
+    const num = Math.floor(Math.random() * 92) + 1;
+    return num.toString().padStart(3, '0');
+  }, []);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -21,7 +29,25 @@ export function Landing() {
   }, []);
 
   return (
-    <div className="flex flex-col h-dvh p-6 overflow-hidden">
+    <div className="flex flex-col h-dvh p-6 overflow-hidden relative">
+      {/* Background card decoration */}
+      <div
+        className="absolute -bottom-20 -right-20 pointer-events-none select-none"
+        style={{
+          transform: 'rotate(-15deg) scale(2.5)',
+          transformOrigin: 'center',
+          opacity: 0.12,
+          filter: 'sepia(100%) saturate(150%) brightness(0.8) hue-rotate(-10deg)',
+        }}
+      >
+        <img
+          src={`${API_BASE}/cards/thumbs/carte_${backgroundCardNumber}.webp`}
+          alt=""
+          className="w-[200px] h-[280px]"
+          loading="lazy"
+        />
+      </div>
+
       {/* Main content - centered */}
       <div className="flex-1 flex flex-col items-center justify-center">
         <div className="max-w-md w-full text-center">
