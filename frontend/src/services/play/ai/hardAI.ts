@@ -13,9 +13,17 @@
 import type {
   AIPlayer,
   AILevel,
+  AIBuyDecision,
+  AIKeyAction,
+  AIEffectOption,
   PlayGameState,
   GameAction,
   PlayPlayer,
+  DiscardChoice,
+  ReplaceLocationChoice,
+  AdjacentCardChoice,
+  PurseSelectionChoice,
+  Location,
 } from '../../../types/play';
 import { getValidPlacements } from '../../../types/play';
 import {
@@ -56,22 +64,308 @@ export class HardAI implements AIPlayer {
   level: AILevel = 'hard';
   name = 'IA Difficile';
 
-  async selectAction(state: PlayGameState): Promise<GameAction> {
+  // ===========================================================================
+  // Actions obligatoires
+  // ===========================================================================
+
+  selectBuyAction(state: PlayGameState, availableCards: string[]): AIBuyDecision {
     const player = getCurrentPlayer(state);
-    const playerId = player.id;
 
-    // Pour les phases simples, utiliser des heuristiques
-    if (state.turnPhase === 'effect') {
-      return this.selectEffectAction(state, playerId);
+    // Generer toutes les actions d'achat possibles
+    const buyActions: GameAction[] = [];
+    for (const cardId of availableCards) {
+      if (canAffordCard(player, cardId).canAfford) {
+        buyActions.push({ type: 'buy_card', playerId: player.id, cardId });
+      }
+      buyActions.push({ type: 'buy_card_flipped', playerId: player.id, cardId });
     }
 
-    if (state.turnPhase === 'post_action' || state.turnPhase === 'end') {
-      return { type: 'end_turn', playerId };
+    // Utiliser MCTS pour trouver la meilleure action
+    const bestAction = this.runMCTSForActions(state, buyActions);
+
+    if (bestAction && bestAction.cardId) {
+      return {
+        cardId: bestAction.cardId,
+        flipped: bestAction.type === 'buy_card_flipped',
+      };
     }
 
-    // Pour l'achat et le placement, utiliser MCTS
-    return this.runMCTS(state);
+    // Fallback: carte la moins chere face cachee
+    const sortedByValue = [...availableCards].sort((a, b) => {
+      const cardA = getCard(a);
+      const cardB = getCard(b);
+      return (cardA?.value ?? 0) - (cardB?.value ?? 0);
+    });
+    return { cardId: sortedByValue[0], flipped: true };
   }
+
+  selectPlaceAction(state: PlayGameState, cardId: string, validPositions: number[]): number {
+    const player = getCurrentPlayer(state);
+
+    if (validPositions.length === 0) {
+      return 4; // Centre par defaut
+    }
+
+    if (validPositions.length === 1) {
+      return validPositions[0];
+    }
+
+    // Generer toutes les actions de placement possibles
+    const placeActions: GameAction[] = validPositions.map(position => ({
+      type: 'place_card' as const,
+      playerId: player.id,
+      position,
+    }));
+
+    // Utiliser MCTS pour trouver la meilleure position
+    const bestAction = this.runMCTSForActions(state, placeActions);
+
+    if (bestAction && bestAction.position !== undefined) {
+      return bestAction.position;
+    }
+
+    // Fallback: meilleure position par heuristique
+    return this.evaluateBestPosition(state, cardId, validPositions);
+  }
+
+  // ===========================================================================
+  // Actions facultatives
+  // ===========================================================================
+
+  selectKeyAction(state: PlayGameState): AIKeyAction | null {
+    const player = getCurrentPlayer(state);
+
+    // Compter les cartes abordables dans chaque lieu
+    const castleCards = state.board.castleCards;
+    const villageCards = state.board.villageCards;
+
+    const castleAffordable = castleCards.filter(
+      cardId => canAffordCard(player, cardId).canAfford
+    ).length;
+
+    const villageAffordable = villageCards.filter(
+      cardId => canAffordCard(player, cardId).canAfford
+    ).length;
+
+    const currentLocation = state.board.messengerLocation;
+    const currentAffordable = currentLocation === 'castle' ? castleAffordable : villageAffordable;
+    const otherAffordable = currentLocation === 'castle' ? villageAffordable : castleAffordable;
+
+    // Si l'autre lieu a plus de cartes abordables interessantes
+    if (currentAffordable === 0 && otherAffordable > 0) {
+      return {
+        type: 'move_messenger',
+        targetLocation: currentLocation === 'castle' ? 'village' : 'castle',
+      };
+    }
+
+    // Evaluer si un refresh serait benefique
+    if (currentAffordable === 0 && player.gold >= 3) {
+      return {
+        type: 'refresh',
+        targetLocation: currentLocation,
+      };
+    }
+
+    return null;
+  }
+
+  selectLockAction(state: PlayGameState, availableLocks: number[]): number | null {
+    const player = getCurrentPlayer(state);
+    const cardCount = player.board.filter(c => c !== null).length;
+
+    // Utiliser les cadenas plus strategiquement
+    if (availableLocks.length === 0) {
+      return null;
+    }
+
+    // En fin de partie, utiliser les cadenas
+    if (cardCount >= 5) {
+      // Choisir le cadenas qui donne le meilleur effet
+      let bestLock = availableLocks[0];
+      let bestScore = 0;
+
+      for (const lockPos of availableLocks) {
+        const placed = player.board[lockPos];
+        if (!placed) continue;
+
+        const card = getCard(placed.cardId);
+        if (!card || !card.lock_effect) continue;
+
+        // Evaluer l'effet du cadenas
+        let score = 0;
+        const effect = card.lock_effect;
+        if (effect.type.includes('gold')) {
+          score += (effect.amount ?? 1) * 2;
+        }
+        if (effect.type.includes('keys')) {
+          score += (effect.amount ?? 1) * 3;
+        }
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestLock = lockPos;
+        }
+      }
+
+      return bestLock;
+    }
+
+    return null;
+  }
+
+  // ===========================================================================
+  // Choix d'effets
+  // ===========================================================================
+
+  selectEffectOption(state: PlayGameState, options: AIEffectOption[]): number {
+    if (options.length === 0) return 0;
+
+    const player = getCurrentPlayer(state);
+    const cardCount = player.board.filter(c => c !== null).length;
+
+    // Analyser les descriptions des options pour faire un choix intelligent
+    for (let i = 0; i < options.length; i++) {
+      const desc = options[i].description.toLowerCase();
+
+      // En fin de partie, preferer les cles
+      if (cardCount >= 6) {
+        if (desc.includes('clé') || desc.includes('cle')) {
+          return i;
+        }
+      } else {
+        // En debut de partie, preferer l'or
+        if (desc.includes('or') || desc.includes('pièce')) {
+          return i;
+        }
+      }
+    }
+
+    // Sinon, preferer la premiere option (souvent or)
+    return 0;
+  }
+
+  selectLocation(state: PlayGameState, choice: ReplaceLocationChoice): Location {
+    // Choisir le lieu qui maximise le gain
+    const keysPerCard = choice.keysPerCard ?? 0;
+
+    const countKeysForLocation = (location: Location): number => {
+      const cards = location === 'castle'
+        ? state.board.castleCards
+        : state.board.villageCards;
+
+      let keys = 0;
+      for (const cardId of cards) {
+        const card = getCard(cardId);
+        if (!card) continue;
+
+        if (choice.effectType === 'replace_location_gain_keys_per_feature') {
+          if (choice.feature === 'price_reduction' && card.has_price_reduction) {
+            keys += keysPerCard;
+          } else if (choice.feature === 'coin_purse' && card.has_coin_purse) {
+            keys += keysPerCard;
+          }
+        } else if (choice.effectType === 'replace_location_gain_keys_per_shield') {
+          const hasShield = card.shields.some(s => s.color === choice.color);
+          if (hasShield) {
+            keys += keysPerCard;
+          }
+        }
+      }
+
+      return keys;
+    };
+
+    const keysFromCastle = countKeysForLocation('castle');
+    const keysFromVillage = countKeysForLocation('village');
+
+    return keysFromCastle >= keysFromVillage ? 'castle' : 'village';
+  }
+
+  selectDiscardCard(_state: PlayGameState, _choice: DiscardChoice, availableCards: string[]): string {
+    // Defausser la carte la plus chere
+    let bestCard = availableCards[0];
+    let bestValue = 0;
+
+    for (const cardId of availableCards) {
+      const card = getCard(cardId);
+      if (card && card.value > bestValue) {
+        bestValue = card.value;
+        bestCard = cardId;
+      }
+    }
+
+    return bestCard;
+  }
+
+  selectAdjacentCard(state: PlayGameState, choice: AdjacentCardChoice): number {
+    const player = getCurrentPlayer(state);
+
+    // Choisir la carte adjacente avec le meilleur effet
+    let bestPosition = choice.adjacentPositions[0];
+    let bestScore = -Infinity;
+
+    for (const pos of choice.adjacentPositions) {
+      const placed = player.board[pos];
+      if (!placed) continue;
+
+      const card = getCard(placed.cardId);
+      if (!card) continue;
+
+      let score = 0;
+
+      // Evaluer les effets
+      for (const effect of card.effects) {
+        if (effect.type.includes('gold')) {
+          score += (effect.amount ?? 1) * 2;
+        }
+        if (effect.type.includes('keys')) {
+          score += (effect.amount ?? 1) * 3;
+        }
+        if (effect.type.includes('fill_purses')) {
+          score += 5;
+        }
+      }
+
+      // Bonus pour les cartes avec bourse non pleine
+      if (card.has_coin_purse && placed.coinsOnCard !== card.max_coins) {
+        score += 3;
+      }
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestPosition = pos;
+      }
+    }
+
+    return bestPosition;
+  }
+
+  selectPurses(state: PlayGameState, choice: PurseSelectionChoice): number[] {
+    const player = getCurrentPlayer(state);
+
+    // Remplir les bourses avec le plus de capacite restante (maximiser l'or stocke)
+    const pursesWithCapacity = choice.availablePositions.map(pos => {
+      const placed = player.board[pos];
+      if (!placed) return { pos, capacity: 0 };
+
+      const card = getCard(placed.cardId);
+      if (!card) return { pos, capacity: 0 };
+
+      const current = placed.coinsOnCard ?? 0;
+      const max = card.max_coins ?? 0;
+      return { pos, capacity: max - current };
+    });
+
+    // Trier par capacite decroissante (remplir les grosses bourses en premier)
+    pursesWithCapacity.sort((a, b) => b.capacity - a.capacity);
+
+    return pursesWithCapacity.slice(0, choice.maxCards).map(p => p.pos);
+  }
+
+  // ===========================================================================
+  // Utilitaires
+  // ===========================================================================
 
   async isAvailable(): Promise<boolean> {
     return true;
@@ -81,24 +375,28 @@ export class HardAI implements AIPlayer {
   // MCTS Implementation
   // ===========================================================================
 
-  private runMCTS(state: PlayGameState): GameAction {
+  private runMCTSForActions(state: PlayGameState, actions: GameAction[]): GameAction | null {
+    if (actions.length === 0) return null;
+    if (actions.length === 1) return actions[0];
+
     const startTime = Date.now();
     const root = this.createNode(state, null, null);
+    root.untriedActions = [...actions];
 
     let iterations = 0;
     while (iterations < MAX_ITERATIONS && Date.now() - startTime < MAX_TIME_MS) {
-      // 1. Selection - Trouver un noeud a explorer
+      // 1. Selection
       let node = this.select(root);
 
-      // 2. Expansion - Ajouter un enfant si possible
+      // 2. Expansion
       if (node.untriedActions.length > 0 && !this.isTerminal(node.state)) {
         node = this.expand(node);
       }
 
-      // 3. Simulation - Jouer aleatoirement jusqu'a la fin
+      // 3. Simulation
       const result = this.simulate(node.state);
 
-      // 4. Backpropagation - Mettre a jour les stats
+      // 4. Backpropagation
       this.backpropagate(node, result);
 
       iterations++;
@@ -106,12 +404,58 @@ export class HardAI implements AIPlayer {
 
     // Choisir le meilleur enfant (le plus visite)
     const bestChild = this.getBestChild(root, 0);
-    if (!bestChild || !bestChild.action) {
-      // Fallback: action aleatoire
-      return this.getRandomAction(state);
+    return bestChild?.action ?? null;
+  }
+
+  private evaluateBestPosition(
+    state: PlayGameState,
+    cardId: string,
+    validPositions: number[]
+  ): number {
+    const player = getCurrentPlayer(state);
+    const card = getCard(cardId);
+    if (!card) return validPositions[0];
+
+    let bestPosition = validPositions[0];
+    let bestScore = -Infinity;
+
+    for (const position of validPositions) {
+      let score = 0;
+      const row = Math.floor(position / 3);
+      const col = position % 3;
+
+      // Compter les synergies de boucliers
+      for (let i = 0; i < 9; i++) {
+        const placed = player.board[i];
+        if (!placed) continue;
+
+        const placedCard = getCard(placed.cardId);
+        if (!placedCard) continue;
+
+        const placedRow = Math.floor(i / 3);
+        const placedCol = i % 3;
+
+        if (placedRow === row || placedCol === col) {
+          for (const shield of card.shields) {
+            for (const placedShield of placedCard.shields) {
+              if (shield.color === placedShield.color) {
+                score += 2;
+              }
+            }
+          }
+        }
+      }
+
+      // Bonus centre
+      if (position === 4) score += 1;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestPosition = position;
+      }
     }
 
-    return bestChild.action;
+    return bestPosition;
   }
 
   private createNode(
@@ -131,7 +475,6 @@ export class HardAI implements AIPlayer {
   }
 
   private select(node: MCTSNode): MCTSNode {
-    // Descendre dans l'arbre en selectionnant les meilleurs noeuds (UCB1)
     while (node.untriedActions.length === 0 && node.children.length > 0) {
       node = this.getBestChild(node, EXPLORATION_CONSTANT)!;
     }
@@ -139,14 +482,10 @@ export class HardAI implements AIPlayer {
   }
 
   private expand(node: MCTSNode): MCTSNode {
-    // Prendre une action non essayee
     const actionIndex = Math.floor(Math.random() * node.untriedActions.length);
     const action = node.untriedActions.splice(actionIndex, 1)[0];
 
-    // Creer le nouvel etat
     const newState = executeAction(node.state, action);
-
-    // Creer le noeud enfant
     const childNode = this.createNode(newState, action, node);
     node.children.push(childNode);
 
@@ -154,11 +493,9 @@ export class HardAI implements AIPlayer {
   }
 
   private simulate(state: PlayGameState): number {
-    // Simulation rapide: jouer aleatoirement jusqu'a la fin du tour
-    // puis estimer le score
     let currentState = { ...state };
     let depth = 0;
-    const maxDepth = 20; // Limiter la profondeur
+    const maxDepth = 20;
 
     while (depth < maxDepth && !this.isTerminal(currentState)) {
       const actions = this.getLegalActions(currentState);
@@ -169,7 +506,6 @@ export class HardAI implements AIPlayer {
       depth++;
     }
 
-    // Evaluer l'etat final pour le joueur actuel
     return this.evaluateState(currentState, state.currentPlayerIndex);
   }
 
@@ -192,11 +528,9 @@ export class HardAI implements AIPlayer {
 
     for (const child of node.children) {
       if (child.visits === 0) {
-        // Favoriser les noeuds non visites
         return child;
       }
 
-      // UCB1 formula
       const exploitation = child.wins / child.visits;
       const exploration = Math.sqrt(Math.log(node.visits) / child.visits);
       const score = exploitation + explorationConstant * exploration;
@@ -211,7 +545,6 @@ export class HardAI implements AIPlayer {
   }
 
   private isTerminal(state: PlayGameState): boolean {
-    // Un etat est terminal si le tour est termine
     return state.turnPhase === 'end' || state.turnPhase === 'post_action';
   }
 
@@ -220,34 +553,27 @@ export class HardAI implements AIPlayer {
 
     let score = 0;
 
-    // Compter les cartes
     const cardCount = player.board.filter(c => c !== null).length;
     score += cardCount * 5;
 
-    // Ressources
     score += player.gold * 0.5;
     score += player.keys * 2;
 
-    // Reductions (tres valuables)
     score += (player.reductionCastle + player.reductionVillage) * 8;
 
-    // Synergies de boucliers
     score += this.evaluateShieldSynergies(player) * 2;
 
-    // Normaliser entre 0 et 1
     return Math.max(0, Math.min(1, score / 100));
   }
 
   private evaluateShieldSynergies(player: PlayPlayer): number {
     let synergies = 0;
 
-    // Compter les boucliers par ligne et colonne
     for (let i = 0; i < 3; i++) {
       const rowColors = new Map<string, number>();
       const colColors = new Map<string, number>();
 
       for (let j = 0; j < 3; j++) {
-        // Ligne
         const rowCard = player.board[i * 3 + j];
         if (rowCard) {
           const card = getCard(rowCard.cardId);
@@ -261,7 +587,6 @@ export class HardAI implements AIPlayer {
           }
         }
 
-        // Colonne
         const colCard = player.board[j * 3 + i];
         if (colCard) {
           const card = getCard(colCard.cardId);
@@ -276,7 +601,6 @@ export class HardAI implements AIPlayer {
         }
       }
 
-      // Bonus pour les concentrations de couleurs
       for (const count of rowColors.values()) {
         if (count >= 3) synergies += 3;
         else if (count >= 2) synergies += 1;
@@ -290,10 +614,6 @@ export class HardAI implements AIPlayer {
     return synergies;
   }
 
-  // ===========================================================================
-  // Actions legales
-  // ===========================================================================
-
   private getLegalActions(state: PlayGameState): GameAction[] {
     const player = getCurrentPlayer(state);
     const playerId = player.id;
@@ -302,27 +622,21 @@ export class HardAI implements AIPlayer {
     switch (state.turnPhase) {
       case 'pre_action':
       case 'buy':
-        // Actions d'achat
         const availableCards = getAvailableCards(state);
         for (const cardId of availableCards) {
-          // Achat normal
           if (canAffordCard(player, cardId).canAfford) {
             actions.push({ type: 'buy_card', playerId, cardId });
           }
-          // Achat face cachee (toujours possible)
           actions.push({ type: 'buy_card_flipped', playerId, cardId });
         }
 
-        // Utilisation de cle (pre_action uniquement, max 1 par tour)
         if (state.turnPhase === 'pre_action' && player.keys > 0 && !state.keyUsedThisTurn) {
-          // Deplacer messager
           const otherLocation = state.board.messengerLocation === 'castle' ? 'village' : 'castle';
           actions.push({
             type: 'spend_key',
             playerId,
             targetLocation: otherLocation,
           });
-          // Refresh lieu actuel
           actions.push({
             type: 'spend_key',
             playerId,
@@ -350,28 +664,5 @@ export class HardAI implements AIPlayer {
     }
 
     return actions;
-  }
-
-  private getRandomAction(state: PlayGameState): GameAction {
-    const actions = this.getLegalActions(state);
-    if (actions.length === 0) {
-      return { type: 'end_turn', playerId: getCurrentPlayer(state).id };
-    }
-    return actions[Math.floor(Math.random() * actions.length)];
-  }
-
-  private selectEffectAction(state: PlayGameState, playerId: string): GameAction {
-    // Heuristique simple pour les choix d'effets
-    const player = getCurrentPlayer(state);
-    const cardCount = player.board.filter(c => c !== null).length;
-
-    // En debut de partie, preferer l'or ; en fin, les cles
-    const preferKeys = cardCount >= 6;
-
-    return {
-      type: 'choose_effect',
-      playerId,
-      choiceIndex: preferKeys ? 1 : 0,
-    };
   }
 }

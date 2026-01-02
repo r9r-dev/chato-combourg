@@ -205,14 +205,129 @@ export interface PlayGameConfig {
 // Interface IA
 // =============================================================================
 
+/** Decision d'achat de l'IA */
+export interface AIBuyDecision {
+  cardId: string;
+  flipped: boolean;  // Acheter face cachee ?
+}
+
+/** Action de cle de l'IA */
+export interface AIKeyAction {
+  type: 'move_messenger' | 'refresh';
+  targetLocation: Location;
+}
+
+/** Options d'effet [OU] presentees a l'IA */
+export interface AIEffectOption {
+  index: number;
+  description: string;
+}
+
+/**
+ * Interface complete pour les IA
+ *
+ * Chaque IA doit implementer TOUTES ces methodes pour garantir
+ * qu'elle peut repondre a n'importe quelle situation de jeu.
+ */
 export interface AIPlayer {
   level: AILevel;
   name: string;
 
-  // Selectionne la meilleure action a effectuer
-  selectAction(state: PlayGameState): Promise<GameAction>;
+  // ===========================================================================
+  // Actions obligatoires
+  // ===========================================================================
 
-  // Verifie si l'IA peut tourner (pour ML qui peut necessiter le serveur)
+  /**
+   * Choisir quelle carte acheter
+   * @param state Etat actuel du jeu
+   * @param availableCards Cartes disponibles a l'achat
+   * @returns Decision d'achat (carte + face cachee ou non)
+   */
+  selectBuyAction(state: PlayGameState, availableCards: string[]): AIBuyDecision;
+
+  /**
+   * Choisir ou placer la carte achetee
+   * @param state Etat actuel du jeu
+   * @param cardId ID de la carte a placer
+   * @param validPositions Positions valides pour le placement
+   * @returns Position choisie (0-8)
+   */
+  selectPlaceAction(state: PlayGameState, cardId: string, validPositions: number[]): number;
+
+  // ===========================================================================
+  // Actions facultatives
+  // ===========================================================================
+
+  /**
+   * Decider si utiliser une cle (et comment)
+   * Appele en phase pre_action si le joueur a des cles
+   * @param state Etat actuel du jeu
+   * @returns Action de cle ou null si on n'utilise pas de cle
+   */
+  selectKeyAction(state: PlayGameState): AIKeyAction | null;
+
+  /**
+   * Decider si ouvrir un cadenas
+   * Appele en phase pre_action/post_action si le joueur a des cles et des cadenas
+   * @param state Etat actuel du jeu
+   * @param availableLocks Positions des cadenas disponibles (non ouverts)
+   * @returns Position du cadenas a ouvrir ou null si on n'ouvre pas
+   */
+  selectLockAction(state: PlayGameState, availableLocks: number[]): number | null;
+
+  // ===========================================================================
+  // Choix d'effets
+  // ===========================================================================
+
+  /**
+   * Choisir entre plusieurs options d'effet [OU]
+   * @param state Etat actuel du jeu
+   * @param options Options disponibles avec description
+   * @returns Index de l'option choisie
+   */
+  selectEffectOption(state: PlayGameState, options: AIEffectOption[]): number;
+
+  /**
+   * Choisir un lieu (chateau ou village)
+   * Pour les effets de type replace_location
+   * @param state Etat actuel du jeu
+   * @param choice Details du choix de lieu
+   * @returns Lieu choisi
+   */
+  selectLocation(state: PlayGameState, choice: ReplaceLocationChoice): Location;
+
+  /**
+   * Choisir une carte a defausser
+   * @param state Etat actuel du jeu
+   * @param choice Details du choix de defausse
+   * @param availableCards Cartes disponibles pour la defausse
+   * @returns ID de la carte a defausser
+   */
+  selectDiscardCard(state: PlayGameState, choice: DiscardChoice, availableCards: string[]): string;
+
+  /**
+   * Choisir une carte adjacente a activer
+   * @param state Etat actuel du jeu
+   * @param choice Details du choix
+   * @returns Position de la carte adjacente choisie
+   */
+  selectAdjacentCard(state: PlayGameState, choice: AdjacentCardChoice): number;
+
+  /**
+   * Choisir quelles bourses remplir
+   * @param state Etat actuel du jeu
+   * @param choice Details du choix
+   * @returns Positions des bourses a remplir
+   */
+  selectPurses(state: PlayGameState, choice: PurseSelectionChoice): number[];
+
+  // ===========================================================================
+  // Utilitaires
+  // ===========================================================================
+
+  /**
+   * Verifie si l'IA peut tourner (pour ML qui peut necessiter le serveur)
+   */
   isAvailable(): Promise<boolean>;
 }
 

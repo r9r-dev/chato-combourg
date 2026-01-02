@@ -184,55 +184,6 @@ function getPositionName(position: number): string {
 }
 
 // =============================================================================
-// Helper pour le choix de lieu par l'IA
-// =============================================================================
-
-/**
- * L'IA choisit le lieu qui maximise le gain de cles
- * selon le type d'effet (feature ou shield color)
- */
-function selectBestLocationForAI(
-  state: PlayGameState,
-  choice: ReplaceLocationChoice
-): Location {
-  // Compter les cles potentielles pour chaque lieu
-  const keysPerCard = choice.keysPerCard ?? 0;
-
-  const countKeysForLocation = (location: Location): number => {
-    const cards = location === 'castle'
-      ? state.board.castleCards
-      : state.board.villageCards;
-
-    let keys = 0;
-    for (const cardId of cards) {
-      const card = getCard(cardId);
-      if (!card) continue;
-
-      if (choice.effectType === 'replace_location_gain_keys_per_feature') {
-        if (choice.feature === 'price_reduction' && card.has_price_reduction) {
-          keys += keysPerCard;
-        } else if (choice.feature === 'coin_purse' && card.has_coin_purse) {
-          keys += keysPerCard;
-        }
-      } else if (choice.effectType === 'replace_location_gain_keys_per_shield') {
-        const hasShield = card.shields.some(s => s.color === choice.color);
-        if (hasShield) {
-          keys += keysPerCard;
-        }
-      }
-    }
-
-    return keys;
-  };
-
-  const keysFromCastle = countKeysForLocation('castle');
-  const keysFromVillage = countKeysForLocation('village');
-
-  // Choisir le lieu avec le plus de cles, ou castle par defaut
-  return keysFromCastle >= keysFromVillage ? 'castle' : 'village';
-}
-
-// =============================================================================
 // Provider
 // =============================================================================
 
@@ -923,7 +874,7 @@ export function PlayProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'SET_GAME_STATE', gameState: finalState });
   }, [state.gameState, state.pendingPurseSelectionChoice, addLogEntry]);
 
-  // Boucle IA
+  // Boucle IA - utilise SafeAIRunner pour garantir des actions valides
   const runAITurn = useCallback(async (gameState: PlayGameState) => {
     if (aiLoopRef.current) return;
     aiLoopRef.current = true;
@@ -939,25 +890,100 @@ export function PlayProvider({ children }: { children: ReactNode }) {
       }
 
       const ai = createAI(currentPlayer.aiLevel);
+      ai.resetIterations();
       let currentState = gameState;
 
       // L'IA joue son tour complet
       while (currentState.players[currentState.currentPlayerIndex].id === currentPlayer.id) {
-        // Petit delai pour que l'utilisateur voie les actions
-        await new Promise(resolve => setTimeout(resolve, 300));
-
-        const action = await ai.selectAction(currentState);
-        const validation = validateAction(currentState, action);
-
-        if (!validation.isValid) {
-          console.error('AI invalid action:', validation.reason);
+        // Securite anti-boucle infinie
+        if (!ai.checkIterations()) {
+          console.error(`[${ai.name}] Boucle infinie detectee, fin du tour`);
           break;
         }
+
+        // Petit delai pour que l'utilisateur voie les actions
+        await new Promise(resolve => setTimeout(resolve, 300));
 
         // Capturer les ressources avant l'action
         const playerBefore = currentState.players[currentState.currentPlayerIndex];
         const resourcesBefore = { gold: playerBefore.gold, keys: playerBefore.keys };
         const turnNumber = currentState.turnNumber;
+
+        let action: GameAction;
+
+        // Determiner l'action selon la phase
+        switch (currentState.turnPhase) {
+          case 'pre_action': {
+            // Verifier si l'IA veut utiliser une cle
+            const keyAction = ai.getKeyAction(currentState);
+            if (keyAction) {
+              action = {
+                type: 'spend_key',
+                playerId: playerBefore.id,
+                targetLocation: keyAction.targetLocation,
+              };
+              break;
+            }
+
+            // Verifier si l'IA veut utiliser un cadenas
+            const lockAction = ai.getLockAction(currentState);
+            if (lockAction !== null) {
+              action = {
+                type: 'use_key_on_lock',
+                playerId: playerBefore.id,
+                lockPosition: lockAction,
+              };
+              break;
+            }
+
+            // Sinon, acheter une carte
+            const buyResult = ai.getBuyAction(currentState);
+            action = buyResult.action;
+            break;
+          }
+
+          case 'buy': {
+            const buyResult = ai.getBuyAction(currentState);
+            action = buyResult.action;
+            break;
+          }
+
+          case 'place': {
+            const placeResult = ai.getPlaceAction(currentState);
+            action = placeResult.action;
+            break;
+          }
+
+          case 'post_action': {
+            // Verifier si l'IA veut utiliser un cadenas
+            const lockAction = ai.getLockAction(currentState);
+            if (lockAction !== null) {
+              action = {
+                type: 'use_key_on_lock',
+                playerId: playerBefore.id,
+                lockPosition: lockAction,
+              };
+              break;
+            }
+
+            // Sinon, terminer le tour
+            action = { type: 'end_turn', playerId: playerBefore.id };
+            break;
+          }
+
+          case 'end':
+          default:
+            action = { type: 'end_turn', playerId: playerBefore.id };
+            break;
+        }
+
+        // Valider l'action (devrait toujours etre valide grace au SafeAIRunner)
+        const validation = validateAction(currentState, action);
+        if (!validation.isValid) {
+          console.error(`[${ai.name}] Action invalide malgre le wrapper:`, validation.reason);
+          // Forcer la fin du tour
+          action = { type: 'end_turn', playerId: playerBefore.id };
+        }
 
         const purchasedCard = currentState.purchasedCard;
         currentState = executeAction(currentState, action);
@@ -968,12 +994,10 @@ export function PlayProvider({ children }: { children: ReactNode }) {
           const resourcesAfter = { gold: playerAfter.gold, keys: playerAfter.keys };
           const logActionType = getLogActionType(action.type);
 
-          // Determiner la position selon le type d'action
           const position = action.type === 'use_key_on_lock'
             ? action.lockPosition
             : action.position;
 
-          // Determiner le log selon le type
           if (logActionType === 'buy') {
             addLogEntry(playerBefore, turnNumber, logActionType, {
               cardId: action.cardId,
@@ -997,19 +1021,24 @@ export function PlayProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        // Appliquer les effets
+        // Appliquer les effets apres placement
         if (action.type === 'place_card' && purchasedCard) {
           const card = getCard(purchasedCard);
           if (card && card.effects.length > 0) {
             const hasChoice = card.effects.some(e => e.type === 'choice');
 
-            // L'IA choisit automatiquement (option 0 ou 1 selon heuristique)
-            const choiceIndex = hasChoice && currentPlayer.board.filter(c => c !== null).length >= 6 ? 1 : 0;
+            // L'IA choisit via son interface
+            const choiceIndex = hasChoice
+              ? ai.getEffectOption(currentState, [
+                  { index: 0, description: 'Option 1' },
+                  { index: 1, description: 'Option 2' },
+                ])
+              : 0;
 
             const beforeEffect = currentState.players[currentState.currentPlayerIndex];
             const effectResult = executeCardEffect(currentState, purchasedCard, action.position!, choiceIndex);
 
-            // Si l'effet necessite une defausse, l'IA choisit automatiquement
+            // Si l'effet necessite une defausse
             if (effectResult.requiresChoice && effectResult.discardChoice) {
               const location = effectResult.discardChoice.location;
               const availableCards = location === 'castle'
@@ -1017,16 +1046,7 @@ export function PlayProvider({ children }: { children: ReactNode }) {
                 : currentState.board.villageCards;
 
               if (availableCards.length > 0) {
-                // L'IA choisit la carte avec le cout le plus eleve
-                let bestCard = availableCards[0];
-                let bestValue = 0;
-                for (const cardIdToDiscard of availableCards) {
-                  const cardToDiscard = getCard(cardIdToDiscard);
-                  if (cardToDiscard && cardToDiscard.value > bestValue) {
-                    bestValue = cardToDiscard.value;
-                    bestCard = cardIdToDiscard;
-                  }
-                }
+                const bestCard = ai.getDiscardChoice(currentState, effectResult.discardChoice);
 
                 const discardResult = executeDiscardEffect(
                   currentState,
@@ -1035,7 +1055,6 @@ export function PlayProvider({ children }: { children: ReactNode }) {
                 );
                 currentState = discardResult.newState;
 
-                // Logger l'effet de defausse
                 const afterDiscard = currentState.players[currentState.currentPlayerIndex];
                 addLogEntry(playerBefore, turnNumber, 'effect', {
                   description: discardResult.description,
@@ -1044,9 +1063,7 @@ export function PlayProvider({ children }: { children: ReactNode }) {
                 });
               }
             } else if (effectResult.requiresChoice && effectResult.purseSelectionChoice) {
-              // L'IA choisit les premieres bourses disponibles
-              const { maxCards, availablePositions } = effectResult.purseSelectionChoice;
-              const selectedPositions = availablePositions.slice(0, maxCards);
+              const selectedPositions = ai.getPurseChoice(currentState, effectResult.purseSelectionChoice);
 
               const purseResult = executeFillPursesAtPositions(
                 currentState,
@@ -1055,14 +1072,12 @@ export function PlayProvider({ children }: { children: ReactNode }) {
               );
               currentState = purseResult.newState;
 
-              // Logger l'effet de remplissage
               addLogEntry(playerBefore, turnNumber, 'effect', {
                 description: purseResult.description,
               });
             } else {
               currentState = effectResult.newState;
 
-              // Logger l'effet avec la description
               const afterEffect = currentState.players[currentState.currentPlayerIndex];
               if (beforeEffect.gold !== afterEffect.gold || beforeEffect.keys !== afterEffect.keys) {
                 addLogEntry(playerBefore, turnNumber, 'effect', {
@@ -1074,12 +1089,12 @@ export function PlayProvider({ children }: { children: ReactNode }) {
             }
           }
 
-          // Remplir les lieux apres le placement et les effets (IA)
+          // Remplir les lieux apres le placement et les effets
           const refilledBoard = refillLocations(currentState.board);
           currentState = { ...currentState, board: refilledBoard };
         }
 
-        // Appliquer l'effet du cadenas pour l'IA
+        // Appliquer l'effet du cadenas
         if (action.type === 'use_key_on_lock' && action.lockPosition !== undefined) {
           const aiPlayer = currentState.players[currentState.currentPlayerIndex];
           const placedCard = aiPlayer.board[action.lockPosition];
@@ -1089,22 +1104,18 @@ export function PlayProvider({ children }: { children: ReactNode }) {
             const lockResult = executeLockEffect(currentState, placedCard.cardId, action.lockPosition);
 
             if (lockResult.success) {
-              // Verifier si l'effet necessite un choix de lieu (replace_location)
               if (lockResult.requiresChoice && lockResult.replaceLocationChoice) {
-                // L'IA choisit le lieu qui maximise le gain de cles
-                const choice = lockResult.replaceLocationChoice;
-                const bestLocation = selectBestLocationForAI(currentState, choice);
+                const bestLocation = ai.getLocationChoice(currentState, lockResult.replaceLocationChoice);
 
                 const replaceResult = executeReplaceLocationEffect(
                   currentState,
-                  choice,
+                  lockResult.replaceLocationChoice,
                   bestLocation
                 );
 
                 if (replaceResult.success) {
                   currentState = replaceResult.newState;
 
-                  // Logger l'effet
                   const afterReplace = currentState.players[currentState.currentPlayerIndex];
                   addLogEntry(playerBefore, turnNumber, 'effect', {
                     description: replaceResult.description,
@@ -1112,22 +1123,18 @@ export function PlayProvider({ children }: { children: ReactNode }) {
                     resourcesAfter: { gold: afterReplace.gold, keys: afterReplace.keys },
                   });
                 }
-              // Verifier si l'effet necessite un choix de carte adjacente
               } else if (lockResult.requiresChoice && lockResult.adjacentCardChoice) {
-                // L'IA choisit la premiere carte adjacente disponible (simple)
-                const adjChoice = lockResult.adjacentCardChoice;
-                const bestAdjPosition = adjChoice.adjacentPositions[0]; // Simple: prendre la premiere
+                const bestAdjPosition = ai.getAdjacentCardChoice(currentState, lockResult.adjacentCardChoice);
 
                 const adjResult = executeAdjacentCardEffect(
                   currentState,
-                  adjChoice,
+                  lockResult.adjacentCardChoice,
                   bestAdjPosition
                 );
 
                 if (adjResult.success && !adjResult.requiresChoice) {
                   currentState = adjResult.newState;
 
-                  // Logger l'effet
                   const afterAdj = currentState.players[currentState.currentPlayerIndex];
                   addLogEntry(playerBefore, turnNumber, 'effect', {
                     description: adjResult.description,
@@ -1135,12 +1142,9 @@ export function PlayProvider({ children }: { children: ReactNode }) {
                     resourcesAfter: { gold: afterAdj.gold, keys: afterAdj.keys },
                   });
                 }
-                // Note: si l'effet adjacent necessite un choix supplementaire,
-                // l'IA ne le gere pas pour l'instant (cas rare)
               } else {
                 currentState = lockResult.newState;
 
-                // Logger l'effet du cadenas
                 const afterLock = currentState.players[currentState.currentPlayerIndex];
                 if (beforeLock.gold !== afterLock.gold || beforeLock.keys !== afterLock.keys) {
                   addLogEntry(playerBefore, turnNumber, 'effect', {

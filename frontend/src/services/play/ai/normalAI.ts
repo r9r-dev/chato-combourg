@@ -11,15 +11,20 @@
 import type {
   AIPlayer,
   AILevel,
+  AIBuyDecision,
+  AIKeyAction,
+  AIEffectOption,
   PlayGameState,
-  GameAction,
   PlayPlayer,
   ShieldColor,
+  DiscardChoice,
+  ReplaceLocationChoice,
+  AdjacentCardChoice,
+  PurseSelectionChoice,
+  Location,
 } from '../../../types/play';
-import { getValidPlacements } from '../../../types/play';
 import {
   getCard,
-  getAvailableCards,
   canAffordCard,
   getCurrentPlayer,
 } from '../gameEngine';
@@ -28,77 +33,12 @@ export class NormalAI implements AIPlayer {
   level: AILevel = 'normal';
   name = 'IA Normale';
 
-  async selectAction(state: PlayGameState): Promise<GameAction> {
-    const player = getCurrentPlayer(state);
-    const playerId = player.id;
-
-    switch (state.turnPhase) {
-      case 'pre_action':
-        // Considerer l'utilisation d'une cle
-        const keyAction = this.considerKeyAction(state, playerId);
-        if (keyAction) return keyAction;
-        // Sinon, passer a l'achat
-        return this.selectBuyAction(state, playerId);
-
-      case 'buy':
-        return this.selectBuyAction(state, playerId);
-
-      case 'place':
-        return this.selectPlaceAction(state, playerId);
-
-      case 'effect':
-        return this.selectEffectAction(state, playerId);
-
-      case 'post_action':
-      case 'end':
-        return { type: 'end_turn', playerId };
-
-      default:
-        return { type: 'end_turn', playerId };
-    }
-  }
-
-  async isAvailable(): Promise<boolean> {
-    return true;
-  }
-
   // ===========================================================================
-  // Actions
+  // Actions obligatoires
   // ===========================================================================
 
-  private considerKeyAction(
-    state: PlayGameState,
-    playerId: string
-  ): GameAction | null {
+  selectBuyAction(state: PlayGameState, availableCards: string[]): AIBuyDecision {
     const player = getCurrentPlayer(state);
-
-    // Si on a deja utilise une cle ce tour, on ne peut plus
-    if (state.keyUsedThisTurn) return null;
-
-    // Si on a des cles et que le messager n'est pas au bon endroit
-    if (player.keys > 0) {
-      const availableCards = getAvailableCards(state);
-      const affordableCount = availableCards.filter(
-        cardId => canAffordCard(player, cardId).canAfford
-      ).length;
-
-      // Si aucune carte abordable, deplacer le messager
-      if (affordableCount === 0) {
-        const otherLocation = state.board.messengerLocation === 'castle' ? 'village' : 'castle';
-        return {
-          type: 'spend_key',
-          playerId,
-          targetLocation: otherLocation,
-        };
-      }
-    }
-
-    return null;
-  }
-
-  private selectBuyAction(state: PlayGameState, playerId: string): GameAction {
-    const player = getCurrentPlayer(state);
-    const availableCards = getAvailableCards(state);
 
     // Evaluer chaque carte
     const cardScores: { cardId: string; score: number; canAfford: boolean }[] = [];
@@ -122,64 +62,205 @@ export class NormalAI implements AIPlayer {
         return (cardA?.value ?? 0) - (cardB?.value ?? 0);
       })[0];
 
-      return {
-        type: 'buy_card_flipped',
-        playerId,
-        cardId: cheapest.cardId,
-      };
+      return { cardId: cheapest.cardId, flipped: true };
     }
 
     // Prendre la meilleure carte
-    return {
-      type: 'buy_card',
-      playerId,
-      cardId: affordableCards[0].cardId,
-    };
+    return { cardId: affordableCards[0].cardId, flipped: false };
   }
 
-  private selectPlaceAction(state: PlayGameState, playerId: string): GameAction {
+  selectPlaceAction(state: PlayGameState, cardId: string, validPositions: number[]): number {
     const player = getCurrentPlayer(state);
-    const validPositions = getValidPlacements(player.board);
-    const purchasedCard = state.purchasedCard;
 
-    if (!purchasedCard || validPositions.length === 0) {
-      return {
-        type: 'place_card',
-        playerId,
-        position: validPositions[0] ?? 4, // Centre par defaut
-      };
+    if (validPositions.length === 0) {
+      return 4; // Centre par defaut
     }
 
     // Evaluer chaque position
     const positionScores = validPositions.map(pos => ({
       position: pos,
-      score: this.evaluatePosition(purchasedCard, pos, player),
+      score: this.evaluatePosition(cardId, pos, player),
     }));
 
     // Trier par score et prendre la meilleure
     positionScores.sort((a, b) => b.score - a.score);
 
-    return {
-      type: 'place_card',
-      playerId,
-      position: positionScores[0].position,
-    };
+    return positionScores[0].position;
   }
 
-  private selectEffectAction(state: PlayGameState, playerId: string): GameAction {
+  // ===========================================================================
+  // Actions facultatives
+  // ===========================================================================
+
+  selectKeyAction(state: PlayGameState): AIKeyAction | null {
     const player = getCurrentPlayer(state);
 
-    // Pour les effets avec choix, evaluer les deux options
-    // Heuristique simple: preferer l'or en debut de partie, les cles en fin
+    // Compter les cartes abordables dans le lieu actuel
+    const currentLocation = state.board.messengerLocation;
+    const currentCards = currentLocation === 'castle'
+      ? state.board.castleCards
+      : state.board.villageCards;
 
+    const affordableCount = currentCards.filter(
+      cardId => canAffordCard(player, cardId).canAfford
+    ).length;
+
+    // Si aucune carte abordable, deplacer le messager
+    if (affordableCount === 0) {
+      const otherLocation = currentLocation === 'castle' ? 'village' : 'castle';
+      return {
+        type: 'move_messenger',
+        targetLocation: otherLocation,
+      };
+    }
+
+    return null;
+  }
+
+  selectLockAction(state: PlayGameState, availableLocks: number[]): number | null {
+    const player = getCurrentPlayer(state);
     const cardCount = player.board.filter(c => c !== null).length;
-    const preferKeys = cardCount >= 6; // En fin de partie, les cles valent plus
 
-    return {
-      type: 'choose_effect',
-      playerId,
-      choiceIndex: preferKeys ? 1 : 0, // Assume option 0 = or, option 1 = cles
+    // En fin de partie (>= 6 cartes), utiliser les cadenas
+    if (cardCount >= 6 && availableLocks.length > 0) {
+      // Choisir le premier cadenas disponible
+      return availableLocks[0];
+    }
+
+    return null;
+  }
+
+  // ===========================================================================
+  // Choix d'effets
+  // ===========================================================================
+
+  selectEffectOption(state: PlayGameState, options: AIEffectOption[]): number {
+    if (options.length === 0) return 0;
+
+    const player = getCurrentPlayer(state);
+    const cardCount = player.board.filter(c => c !== null).length;
+
+    // En fin de partie, preferer les cles (souvent option 1)
+    // En debut de partie, preferer l'or (souvent option 0)
+    const preferKeys = cardCount >= 6;
+
+    return preferKeys ? Math.min(1, options.length - 1) : 0;
+  }
+
+  selectLocation(state: PlayGameState, choice: ReplaceLocationChoice): Location {
+    // Choisir le lieu qui maximise le gain de cles
+    const keysPerCard = choice.keysPerCard ?? 0;
+
+    const countKeysForLocation = (location: Location): number => {
+      const cards = location === 'castle'
+        ? state.board.castleCards
+        : state.board.villageCards;
+
+      let keys = 0;
+      for (const cardId of cards) {
+        const card = getCard(cardId);
+        if (!card) continue;
+
+        if (choice.effectType === 'replace_location_gain_keys_per_feature') {
+          if (choice.feature === 'price_reduction' && card.has_price_reduction) {
+            keys += keysPerCard;
+          } else if (choice.feature === 'coin_purse' && card.has_coin_purse) {
+            keys += keysPerCard;
+          }
+        } else if (choice.effectType === 'replace_location_gain_keys_per_shield') {
+          const hasShield = card.shields.some(s => s.color === choice.color);
+          if (hasShield) {
+            keys += keysPerCard;
+          }
+        }
+      }
+
+      return keys;
     };
+
+    const keysFromCastle = countKeysForLocation('castle');
+    const keysFromVillage = countKeysForLocation('village');
+
+    return keysFromCastle >= keysFromVillage ? 'castle' : 'village';
+  }
+
+  selectDiscardCard(_state: PlayGameState, _choice: DiscardChoice, availableCards: string[]): string {
+    // Defausser la carte la plus chere (maximise le gain)
+    let bestCard = availableCards[0];
+    let bestValue = 0;
+
+    for (const cardId of availableCards) {
+      const card = getCard(cardId);
+      if (card && card.value > bestValue) {
+        bestValue = card.value;
+        bestCard = cardId;
+      }
+    }
+
+    return bestCard;
+  }
+
+  selectAdjacentCard(state: PlayGameState, choice: AdjacentCardChoice): number {
+    const player = getCurrentPlayer(state);
+
+    // Choisir la carte adjacente qui donne le plus de ressources
+    let bestPosition = choice.adjacentPositions[0];
+    let bestScore = -Infinity;
+
+    for (const pos of choice.adjacentPositions) {
+      const placed = player.board[pos];
+      if (!placed) continue;
+
+      const card = getCard(placed.cardId);
+      if (!card) continue;
+
+      // Score simple : nombre d'effets * 10 + valeur
+      let score = card.effects.length * 10 + card.value;
+
+      // Bonus si l'effet donne de l'or
+      for (const effect of card.effects) {
+        if (effect.type.includes('gold')) {
+          score += 5;
+        }
+      }
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestPosition = pos;
+      }
+    }
+
+    return bestPosition;
+  }
+
+  selectPurses(state: PlayGameState, choice: PurseSelectionChoice): number[] {
+    const player = getCurrentPlayer(state);
+
+    // Trier par capacite restante (remplir les bourses presque pleines en priorite)
+    const pursesWithCapacity = choice.availablePositions.map(pos => {
+      const placed = player.board[pos];
+      if (!placed) return { pos, remaining: Infinity };
+
+      const card = getCard(placed.cardId);
+      if (!card) return { pos, remaining: Infinity };
+
+      const current = placed.coinsOnCard ?? 0;
+      const max = card.max_coins ?? 0;
+      return { pos, remaining: max - current };
+    });
+
+    // Trier par capacite restante (petite = prioritaire)
+    pursesWithCapacity.sort((a, b) => a.remaining - b.remaining);
+
+    return pursesWithCapacity.slice(0, choice.maxCards).map(p => p.pos);
+  }
+
+  // ===========================================================================
+  // Utilitaires
+  // ===========================================================================
+
+  async isAvailable(): Promise<boolean> {
+    return true;
   }
 
   // ===========================================================================
@@ -218,7 +299,7 @@ export class NormalAI implements AIPlayer {
 
     // Bonus pour les bourses
     if (card.has_coin_purse) {
-      score += card.max_coins * 0.5;
+      score += (card.max_coins ?? 0) * 0.5;
     }
 
     // Malus pour le cout eleve

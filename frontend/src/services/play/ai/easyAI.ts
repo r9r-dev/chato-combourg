@@ -15,15 +15,20 @@
 import type {
   AIPlayer,
   AILevel,
+  AIBuyDecision,
+  AIKeyAction,
+  AIEffectOption,
   PlayGameState,
-  GameAction,
   PlayCard,
   PlacedCard,
   ShieldColor,
+  DiscardChoice,
+  ReplaceLocationChoice,
+  AdjacentCardChoice,
+  PurseSelectionChoice,
+  Location,
 } from '../../../types/play';
-import { getValidPlacements } from '../../../types/play';
 import {
-  getAvailableCards,
   canAffordCard,
   getCurrentPlayer,
   getCard,
@@ -408,65 +413,20 @@ function getEffectSimplicityBonus(card: PlayCard): number {
   return bonus;
 }
 
+// =============================================================================
+// Implementation de l'IA
+// =============================================================================
+
 export class EasyAI implements AIPlayer {
   level: AILevel = 'easy';
   name = 'IA Facile';
 
-  async selectAction(state: PlayGameState): Promise<GameAction> {
-    const player = getCurrentPlayer(state);
-    const playerId = player.id;
-
-    switch (state.turnPhase) {
-      case 'pre_action':
-      case 'buy':
-        return this.selectBuyAction(state, playerId);
-
-      case 'place':
-        return this.selectPlaceAction(state, playerId);
-
-      case 'effect':
-        return this.selectEffectAction(state, playerId);
-
-      case 'post_action':
-        return this.selectPostAction(state, playerId);
-
-      case 'end':
-        return { type: 'end_turn', playerId };
-
-      default:
-        return { type: 'end_turn', playerId };
-    }
-  }
-
-  async isAvailable(): Promise<boolean> {
-    return true; // Toujours disponible
-  }
-
   // ===========================================================================
-  // Actions
+  // Actions obligatoires
   // ===========================================================================
 
-  private selectBuyAction(state: PlayGameState, playerId: string): GameAction {
+  selectBuyAction(state: PlayGameState, availableCards: string[]): AIBuyDecision {
     const player = getCurrentPlayer(state);
-
-    // Le debutant garde ses cles "pour plus tard" - utilise tres rarement les cadenas
-    // Seulement 5% de chance d'utiliser un cadenas (au lieu de 50%)
-    if (state.turnPhase === 'pre_action' && !state.lockUsedThisTurn && Math.random() < 0.05) {
-      const locksWithKeys: number[] = [];
-      for (const [position, hasKey] of player.lockedCards) {
-        if (hasKey) locksWithKeys.push(position);
-      }
-      if (locksWithKeys.length > 0) {
-        const randomLock = locksWithKeys[Math.floor(Math.random() * locksWithKeys.length)];
-        return {
-          type: 'use_key_on_lock',
-          playerId,
-          lockPosition: randomLock,
-        };
-      }
-    }
-
-    const availableCards = getAvailableCards(state);
 
     // Filtrer les cartes abordables
     const affordableCards = availableCards.filter(cardId => {
@@ -475,10 +435,8 @@ export class EasyAI implements AIPlayer {
     });
 
     // Le debutant n'achete face cachee que s'il n'a pas les moyens
-    // d'acheter aucune carte visible
     if (affordableCards.length === 0) {
-      // Prendre une carte face cachee - choisir celle qui semble la moins chere
-      // (le debutant n'aime pas "gaspiller" une carte chere)
+      // Prendre la carte la moins chere face cachee
       const sortedByValue = [...availableCards].sort((a, b) => {
         const cardA = getCard(a);
         const cardB = getCard(b);
@@ -487,15 +445,10 @@ export class EasyAI implements AIPlayer {
       // Prend une des cartes les moins cheres (avec un peu de variance)
       const cheaperCards = sortedByValue.slice(0, 2);
       const selectedCard = cheaperCards[Math.floor(Math.random() * cheaperCards.length)];
-      return {
-        type: 'buy_card_flipped',
-        playerId,
-        cardId: selectedCard,
-      };
+      return { cardId: selectedCard, flipped: true };
     }
 
     // Choisir la carte avec le meilleur score de preference
-    // Le debutant est attire par les cartes simples avec de l'or
     const cardsWithScores = affordableCards.map(cardId => ({
       cardId,
       score: getCardPreference(cardId, player.board),
@@ -504,34 +457,19 @@ export class EasyAI implements AIPlayer {
     // Trier par score decroissant
     cardsWithScores.sort((a, b) => b.score - a.score);
 
-    // Prendre la carte avec le meilleur score
-    // (la variance aleatoire dans getCardPreference ajoute deja de l'imprevisibilite)
-    return {
-      type: 'buy_card',
-      playerId,
-      cardId: cardsWithScores[0].cardId,
-    };
+    return { cardId: cardsWithScores[0].cardId, flipped: false };
   }
 
-  private selectPlaceAction(state: PlayGameState, playerId: string): GameAction {
+  selectPlaceAction(state: PlayGameState, cardId: string, validPositions: number[]): number {
     const player = getCurrentPlayer(state);
-    const validPositions = getValidPlacements(player.board);
-
-    // Recuperer la carte a placer
-    const cardToPlace = state.purchasedCard ? getCard(state.purchasedCard) : null;
+    const cardToPlace = getCard(cardId);
 
     // Si on n'a pas d'info sur la carte, placement aleatoire
     if (!cardToPlace || validPositions.length === 0) {
-      const randomPosition = validPositions[Math.floor(Math.random() * validPositions.length)];
-      return {
-        type: 'place_card',
-        playerId,
-        position: randomPosition,
-      };
+      return validPositions[Math.floor(Math.random() * validPositions.length)] ?? 4;
     }
 
     // Le debutant essaie d'aligner les boucliers et les categories
-    // C'est la premiere mecanique qu'on apprend au jeu !
     const positionsWithScores = validPositions.map(position => ({
       position,
       score: evaluatePosition(player.board, position, cardToPlace),
@@ -540,46 +478,81 @@ export class EasyAI implements AIPlayer {
     // Trier par score decroissant
     positionsWithScores.sort((a, b) => b.score - a.score);
 
-    // Prendre la meilleure position
-    return {
-      type: 'place_card',
-      playerId,
-      position: positionsWithScores[0].position,
-    };
+    return positionsWithScores[0].position;
   }
 
-  private selectEffectAction(_state: PlayGameState, playerId: string): GameAction {
-    // Pour les effets avec choix, le debutant prefere l'or aux cles
-    // Dans la plupart des cartes, l'option 0 donne de l'or et l'option 1 des cles
-    // Le debutant choisit l'or 80% du temps
-    return {
-      type: 'choose_effect',
-      playerId,
-      choiceIndex: Math.random() < 0.8 ? 0 : 1,
-    };
+  // ===========================================================================
+  // Actions facultatives
+  // ===========================================================================
+
+  selectKeyAction(_state: PlayGameState): AIKeyAction | null {
+    // Le debutant garde ses cles "pour plus tard"
+    // Il ne les utilise presque jamais (seulement 5% de chance)
+    if (Math.random() < 0.05) {
+      // S'il decide d'utiliser une cle, il prefere deplacer le messager
+      return {
+        type: 'move_messenger',
+        targetLocation: Math.random() < 0.5 ? 'castle' : 'village',
+      };
+    }
+    return null;
   }
 
-  private selectPostAction(state: PlayGameState, playerId: string): GameAction {
-    const player = getCurrentPlayer(state);
-
-    // Le debutant garde ses cles "pour plus tard" - utilise tres rarement les cadenas
+  selectLockAction(_state: PlayGameState, availableLocks: number[]): number | null {
+    // Le debutant garde ses cles "pour plus tard"
     // Seulement 5% de chance d'utiliser un cadenas
-    if (!state.lockUsedThisTurn && Math.random() < 0.05) {
-      const locksWithKeys: number[] = [];
-      for (const [position, hasKey] of player.lockedCards) {
-        if (hasKey) locksWithKeys.push(position);
-      }
-      if (locksWithKeys.length > 0) {
-        const randomLock = locksWithKeys[Math.floor(Math.random() * locksWithKeys.length)];
-        return {
-          type: 'use_key_on_lock',
-          playerId,
-          lockPosition: randomLock,
-        };
+    if (Math.random() < 0.05 && availableLocks.length > 0) {
+      return availableLocks[Math.floor(Math.random() * availableLocks.length)];
+    }
+    return null;
+  }
+
+  // ===========================================================================
+  // Choix d'effets
+  // ===========================================================================
+
+  selectEffectOption(_state: PlayGameState, options: AIEffectOption[]): number {
+    // Le debutant prefere l'or aux cles (80% du temps option 0)
+    // Dans la plupart des cartes, l'option 0 donne de l'or
+    if (options.length === 0) return 0;
+    return Math.random() < 0.8 ? 0 : Math.min(1, options.length - 1);
+  }
+
+  selectLocation(_state: PlayGameState, _choice: ReplaceLocationChoice): Location {
+    // Le debutant choisit au hasard
+    return Math.random() < 0.5 ? 'castle' : 'village';
+  }
+
+  selectDiscardCard(_state: PlayGameState, _choice: DiscardChoice, availableCards: string[]): string {
+    // Le debutant choisit la carte la plus chere (il pense que c'est mieux)
+    let bestCard = availableCards[0];
+    let bestValue = 0;
+    for (const cardId of availableCards) {
+      const card = getCard(cardId);
+      if (card && card.value > bestValue) {
+        bestValue = card.value;
+        bestCard = cardId;
       }
     }
+    return bestCard;
+  }
 
-    // Terminer le tour
-    return { type: 'end_turn', playerId };
+  selectAdjacentCard(_state: PlayGameState, choice: AdjacentCardChoice): number {
+    // Le debutant choisit au hasard parmi les cartes adjacentes
+    const positions = choice.adjacentPositions;
+    return positions[Math.floor(Math.random() * positions.length)];
+  }
+
+  selectPurses(_state: PlayGameState, choice: PurseSelectionChoice): number[] {
+    // Le debutant remplit les premieres bourses disponibles
+    return choice.availablePositions.slice(0, choice.maxCards);
+  }
+
+  // ===========================================================================
+  // Utilitaires
+  // ===========================================================================
+
+  async isAvailable(): Promise<boolean> {
+    return true; // Toujours disponible
   }
 }
