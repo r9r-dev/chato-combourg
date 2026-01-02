@@ -28,6 +28,7 @@ import type {
   LogActionType,
   DiscardChoice,
   ReplaceLocationChoice,
+  AdjacentCardChoice,
   Location,
 } from '../types/play';
 import {
@@ -42,7 +43,7 @@ import {
   refillLocations,
 } from '../services/play/gameEngine';
 import { createAI } from '../services/play/ai';
-import { executeCardEffect, executeDiscardEffect, executeLockEffect, executeReplaceLocationEffect } from '../services/play/effectExecutor';
+import { executeCardEffect, executeDiscardEffect, executeLockEffect, executeReplaceLocationEffect, executeAdjacentCardEffect } from '../services/play/effectExecutor';
 import { applyOptimalShift } from '../services/play/shiftHelper';
 import {
   playReducer,
@@ -95,6 +96,10 @@ interface PlayContextType {
   // Choix de lieu a remplacer
   pendingReplaceLocationChoice: ReplaceLocationChoice | null;
   selectReplaceLocation: (location: Location) => Promise<void>;
+
+  // Choix de carte adjacente
+  pendingAdjacentCardChoice: AdjacentCardChoice | null;
+  selectAdjacentCard: (position: number) => Promise<void>;
 
   // Logs
   toggleGameLog: () => void;
@@ -570,6 +575,16 @@ export function PlayProvider({ children }: { children: ReactNode }) {
             return;
           }
 
+          // Verifier si l'effet necessite un choix de carte adjacente
+          if (lockResult.requiresChoice && lockResult.adjacentCardChoice) {
+            dispatch({
+              type: 'ADJACENT_CARD_CHOICE_REQUIRED',
+              adjacentCardChoice: lockResult.adjacentCardChoice,
+            });
+            dispatch({ type: 'SET_GAME_STATE', gameState: newState });
+            return;
+          }
+
           newState = lockResult.newState;
 
           // Logger l'effet du cadenas
@@ -738,6 +753,103 @@ export function PlayProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'REPLACE_LOCATION_CHOICE_MADE' });
     dispatch({ type: 'SET_GAME_STATE', gameState: finalState });
   }, [state.gameState, state.pendingReplaceLocationChoice, addLogEntry]);
+
+  // Selection d'une carte adjacente a activer
+  const selectAdjacentCard = useCallback(async (position: number) => {
+    if (!state.gameState || !state.pendingAdjacentCardChoice) return;
+
+    const playerBefore = state.gameState.players[state.gameState.currentPlayerIndex];
+    const resourcesBefore = { gold: playerBefore.gold, keys: playerBefore.keys };
+    const turnNumber = state.gameState.turnNumber;
+
+    // Executer l'effet de la carte adjacente
+    const result = executeAdjacentCardEffect(
+      state.gameState,
+      state.pendingAdjacentCardChoice,
+      position
+    );
+
+    if (!result.success) {
+      dispatch({ type: 'SET_ERROR', error: result.description });
+      return;
+    }
+
+    // Gerer le chainage d'effets: si l'effet de la carte adjacente necessite un choix
+
+    // Cas 1: Effet [OU] - proposer le choix
+    if (result.requiresChoice && result.choices) {
+      const targetCard = state.gameState.players[state.gameState.currentPlayerIndex].board[position];
+      dispatch({ type: 'ADJACENT_CARD_CHOICE_MADE' });
+      dispatch({ type: 'SET_GAME_STATE', gameState: result.newState });
+      dispatch({
+        type: 'EFFECT_CHOICE_REQUIRED',
+        options: result.choices,
+        cardId: targetCard?.cardId ?? '',
+      });
+      return;
+    }
+
+    // Cas 2: Effet de defausse
+    if (result.requiresChoice && result.discardChoice) {
+      dispatch({ type: 'ADJACENT_CARD_CHOICE_MADE' });
+      dispatch({ type: 'SET_GAME_STATE', gameState: result.newState });
+      dispatch({
+        type: 'DISCARD_CHOICE_REQUIRED',
+        discardChoice: result.discardChoice,
+      });
+      return;
+    }
+
+    // Cas 3: Effet de remplacement de lieu
+    if (result.requiresChoice && result.replaceLocationChoice) {
+      dispatch({ type: 'ADJACENT_CARD_CHOICE_MADE' });
+      dispatch({ type: 'SET_GAME_STATE', gameState: result.newState });
+      dispatch({
+        type: 'REPLACE_LOCATION_CHOICE_REQUIRED',
+        replaceLocationChoice: result.replaceLocationChoice,
+      });
+      return;
+    }
+
+    // Cas 4: Effet d'activation adjacente (recursif - rare mais possible)
+    if (result.requiresChoice && result.adjacentCardChoice) {
+      dispatch({ type: 'ADJACENT_CARD_CHOICE_MADE' });
+      dispatch({ type: 'SET_GAME_STATE', gameState: result.newState });
+      dispatch({
+        type: 'ADJACENT_CARD_CHOICE_REQUIRED',
+        adjacentCardChoice: result.adjacentCardChoice,
+      });
+      return;
+    }
+
+    // Pas de choix supplementaire - finaliser
+    const afterEffect = result.newState.players[result.newState.currentPlayerIndex];
+    addLogEntry(playerBefore, turnNumber, 'effect', {
+      description: result.description,
+      resourcesBefore,
+      resourcesAfter: { gold: afterEffect.gold, keys: afterEffect.keys },
+    });
+
+    // Appliquer le shift helper pour optimiser les points de position
+    let newState = result.newState;
+    const currentPlayer = newState.players[newState.currentPlayerIndex];
+    const shiftResult = applyOptimalShift(currentPlayer.board, currentPlayer.lockedCards);
+    if (shiftResult.shifted) {
+      const players = [...newState.players];
+      players[newState.currentPlayerIndex] = {
+        ...currentPlayer,
+        board: shiftResult.board,
+        lockedCards: shiftResult.lockedCards,
+      };
+      newState = { ...newState, players };
+    }
+
+    // Passer a la phase post_action (le cadenas a ete utilise)
+    const finalState = { ...newState, turnPhase: 'post_action' as const };
+
+    dispatch({ type: 'ADJACENT_CARD_CHOICE_MADE' });
+    dispatch({ type: 'SET_GAME_STATE', gameState: finalState });
+  }, [state.gameState, state.pendingAdjacentCardChoice, addLogEntry]);
 
   // Boucle IA
   const runAITurn = useCallback(async (gameState: PlayGameState) => {
@@ -912,6 +1024,31 @@ export function PlayProvider({ children }: { children: ReactNode }) {
                     resourcesAfter: { gold: afterReplace.gold, keys: afterReplace.keys },
                   });
                 }
+              // Verifier si l'effet necessite un choix de carte adjacente
+              } else if (lockResult.requiresChoice && lockResult.adjacentCardChoice) {
+                // L'IA choisit la premiere carte adjacente disponible (simple)
+                const adjChoice = lockResult.adjacentCardChoice;
+                const bestAdjPosition = adjChoice.adjacentPositions[0]; // Simple: prendre la premiere
+
+                const adjResult = executeAdjacentCardEffect(
+                  currentState,
+                  adjChoice,
+                  bestAdjPosition
+                );
+
+                if (adjResult.success && !adjResult.requiresChoice) {
+                  currentState = adjResult.newState;
+
+                  // Logger l'effet
+                  const afterAdj = currentState.players[currentState.currentPlayerIndex];
+                  addLogEntry(playerBefore, turnNumber, 'effect', {
+                    description: adjResult.description,
+                    resourcesBefore: { gold: beforeLock.gold, keys: beforeLock.keys },
+                    resourcesAfter: { gold: afterAdj.gold, keys: afterAdj.keys },
+                  });
+                }
+                // Note: si l'effet adjacent necessite un choix supplementaire,
+                // l'IA ne le gere pas pour l'instant (cas rare)
               } else {
                 currentState = lockResult.newState;
 
@@ -1101,6 +1238,9 @@ export function PlayProvider({ children }: { children: ReactNode }) {
         // Choix de lieu a remplacer
         pendingReplaceLocationChoice: state.pendingReplaceLocationChoice,
         selectReplaceLocation,
+        // Choix de carte adjacente
+        pendingAdjacentCardChoice: state.pendingAdjacentCardChoice,
+        selectAdjacentCard,
         // Logs
         toggleGameLog,
         gameLog: state.gameLog,

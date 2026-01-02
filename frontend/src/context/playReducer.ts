@@ -13,6 +13,7 @@ import type {
   GameLogEntry,
   DiscardChoice,
   ReplaceLocationChoice,
+  AdjacentCardChoice,
 } from '../types/play';
 
 // =============================================================================
@@ -26,6 +27,7 @@ export type PlayStep =
   | 'effect_choice'   // Choix d'effet [OU] en attente
   | 'discard_choice'  // Choix de carte a defausser en attente
   | 'replace_location_choice'  // Choix de lieu a remplacer en attente
+  | 'adjacent_card_choice'     // Choix de carte adjacente en attente
   | 'results';        // Resultats finaux
 
 export interface PlayUIState {
@@ -53,6 +55,9 @@ export interface PlayUIState {
 
   // Choix de lieu a remplacer en attente
   pendingReplaceLocationChoice: ReplaceLocationChoice | null;
+
+  // Choix de carte adjacente en attente
+  pendingAdjacentCardChoice: AdjacentCardChoice | null;
 
   // Erreurs
   lastError: string | null;
@@ -103,6 +108,10 @@ export type PlayUIAction =
   | { type: 'REPLACE_LOCATION_CHOICE_REQUIRED'; replaceLocationChoice: ReplaceLocationChoice }
   | { type: 'REPLACE_LOCATION_CHOICE_MADE' }
 
+  // Choix de carte adjacente
+  | { type: 'ADJACENT_CARD_CHOICE_REQUIRED'; adjacentCardChoice: AdjacentCardChoice }
+  | { type: 'ADJACENT_CARD_CHOICE_MADE' }
+
   // Erreurs et chargement
   | { type: 'SET_ERROR'; error: string | null }
   | { type: 'SET_LOADING'; isLoading: boolean }
@@ -125,6 +134,7 @@ export const initialPlayUIState: PlayUIState = {
   pendingEffectChoice: null,
   pendingDiscardChoice: null,
   pendingReplaceLocationChoice: null,
+  pendingAdjacentCardChoice: null,
   lastError: null,
   isLoading: false,
   gameLog: [],
@@ -311,6 +321,21 @@ export function playReducer(
         ...state,
         step: 'playing',
         pendingReplaceLocationChoice: null,
+      };
+
+    // Choix de carte adjacente
+    case 'ADJACENT_CARD_CHOICE_REQUIRED':
+      return {
+        ...state,
+        step: 'adjacent_card_choice',
+        pendingAdjacentCardChoice: action.adjacentCardChoice,
+      };
+
+    case 'ADJACENT_CARD_CHOICE_MADE':
+      return {
+        ...state,
+        step: 'playing',
+        pendingAdjacentCardChoice: null,
       };
 
     // Erreurs et chargement

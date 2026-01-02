@@ -17,7 +17,9 @@ import type {
   DiscardChoice,
   ReplaceLocationChoice,
   ReplaceLocationEffectType,
+  AdjacentCardChoice,
 } from '../../types/play';
+import { ADJACENCY_MAP } from '../../types/play';
 import { getCard } from './gameEngine';
 import {
   countShieldsOnBoard,
@@ -40,6 +42,7 @@ export interface EffectResult {
   choices?: CardEffect[];
   discardChoice?: DiscardChoice;  // Pour les effets de defausse
   replaceLocationChoice?: ReplaceLocationChoice;  // Pour les effets de remplacement de lieu
+  adjacentCardChoice?: AdjacentCardChoice;  // Pour les effets d'activation de carte adjacente
 }
 
 // =============================================================================
@@ -734,14 +737,57 @@ function applyReplaceLocationGainKeysPerShield(
 
 function applyActivateAdjacent(
   state: PlayGameState,
-  _position: number
+  position: number
 ): EffectResult {
-  // Le joueur doit choisir une carte adjacente
+  const player = state.players[state.currentPlayerIndex];
+  const placedCard = player.board[position];
+
+  if (!placedCard) {
+    return {
+      success: false,
+      newState: state,
+      description: 'Pas de carte a cette position',
+    };
+  }
+
+  // Trouver les positions adjacentes valides (cartes avec effets)
+  const adjacentPositions = ADJACENCY_MAP[position] ?? [];
+  const validPositions: number[] = [];
+
+  for (const adjPos of adjacentPositions) {
+    const adjCard = player.board[adjPos];
+    if (!adjCard) continue;
+
+    const cardData = getCard(adjCard.cardId);
+    if (!cardData) continue;
+
+    // Valide si la carte a des effets normaux OU un effet de cadenas
+    const hasNormalEffects = cardData.effects.length > 0;
+    const hasLockEffect = cardData.lock_effect !== null;
+
+    if (hasNormalEffects || hasLockEffect) {
+      validPositions.push(adjPos);
+    }
+  }
+
+  if (validPositions.length === 0) {
+    return {
+      success: true,
+      newState: state,
+      description: 'Aucune carte adjacente avec effet',
+    };
+  }
+
   return {
     success: true,
     newState: state,
     description: 'Activer l\'effet d\'une carte adjacente',
     requiresChoice: true,
+    adjacentCardChoice: {
+      triggerPosition: position,
+      triggerCardId: placedCard.cardId,
+      adjacentPositions: validPositions,
+    },
   };
 }
 
@@ -944,4 +990,47 @@ export function executeReplaceLocationEffect(
     newState: { ...state, players, board },
     description,
   };
+}
+
+// =============================================================================
+// Execution de l'effet de carte adjacente (apres choix du joueur)
+// =============================================================================
+
+/**
+ * Execute l'effet d'une carte adjacente apres que le joueur l'ait choisie.
+ * - Si la carte cible a un effet de cadenas : execute l'effet de cadenas (sans consommer la cle)
+ * - Sinon : execute les effets normaux (comme si la carte venait d'etre posee)
+ */
+export function executeAdjacentCardEffect(
+  state: PlayGameState,
+  _adjacentCardChoice: AdjacentCardChoice,
+  chosenPosition: number
+): EffectResult {
+  const player = state.players[state.currentPlayerIndex];
+  const targetCard = player.board[chosenPosition];
+
+  if (!targetCard) {
+    return {
+      success: false,
+      newState: state,
+      description: 'Carte adjacente introuvable',
+    };
+  }
+
+  const cardData = getCard(targetCard.cardId);
+  if (!cardData) {
+    return {
+      success: false,
+      newState: state,
+      description: 'Donnees de carte introuvables',
+    };
+  }
+
+  // Si la carte a un effet de cadenas, l'executer (sans consommer la cle sur cette carte)
+  // Sinon, executer les effets normaux
+  if (cardData.lock_effect) {
+    return executeSingleEffect(state, cardData.lock_effect, chosenPosition, targetCard.cardId);
+  } else {
+    return executeCardEffect(state, targetCard.cardId, chosenPosition);
+  }
 }

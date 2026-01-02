@@ -140,6 +140,8 @@ export function Play() {
     selectDiscardCard,
     pendingReplaceLocationChoice,
     selectReplaceLocation,
+    pendingAdjacentCardChoice,
+    selectAdjacentCard,
     debugRefreshCards,
     debugMoveMessenger,
     debugAddResources,
@@ -186,6 +188,7 @@ export function Play() {
   const canUseLock = (isBuyPhase || isPostActionPhase) && !gameState?.lockUsedThisTurn && !isCurrentPlayerAI();
   const isDiscardPhase = state.step === 'discard_choice';
   const isReplaceLocationPhase = state.step === 'replace_location_choice';
+  const isAdjacentCardPhase = state.step === 'adjacent_card_choice';
   const canEndTurn = gameState?.turnPhase === 'post_action' || gameState?.turnPhase === 'end';
 
   // Cartes disponibles pour la defausse
@@ -195,6 +198,19 @@ export function Play() {
       ? gameState.board.castleCards
       : gameState.board.villageCards;
   }, [gameState, pendingDiscardChoice]);
+
+  // Options de cartes adjacentes
+  const adjacentCardOptions = useMemo(() => {
+    if (!gameState || !pendingAdjacentCardChoice) return [];
+    const player = gameState.players[gameState.currentPlayerIndex];
+    return pendingAdjacentCardChoice.adjacentPositions.map(pos => {
+      const placedCard = player.board[pos];
+      return {
+        position: pos,
+        cardId: placedCard?.cardId ?? '',
+      };
+    }).filter(opt => opt.cardId !== '');
+  }, [gameState, pendingAdjacentCardChoice]);
 
   // Autres joueurs
   const otherPlayers = useMemo(() => {
@@ -685,6 +701,36 @@ export function Play() {
                   {gameState?.board.villageCards.length ?? 0} cartes
                 </div>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal choix de carte adjacente */}
+      {isAdjacentCardPhase && pendingAdjacentCardChoice && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+          <div className="bg-dark-card rounded-2xl p-6 max-w-md w-full">
+            <h3 className="text-white font-semibold text-lg mb-2 text-center">
+              Activer une carte adjacente
+            </h3>
+            <p className="text-white/60 text-sm mb-4 text-center">
+              Choisissez une carte pour activer son effet
+            </p>
+            <div className={`grid gap-3 ${adjacentCardOptions.length <= 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+              {adjacentCardOptions.map((option) => (
+                <button
+                  key={option.position}
+                  onClick={() => selectAdjacentCard(option.position)}
+                  className="aspect-[5/7] rounded-lg overflow-hidden border-2 border-white/30 hover:border-gold transition-colors"
+                >
+                  <img
+                    src={`${API_BASE}/cards/thumbs/carte_${option.cardId}.webp`}
+                    alt={`Carte position ${option.position}`}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </button>
+              ))}
             </div>
           </div>
         </div>

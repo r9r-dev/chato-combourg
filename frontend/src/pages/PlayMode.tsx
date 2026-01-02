@@ -23,6 +23,8 @@ function PlayModeContent() {
     case 'ai_thinking':
     case 'effect_choice':
     case 'discard_choice':
+    case 'replace_location_choice':
+    case 'adjacent_card_choice':
       return <Play />;
 
     case 'results':

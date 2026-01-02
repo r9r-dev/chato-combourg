@@ -251,6 +251,19 @@ export interface PlacementValidation {
 // Helpers
 // =============================================================================
 
+/** Map d'adjacence pour la grille 3x3 (positions orthogonales uniquement) */
+export const ADJACENCY_MAP: Record<number, number[]> = {
+  0: [1, 3],
+  1: [0, 2, 4],
+  2: [1, 5],
+  3: [0, 4, 6],
+  4: [1, 3, 5, 7],
+  5: [2, 4, 8],
+  6: [3, 7],
+  7: [4, 6, 8],
+  8: [5, 7],
+};
+
 /** Positions valides pour le placement selon les cartes deja placees */
 export function getValidPlacements(board: (PlacedCard | null)[]): number[] {
   const occupied = board.map((c, i) => c !== null ? i : -1).filter(i => i >= 0);
@@ -262,20 +275,9 @@ export function getValidPlacements(board: (PlacedCard | null)[]): number[] {
 
   // Positions adjacentes aux cartes existantes
   const adjacent = new Set<number>();
-  const adjacencyMap: Record<number, number[]> = {
-    0: [1, 3],
-    1: [0, 2, 4],
-    2: [1, 5],
-    3: [0, 4, 6],
-    4: [1, 3, 5, 7],
-    5: [2, 4, 8],
-    6: [3, 7],
-    7: [4, 6, 8],
-    8: [5, 7],
-  };
 
   for (const pos of occupied) {
-    for (const adj of adjacencyMap[pos]) {
+    for (const adj of ADJACENCY_MAP[pos]) {
       if (board[adj] === null) {
         adjacent.add(adj);
       }
@@ -510,4 +512,14 @@ export interface ReplaceLocationChoice {
   feature?: string;              // "price_reduction" ou "coin_purse"
   color?: ShieldColor;           // Couleur du bouclier
   keysPerCard?: number;          // Nombre de cles par carte
+}
+
+// =============================================================================
+// Choix de carte adjacente (effet "activate_adjacent")
+// =============================================================================
+
+export interface AdjacentCardChoice {
+  triggerPosition: number;       // Position de la carte avec l'effet activate_adjacent
+  triggerCardId: string;         // ID de la carte declencheuse
+  adjacentPositions: number[];   // Positions adjacentes valides (cartes avec effets)
 }
