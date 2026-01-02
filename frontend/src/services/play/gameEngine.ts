@@ -370,15 +370,11 @@ function validateChooseEffect(
 }
 
 function validateShiftBoard(
-  state: PlayGameState,
+  _state: PlayGameState,
   player: PlayPlayer,
   action: GameAction
 ): ActionValidation {
-  // Le decalage n'est pas permis pendant le placement obligatoire
-  if (state.turnPhase === 'place') {
-    return { isValid: false, reason: 'Vous devez d\'abord placer votre carte' };
-  }
-
+  // Le decalage est toujours permis (c'est un helper visuel, pas une action de jeu)
   if (!action.shiftDirection) {
     return { isValid: false, reason: 'Direction non specifiee' };
   }
