@@ -1,118 +1,122 @@
 /**
  * PlaySetup - Configuration d'une partie en mode Jouer
  *
- * Permet de :
- * - Ajouter des joueurs humains ou IA
- * - Choisir le niveau de difficulte des IA
- * - Configurer les couleurs
- * - Lancer la partie
+ * Interface unifiee avec la selection de joueurs standard,
+ * avec la possibilite d'ajouter des IA.
  */
 
 import { useState } from 'react';
 import { usePlay } from '../context/PlayContext';
+import { useGame } from '../context/GameContext';
+import { useAuth } from '../context/AuthContext';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import type { Player } from '../types';
 import type { AILevel } from '../types/play';
 
-const PLAYER_COLORS = [
-  '#e74c3c', // Rouge
-  '#3498db', // Bleu
-  '#2ecc71', // Vert
-  '#f39c12', // Orange
-  '#9b59b6', // Violet
+const AI_COLORS = [
+  '#6b7280', // Gris
+  '#4b5563', // Gris fonce
+  '#374151', // Gris tres fonce
 ];
 
 const AI_LEVELS: { value: AILevel; label: string; description: string }[] = [
   { value: 'easy', label: 'Facile', description: '"Oh, elle est jolie cette carte !"' },
-  { value: 'normal', label: 'Normale', description: '"Je connais bien les règles."' },
-  { value: 'hard', label: 'Difficile', description: '"Je n\'ai aucune pitié."' },
-  { value: 'neural', label: 'Extrême', description: '"Prie pour avoir de la chance."' },
+  { value: 'normal', label: 'Normale', description: '"Je connais bien les regles."' },
+  { value: 'hard', label: 'Difficile', description: '"Je n\'ai aucune pitie."' },
+  { value: 'neural', label: 'Extreme', description: '"Prie pour avoir de la chance."' },
 ];
 
-interface PlayerSetup {
+interface AIPlayer {
+  id: string;
   name: string;
   color: string;
-  isAI: boolean;
-  aiLevel?: AILevel;
+  level: AILevel;
 }
 
 export function PlaySetup() {
   const { state, startGame, reset } = usePlay();
-  const [players, setPlayers] = useState<PlayerSetup[]>([
-    { name: 'Joueur 1', color: PLAYER_COLORS[0], isAI: false },
-    { name: 'IA Normale', color: PLAYER_COLORS[1], isAI: true, aiLevel: 'normal' },
-  ]);
-  const [showQuitConfirm, setShowQuitConfirm] = useState(false);
-  const [showAddMenu, setShowAddMenu] = useState(false);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [editingName, setEditingName] = useState('');
+  const { setStep: setGameStep } = useGame();
+  const { sortedPlayers, addPlayer, loading } = useAuth();
 
-  const getNextColor = (): string => {
-    const usedColors = players.map(p => p.color);
-    const available = PLAYER_COLORS.filter(c => !usedColors.includes(c));
-    return available[0] ?? PLAYER_COLORS[0];
+  const [selectedPlayers, setSelectedPlayers] = useState<Player[]>([]);
+  const [aiPlayers, setAiPlayers] = useState<AIPlayer[]>([]);
+  const [newPlayerName, setNewPlayerName] = useState('');
+  const [showAddPlayer, setShowAddPlayer] = useState(false);
+  const [showAddAI, setShowAddAI] = useState(false);
+  const [showQuitConfirm, setShowQuitConfirm] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+
+  const totalPlayers = selectedPlayers.length + aiPlayers.length;
+  const canAddMore = totalPlayers < 5;
+  const hasHuman = selectedPlayers.length > 0;
+  const canStart = totalPlayers >= 2 && hasHuman;
+
+  const getNextAIColor = (): string => {
+    const usedColors = aiPlayers.map(ai => ai.color);
+    const available = AI_COLORS.filter(c => !usedColors.includes(c));
+    return available[0] ?? AI_COLORS[0];
   };
 
-  const handleAddHuman = () => {
-    if (players.length >= 5) return;
-    const humanCount = players.filter(p => !p.isAI).length + 1;
-    setPlayers([
-      ...players,
-      { name: `Joueur ${humanCount}`, color: getNextColor(), isAI: false },
-    ]);
-    setShowAddMenu(false);
+  const togglePlayer = (player: Player) => {
+    const isSelected = selectedPlayers.find((p) => p.id === player.id);
+    if (isSelected) {
+      setSelectedPlayers(selectedPlayers.filter((p) => p.id !== player.id));
+    } else if (canAddMore) {
+      setSelectedPlayers([...selectedPlayers, player]);
+    }
+  };
+
+  const handleCreatePlayer = async () => {
+    if (!newPlayerName.trim() || isCreating || !canAddMore) return;
+    setIsCreating(true);
+    try {
+      const player = await addPlayer(newPlayerName.trim());
+      setSelectedPlayers([...selectedPlayers, player]);
+      setNewPlayerName('');
+      setShowAddPlayer(false);
+    } catch (error) {
+      console.error('Failed to create player:', error);
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleAddAI = (level: AILevel) => {
-    if (players.length >= 5) return;
+    if (!canAddMore) return;
     const levelLabel = AI_LEVELS.find(l => l.value === level)?.label ?? 'IA';
-    setPlayers([
-      ...players,
-      { name: `IA ${levelLabel}`, color: getNextColor(), isAI: true, aiLevel: level },
-    ]);
-    setShowAddMenu(false);
-  };
-
-  const handleRemovePlayer = (index: number) => {
-    if (players.length <= 2) return;
-    const newPlayers = [...players];
-    newPlayers.splice(index, 1);
-    setPlayers(newPlayers);
-  };
-
-  const handleStartEdit = (index: number) => {
-    setEditingIndex(index);
-    setEditingName(players[index].name);
-  };
-
-  const handleSaveEdit = () => {
-    if (editingIndex === null) return;
-    const newPlayers = [...players];
-    newPlayers[editingIndex] = { ...newPlayers[editingIndex], name: editingName.trim() || newPlayers[editingIndex].name };
-    setPlayers(newPlayers);
-    setEditingIndex(null);
-    setEditingName('');
-  };
-
-  const handleChangeAILevel = (index: number, level: AILevel) => {
-    const newPlayers = [...players];
-    const levelLabel = AI_LEVELS.find(l => l.value === level)?.label ?? 'IA';
-    newPlayers[index] = {
-      ...newPlayers[index],
-      aiLevel: level,
+    const newAI: AIPlayer = {
+      id: `ai-${Date.now()}`,
       name: `IA ${levelLabel}`,
+      color: getNextAIColor(),
+      level,
     };
-    setPlayers(newPlayers);
+    setAiPlayers([...aiPlayers, newAI]);
+    setShowAddAI(false);
+  };
+
+  const handleRemoveAI = (aiId: string) => {
+    setAiPlayers(aiPlayers.filter(ai => ai.id !== aiId));
   };
 
   const handleStartGame = async () => {
-    // Construire le config et le passer directement a startGame
+    if (!canStart) return;
+
     const config = {
-      players: players.map(p => ({
-        name: p.name,
-        color: p.color,
-        isAI: p.isAI,
-        aiLevel: p.aiLevel,
-      })),
+      players: [
+        // Joueurs humains selectionnes
+        ...selectedPlayers.map(p => ({
+          name: p.name,
+          color: p.color,
+          isAI: false,
+        })),
+        // IA ajoutees
+        ...aiPlayers.map(ai => ({
+          name: ai.name,
+          color: ai.color,
+          isAI: true,
+          aiLevel: ai.level,
+        })),
+      ],
     };
     await startGame(config);
   };
@@ -123,10 +127,16 @@ export function PlaySetup() {
 
   const confirmQuit = () => {
     reset();
+    setGameStep('landing');
   };
 
-  const hasHuman = players.some(p => !p.isAI);
-  const canStart = players.length >= 2 && hasHuman;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-dvh">
+        <div className="text-white/60">Chargement...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-dvh">
@@ -142,96 +152,71 @@ export function PlaySetup() {
       {/* Content */}
       <div className="flex-1 overflow-auto p-4">
         <p className="text-center text-white/60 mb-4">
-          Configurez les joueurs (2 à 5)
+          Selectionnez 2 a 5 joueurs ({totalPlayers}/5)
         </p>
 
-        {/* Players list */}
-        <div className="space-y-3 mb-4">
-          {players.map((player, index) => (
-            <div
-              key={index}
-              className="flex items-center gap-3 p-3 rounded-xl bg-dark-lighter border border-white/10"
-            >
-              {/* Color badge */}
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: player.color }}
+        {/* Human players list */}
+        <div className="space-y-2 mb-4">
+          {sortedPlayers.map((player) => {
+            const isSelected = selectedPlayers.find((p) => p.id === player.id);
+            const order = isSelected
+              ? selectedPlayers.findIndex((p) => p.id === player.id) + 1
+              : 0;
+
+            return (
+              <button
+                key={player.id}
+                onClick={() => togglePlayer(player)}
+                disabled={!isSelected && !canAddMore}
+                className={`w-full flex items-center gap-3 p-4 rounded-xl transition-all ${
+                  isSelected
+                    ? 'bg-gold/20 border-2 border-gold'
+                    : canAddMore
+                    ? 'bg-dark-lighter border-2 border-transparent hover:border-white/20'
+                    : 'bg-dark-lighter border-2 border-transparent opacity-50 cursor-not-allowed'
+                }`}
               >
-                {player.isAI ? (
-                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                      d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                ) : (
-                  <span className="text-white font-bold">{player.name.charAt(0).toUpperCase()}</span>
-                )}
-              </div>
+                {/* Color badge */}
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white"
+                  style={{ backgroundColor: player.color }}
+                >
+                  {isSelected ? order : player.name.charAt(0).toUpperCase()}
+                </div>
 
-              {/* Name or edit field */}
-              <div className="flex-1 min-w-0">
-                {editingIndex === index ? (
-                  <input
-                    type="text"
-                    value={editingName}
-                    onChange={(e) => setEditingName(e.target.value)}
-                    onBlur={handleSaveEdit}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit()}
-                    className="w-full px-2 py-1 rounded bg-dark text-white border border-gold focus:outline-none"
-                    autoFocus
-                  />
-                ) : (
-                  <button
-                    onClick={() => handleStartEdit(index)}
-                    className="text-left w-full"
+                {/* Name */}
+                <span className="flex-1 text-left text-white font-medium">
+                  {player.name}
+                </span>
+
+                {/* Check mark */}
+                {isSelected && (
+                  <svg
+                    className="w-6 h-6 text-gold"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                   >
-                    <span className="text-white font-medium truncate block">{player.name}</span>
-                    {player.isAI && (
-                      <span className="text-white/40 text-xs">
-                        {AI_LEVELS.find(l => l.value === player.aiLevel)?.description}
-                      </span>
-                    )}
-                  </button>
-                )}
-              </div>
-
-              {/* AI level selector */}
-              {player.isAI && (
-                <select
-                  value={player.aiLevel}
-                  onChange={(e) => handleChangeAILevel(index, e.target.value as AILevel)}
-                  className="px-2 py-1 rounded bg-dark text-white border border-white/20 text-sm"
-                >
-                  {AI_LEVELS.map((level) => (
-                    <option key={level.value} value={level.value}>
-                      {level.label}
-                    </option>
-                  ))}
-                </select>
-              )}
-
-              {/* Remove button */}
-              {players.length > 2 && (
-                <button
-                  onClick={() => handleRemovePlayer(index)}
-                  className="p-2 text-white/40 hover:text-red-400 transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
-                </button>
-              )}
-            </div>
-          ))}
+                )}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Add player */}
-        {players.length < 5 && (
-          <div className="relative">
-            {!showAddMenu ? (
+        {/* Add human player */}
+        {canAddMore && (
+          <>
+            {!showAddPlayer ? (
               <button
-                onClick={() => setShowAddMenu(true)}
-                className="w-full flex items-center justify-center gap-2 p-4 rounded-xl
+                onClick={() => setShowAddPlayer(true)}
+                className="w-full flex items-center justify-center gap-2 p-4 rounded-xl mb-4
                            border-2 border-dashed border-white/20 text-white/60
                            hover:border-gold hover:text-gold transition-colors"
               >
@@ -241,51 +226,139 @@ export function PlaySetup() {
                 Ajouter un joueur
               </button>
             ) : (
-              <div className="bg-dark-card rounded-xl border border-white/10 overflow-hidden">
+              <div className="flex gap-2 mb-4">
+                <input
+                  type="text"
+                  value={newPlayerName}
+                  onChange={(e) => setNewPlayerName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCreatePlayer()}
+                  placeholder="Nom du joueur"
+                  className="flex-1 px-4 py-3 rounded-xl bg-dark-lighter text-white
+                             border border-white/20 focus:border-gold focus:outline-none"
+                  autoFocus
+                />
                 <button
-                  onClick={handleAddHuman}
-                  className="w-full flex items-center gap-3 p-4 hover:bg-white/5 transition-colors border-b border-white/10"
+                  onClick={handleCreatePlayer}
+                  disabled={!newPlayerName.trim() || isCreating}
+                  className="px-4 py-3 rounded-xl bg-gold text-dark font-semibold
+                             disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gold/20 flex items-center justify-center">
-                    <svg className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                  <span className="text-white">Joueur humain</span>
+                  {isCreating ? '...' : 'OK'}
                 </button>
-
-                <div className="p-2 border-b border-white/10">
-                  <p className="text-white/40 text-xs px-2 mb-2">Ajouter une IA</p>
-                  <div className="flex gap-2">
-                    {AI_LEVELS.map((level) => (
-                      <button
-                        key={level.value}
-                        onClick={() => handleAddAI(level.value)}
-                        className="flex-1 py-2 px-3 rounded-lg bg-dark-lighter hover:bg-white/10 transition-colors"
-                      >
-                        <span className="text-white text-sm block">{level.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
                 <button
-                  onClick={() => setShowAddMenu(false)}
-                  className="w-full p-3 text-white/40 hover:text-white transition-colors"
+                  onClick={() => {
+                    setShowAddPlayer(false);
+                    setNewPlayerName('');
+                  }}
+                  className="px-4 py-3 rounded-xl bg-dark-lighter text-white/60"
+                >
+                  X
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* AI players section */}
+        {aiPlayers.length > 0 && (
+          <div className="mb-4">
+            <p className="text-white/40 text-sm mb-2 px-1">Intelligence artificielle</p>
+            <div className="space-y-2">
+              {aiPlayers.map((ai, index) => {
+                const order = selectedPlayers.length + index + 1;
+                const levelInfo = AI_LEVELS.find(l => l.value === ai.level);
+
+                return (
+                  <div
+                    key={ai.id}
+                    className="w-full flex items-center gap-3 p-4 rounded-xl bg-gold/20 border-2 border-gold"
+                  >
+                    {/* AI badge */}
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center"
+                      style={{ backgroundColor: ai.color }}
+                    >
+                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+
+                    {/* Order badge */}
+                    <div className="w-6 h-6 rounded-full bg-gold text-dark flex items-center justify-center text-sm font-bold">
+                      {order}
+                    </div>
+
+                    {/* Name and level */}
+                    <div className="flex-1 min-w-0">
+                      <span className="text-white font-medium block">{ai.name}</span>
+                      <span className="text-white/40 text-xs">{levelInfo?.description}</span>
+                    </div>
+
+                    {/* Remove button */}
+                    <button
+                      onClick={() => handleRemoveAI(ai.id)}
+                      className="p-2 text-white/40 hover:text-red-400 transition-colors"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Add AI button */}
+        {canAddMore && (
+          <>
+            {!showAddAI ? (
+              <button
+                onClick={() => setShowAddAI(true)}
+                className="w-full flex items-center justify-center gap-2 p-4 rounded-xl
+                           border-2 border-dashed border-white/20 text-white/60
+                           hover:border-blue-400 hover:text-blue-400 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Ajouter une IA
+              </button>
+            ) : (
+              <div className="bg-dark-card rounded-xl border border-white/10 overflow-hidden">
+                <p className="text-white/40 text-sm px-4 pt-3 pb-2">Choisir le niveau</p>
+                <div className="grid grid-cols-2 gap-2 p-2">
+                  {AI_LEVELS.map((level) => (
+                    <button
+                      key={level.value}
+                      onClick={() => handleAddAI(level.value)}
+                      className="py-3 px-4 rounded-lg bg-dark-lighter hover:bg-white/10 transition-colors text-left"
+                    >
+                      <span className="text-white font-medium block">{level.label}</span>
+                      <span className="text-white/40 text-xs">{level.description}</span>
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setShowAddAI(false)}
+                  className="w-full p-3 text-white/40 hover:text-white transition-colors border-t border-white/10"
                 >
                   Annuler
                 </button>
               </div>
             )}
-          </div>
+          </>
         )}
 
         {/* Warning if no human */}
-        {!hasHuman && (
+        {!hasHuman && aiPlayers.length > 0 && (
           <div className="mt-4 p-3 rounded-xl bg-orange-900/30 border border-orange-500/30">
             <p className="text-orange-300 text-sm text-center">
-              Ajoutez au moins un joueur humain
+              Selectionnez au moins un joueur humain
             </p>
           </div>
         )}
@@ -300,7 +373,7 @@ export function PlaySetup() {
                      hover:bg-gold-light active:bg-gold-dark transition-colors
                      disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {state.isLoading ? 'Chargement...' : `Commencer (${players.length} joueurs)`}
+          {state.isLoading ? 'Chargement...' : `Commencer (${totalPlayers} joueurs)`}
         </button>
       </footer>
 
