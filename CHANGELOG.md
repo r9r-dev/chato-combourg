@@ -1,5 +1,10 @@
 # Changelog
 
+## v3.3.0 (2026-01-02)
+
+- Refonte de l'interface IA avec wrapper sécurisé et méthodes typées
+- IA Easy : comportement de débutant naïf
+
 ## v3.2.3 (2026-01-02)
 
 - Améliorations de l'interface utilisateur
