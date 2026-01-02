@@ -632,8 +632,8 @@ function executeShiftBoard(
 }
 
 function executeEndTurn(state: PlayGameState): PlayGameState {
-  // Completer les lieux
-  let board = refillLocations(state.board);
+  // Le refill des lieux est fait apres le placement de carte (dans PlayContext)
+  let board = state.board;
 
   // Deplacer le messager si la carte a l'icone messager
   const player = state.players[state.currentPlayerIndex];
@@ -749,7 +749,7 @@ function refreshLocation(board: CentralBoard, location: Location): CentralBoard 
   return newBoard;
 }
 
-function refillLocations(board: CentralBoard): CentralBoard {
+export function refillLocations(board: CentralBoard): CentralBoard {
   let newBoard = { ...board };
 
   // Remplir le chateau

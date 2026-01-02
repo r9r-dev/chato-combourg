@@ -39,6 +39,7 @@ import {
   getAvailableCards,
   canAffordCard,
   getCard,
+  refillLocations,
 } from '../services/play/gameEngine';
 import { createAI } from '../services/play/ai';
 import { executeCardEffect, executeDiscardEffect, executeLockEffect, executeReplaceLocationEffect } from '../services/play/effectExecutor';
@@ -485,8 +486,9 @@ export function PlayProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // Passer a la phase post_action apres les effets
-      newState = { ...newState, turnPhase: 'post_action' };
+      // Remplir les lieux apres le placement et les effets
+      const refilledBoard = refillLocations(newState.board);
+      newState = { ...newState, board: refilledBoard, turnPhase: 'post_action' };
     }
 
     // Appliquer le choix d'effet
@@ -515,8 +517,9 @@ export function PlayProvider({ children }: { children: ReactNode }) {
         resourcesAfter: { gold: afterEffect.gold, keys: afterEffect.keys },
       });
 
-      // Passer a la phase post_action apres le choix
-      newState = { ...newState, turnPhase: 'post_action' };
+      // Remplir les lieux apres le choix d'effet
+      const refilledBoard = refillLocations(newState.board);
+      newState = { ...newState, board: refilledBoard, turnPhase: 'post_action' };
 
       dispatch({ type: 'EFFECT_CHOICE_MADE', choiceIndex });
     }
@@ -822,6 +825,10 @@ export function PlayProvider({ children }: { children: ReactNode }) {
               }
             }
           }
+
+          // Remplir les lieux apres le placement et les effets (IA)
+          const refilledBoard = refillLocations(currentState.board);
+          currentState = { ...currentState, board: refilledBoard };
         }
 
         // Appliquer l'effet du cadenas pour l'IA
