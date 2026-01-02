@@ -25,6 +25,7 @@ function PlayModeContent() {
     case 'discard_choice':
     case 'replace_location_choice':
     case 'adjacent_card_choice':
+    case 'purse_selection_choice':
       return <Play />;
 
     case 'results':

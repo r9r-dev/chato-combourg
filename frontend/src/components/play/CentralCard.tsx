@@ -14,6 +14,9 @@ interface CentralCardProps {
   isActive: boolean;
   onBuy: () => void;
   onBuyFlipped: () => void;
+  // Props pour selection directe (defausse)
+  isSelectable?: boolean;    // Mode selection (defausse)
+  onSelect?: () => void;     // Handler de selection
 }
 
 export function CentralCard({
@@ -23,26 +26,40 @@ export function CentralCard({
   isActive,
   onBuy,
   onBuyFlipped,
+  isSelectable = false,
+  onSelect,
 }: CentralCardProps) {
   const [showMenu, setShowMenu] = useState(false);
 
   const handleClick = () => {
+    // Mode selection: appeler onSelect directement
+    if (isSelectable && onSelect) {
+      onSelect();
+      return;
+    }
     if (!isActive) return;
     setShowMenu(true);
+  };
+
+  // Determiner les classes de bordure
+  const getBorderClasses = () => {
+    if (isSelectable) {
+      return 'border-gold animate-pulse cursor-pointer hover:border-gold-light';
+    }
+    if (isActive) {
+      return canAfford
+        ? 'border-gold hover:border-gold-light cursor-pointer'
+        : 'border-white/30 hover:border-white/50 cursor-pointer';
+    }
+    return 'border-transparent opacity-60';
   };
 
   return (
     <div className="relative">
       <button
         onClick={handleClick}
-        disabled={!isActive}
-        className={`relative w-full aspect-[5/7] rounded-lg overflow-hidden border-2 transition-all ${
-          isActive
-            ? canAfford
-              ? 'border-gold hover:border-gold-light cursor-pointer'
-              : 'border-white/30 hover:border-white/50 cursor-pointer'
-            : 'border-transparent opacity-60'
-        }`}
+        disabled={!isActive && !isSelectable}
+        className={`relative w-full aspect-[5/7] rounded-lg overflow-hidden border-2 transition-all ${getBorderClasses()}`}
       >
         <img
           src={`${API_BASE}/cards/thumbs/carte_${cardId}.webp`}
@@ -52,8 +69,8 @@ export function CentralCard({
         />
       </button>
 
-      {/* Menu d'achat */}
-      {showMenu && (
+      {/* Menu d'achat (pas affiche en mode selection) */}
+      {showMenu && !isSelectable && (
         <div className="absolute inset-0 bg-dark/90 rounded-lg flex flex-col items-center justify-center gap-2 z-10">
           <button
             onClick={() => { onBuy(); setShowMenu(false); }}

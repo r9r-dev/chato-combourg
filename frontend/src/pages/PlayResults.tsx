@@ -68,7 +68,7 @@ export function PlayResults() {
     <div className="flex flex-col h-dvh bg-dark">
       {/* Header */}
       <header className="p-4 border-b border-white/10 text-center">
-        <h1 className="text-2xl font-bold text-gold">Partie terminee !</h1>
+        <h1 className="text-2xl font-bold text-gold">Partie terminée !</h1>
       </header>
 
       {/* Winner */}
@@ -133,7 +133,7 @@ export function PlayResults() {
                 <div className="flex gap-3 text-xs text-white/40 mt-0.5">
                   <span>{result.player.board.filter(c => c !== null).length} cartes</span>
                   <span>{result.player.gold} or</span>
-                  <span>{result.player.keys} cles</span>
+                  <span>{result.player.keys} clés</span>
                 </div>
               </div>
 

@@ -29,6 +29,7 @@ import type {
   DiscardChoice,
   ReplaceLocationChoice,
   AdjacentCardChoice,
+  PurseSelectionChoice,
   Location,
 } from '../types/play';
 import {
@@ -43,7 +44,7 @@ import {
   refillLocations,
 } from '../services/play/gameEngine';
 import { createAI } from '../services/play/ai';
-import { executeCardEffect, executeDiscardEffect, executeLockEffect, executeReplaceLocationEffect, executeAdjacentCardEffect } from '../services/play/effectExecutor';
+import { executeCardEffect, executeDiscardEffect, executeLockEffect, executeReplaceLocationEffect, executeAdjacentCardEffect, executeFillPursesAtPositions } from '../services/play/effectExecutor';
 import { applyOptimalShift } from '../services/play/shiftHelper';
 import {
   playReducer,
@@ -100,6 +101,10 @@ interface PlayContextType {
   // Choix de carte adjacente
   pendingAdjacentCardChoice: AdjacentCardChoice | null;
   selectAdjacentCard: (position: number) => Promise<void>;
+
+  // Choix de bourses a remplir
+  pendingPurseSelectionChoice: PurseSelectionChoice | null;
+  selectPurses: (positions: number[]) => Promise<void>;
 
   // Logs
   toggleGameLog: () => void;
@@ -344,7 +349,7 @@ export function PlayProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       dispatch({
         type: 'SET_ERROR',
-        error: error instanceof Error ? error.message : 'Erreur au demarrage',
+        error: error instanceof Error ? error.message : 'Erreur au démarrage',
       });
     } finally {
       dispatch({ type: 'SET_LOADING', isLoading: false });
@@ -362,6 +367,7 @@ export function PlayProvider({ children }: { children: ReactNode }) {
     requiresChoice: boolean;
     choices?: unknown[];
     discardChoice?: DiscardChoice;
+    purseSelectionChoice?: PurseSelectionChoice;
     description: string;
   } => {
     const result = executeCardEffect(gameState, cardId, position, choiceIndex);
@@ -382,6 +388,16 @@ export function PlayProvider({ children }: { children: ReactNode }) {
         newState: result.newState,
         requiresChoice: true,
         discardChoice: result.discardChoice,
+        description: result.description,
+      };
+    }
+
+    // Choix de bourses a remplir
+    if (result.requiresChoice && result.purseSelectionChoice) {
+      return {
+        newState: result.newState,
+        requiresChoice: true,
+        purseSelectionChoice: result.purseSelectionChoice,
         description: result.description,
       };
     }
@@ -471,6 +487,16 @@ export function PlayProvider({ children }: { children: ReactNode }) {
           dispatch({
             type: 'DISCARD_CHOICE_REQUIRED',
             discardChoice: effectResult.discardChoice,
+          });
+          dispatch({ type: 'SET_GAME_STATE', gameState: newState });
+          return;
+        }
+
+        // Choix de bourses a remplir
+        if (effectResult.requiresChoice && effectResult.purseSelectionChoice) {
+          dispatch({
+            type: 'PURSE_SELECTION_CHOICE_REQUIRED',
+            purseSelectionChoice: effectResult.purseSelectionChoice,
           });
           dispatch({ type: 'SET_GAME_STATE', gameState: newState });
           return;
@@ -851,6 +877,52 @@ export function PlayProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'SET_GAME_STATE', gameState: finalState });
   }, [state.gameState, state.pendingAdjacentCardChoice, addLogEntry]);
 
+  // Selection des bourses a remplir
+  const selectPurses = useCallback(async (positions: number[]) => {
+    if (!state.gameState || !state.pendingPurseSelectionChoice) return;
+
+    const playerBefore = state.gameState.players[state.gameState.currentPlayerIndex];
+    const turnNumber = state.gameState.turnNumber;
+
+    // Executer le remplissage des bourses selectionnees
+    const result = executeFillPursesAtPositions(
+      state.gameState,
+      state.gameState.currentPlayerIndex,
+      positions
+    );
+
+    if (!result.success) {
+      dispatch({ type: 'SET_ERROR', error: result.description });
+      return;
+    }
+
+    // Logger l'effet
+    addLogEntry(playerBefore, turnNumber, 'effect', {
+      description: result.description,
+    });
+
+    // Appliquer le shift helper pour optimiser les points de position
+    let newState = result.newState;
+    const currentPlayer = newState.players[newState.currentPlayerIndex];
+    const shiftResult = applyOptimalShift(currentPlayer.board, currentPlayer.lockedCards);
+    if (shiftResult.shifted) {
+      const players = [...newState.players];
+      players[newState.currentPlayerIndex] = {
+        ...currentPlayer,
+        board: shiftResult.board,
+        lockedCards: shiftResult.lockedCards,
+      };
+      newState = { ...newState, players };
+    }
+
+    // Remplir les lieux et passer a la phase post_action
+    const refilledBoard = refillLocations(newState.board);
+    const finalState = { ...newState, board: refilledBoard, turnPhase: 'post_action' as const };
+
+    dispatch({ type: 'PURSE_SELECTION_CHOICE_MADE' });
+    dispatch({ type: 'SET_GAME_STATE', gameState: finalState });
+  }, [state.gameState, state.pendingPurseSelectionChoice, addLogEntry]);
+
   // Boucle IA
   const runAITurn = useCallback(async (gameState: PlayGameState) => {
     if (aiLoopRef.current) return;
@@ -971,6 +1043,22 @@ export function PlayProvider({ children }: { children: ReactNode }) {
                   resourcesAfter: { gold: afterDiscard.gold, keys: afterDiscard.keys },
                 });
               }
+            } else if (effectResult.requiresChoice && effectResult.purseSelectionChoice) {
+              // L'IA choisit les premieres bourses disponibles
+              const { maxCards, availablePositions } = effectResult.purseSelectionChoice;
+              const selectedPositions = availablePositions.slice(0, maxCards);
+
+              const purseResult = executeFillPursesAtPositions(
+                currentState,
+                currentState.currentPlayerIndex,
+                selectedPositions
+              );
+              currentState = purseResult.newState;
+
+              // Logger l'effet de remplissage
+              addLogEntry(playerBefore, turnNumber, 'effect', {
+                description: purseResult.description,
+              });
             } else {
               currentState = effectResult.newState;
 
@@ -1241,6 +1329,9 @@ export function PlayProvider({ children }: { children: ReactNode }) {
         // Choix de carte adjacente
         pendingAdjacentCardChoice: state.pendingAdjacentCardChoice,
         selectAdjacentCard,
+        // Choix de bourses a remplir
+        pendingPurseSelectionChoice: state.pendingPurseSelectionChoice,
+        selectPurses,
         // Logs
         toggleGameLog,
         gameLog: state.gameLog,

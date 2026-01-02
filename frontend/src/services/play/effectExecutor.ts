@@ -18,6 +18,7 @@ import type {
   ReplaceLocationChoice,
   ReplaceLocationEffectType,
   AdjacentCardChoice,
+  PurseSelectionChoice,
 } from '../../types/play';
 import { ADJACENCY_MAP } from '../../types/play';
 import { getCard } from './gameEngine';
@@ -43,6 +44,7 @@ export interface EffectResult {
   discardChoice?: DiscardChoice;  // Pour les effets de defausse
   replaceLocationChoice?: ReplaceLocationChoice;  // Pour les effets de remplacement de lieu
   adjacentCardChoice?: AdjacentCardChoice;  // Pour les effets d'activation de carte adjacente
+  purseSelectionChoice?: PurseSelectionChoice;  // Pour les effets de selection de bourses
 }
 
 // =============================================================================
@@ -93,6 +95,11 @@ export function executeCardEffect(
 
     // Si un effet necessite un choix de defausse, retourner immediatement
     if (result.requiresChoice && result.discardChoice) {
+      return result;
+    }
+
+    // Si un effet necessite un choix de bourses, retourner immediatement
+    if (result.requiresChoice && result.purseSelectionChoice) {
       return result;
     }
 
@@ -225,6 +232,9 @@ function executeSingleEffect(
     // Remplissage des bourses
     case 'fill_purses':
       return applyFillPurses(state, playerIndex, effect.amount ?? 2);
+
+    case 'fill_purses_select':
+      return applyFillPursesSelect(state, playerIndex, effect.max_cards ?? 2);
 
     // Defausser une carte
     case 'discard_village_gain_gold':
@@ -590,6 +600,94 @@ function applyFillPurses(
     success: true,
     newState: { ...state, players },
     description: `+${totalAdded} pieces sur les bourses`,
+  };
+}
+
+function applyFillPursesSelect(
+  state: PlayGameState,
+  playerIndex: number,
+  maxCards: number
+): EffectResult {
+  const player = state.players[playerIndex];
+
+  // Trouver les bourses non pleines
+  const nonFullPurses: number[] = [];
+  for (let i = 0; i < player.board.length; i++) {
+    const placed = player.board[i];
+    if (!placed) continue;
+
+    const card = getCard(placed.cardId);
+    if (!card?.has_coin_purse) continue;
+
+    if (placed.coinsOnCard < card.max_coins) {
+      nonFullPurses.push(i);
+    }
+  }
+
+  // Si aucune bourse non pleine
+  if (nonFullPurses.length === 0) {
+    return {
+      success: true,
+      newState: state,
+      description: 'Aucune bourse a remplir',
+    };
+  }
+
+  // Si <= maxCards bourses non pleines, les remplir automatiquement
+  if (nonFullPurses.length <= maxCards) {
+    return executeFillPursesAtPositions(state, playerIndex, nonFullPurses);
+  }
+
+  // Sinon, demander au joueur de choisir
+  return {
+    success: true,
+    newState: state,
+    description: `Choisissez jusqu'a ${maxCards} bourses a remplir`,
+    requiresChoice: true,
+    purseSelectionChoice: {
+      maxCards,
+      availablePositions: nonFullPurses,
+    },
+  };
+}
+
+/**
+ * Remplit les bourses aux positions donnees au maximum.
+ */
+export function executeFillPursesAtPositions(
+  state: PlayGameState,
+  playerIndex: number,
+  positions: number[]
+): EffectResult {
+  const players = [...state.players];
+  const player = { ...players[playerIndex] };
+  const board = [...player.board];
+  let totalAdded = 0;
+
+  for (const pos of positions) {
+    const placed = board[pos];
+    if (!placed) continue;
+
+    const card = getCard(placed.cardId);
+    if (!card?.has_coin_purse) continue;
+
+    const maxCoins = card.max_coins;
+    const currentCoins = placed.coinsOnCard;
+    const canAdd = maxCoins - currentCoins;
+
+    if (canAdd > 0) {
+      board[pos] = { ...placed, coinsOnCard: maxCoins };
+      totalAdded += canAdd;
+    }
+  }
+
+  player.board = board;
+  players[playerIndex] = player;
+
+  return {
+    success: true,
+    newState: { ...state, players },
+    description: `+${totalAdded} pieces sur ${positions.length} bourse${positions.length > 1 ? 's' : ''}`,
   };
 }
 

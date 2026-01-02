@@ -14,6 +14,7 @@ import type {
   DiscardChoice,
   ReplaceLocationChoice,
   AdjacentCardChoice,
+  PurseSelectionChoice,
 } from '../types/play';
 
 // =============================================================================
@@ -28,6 +29,7 @@ export type PlayStep =
   | 'discard_choice'  // Choix de carte a defausser en attente
   | 'replace_location_choice'  // Choix de lieu a remplacer en attente
   | 'adjacent_card_choice'     // Choix de carte adjacente en attente
+  | 'purse_selection_choice'   // Choix de bourses a remplir en attente
   | 'results';        // Resultats finaux
 
 export interface PlayUIState {
@@ -58,6 +60,9 @@ export interface PlayUIState {
 
   // Choix de carte adjacente en attente
   pendingAdjacentCardChoice: AdjacentCardChoice | null;
+
+  // Choix de bourses a remplir en attente
+  pendingPurseSelectionChoice: PurseSelectionChoice | null;
 
   // Erreurs
   lastError: string | null;
@@ -112,6 +117,10 @@ export type PlayUIAction =
   | { type: 'ADJACENT_CARD_CHOICE_REQUIRED'; adjacentCardChoice: AdjacentCardChoice }
   | { type: 'ADJACENT_CARD_CHOICE_MADE' }
 
+  // Choix de bourses a remplir
+  | { type: 'PURSE_SELECTION_CHOICE_REQUIRED'; purseSelectionChoice: PurseSelectionChoice }
+  | { type: 'PURSE_SELECTION_CHOICE_MADE' }
+
   // Erreurs et chargement
   | { type: 'SET_ERROR'; error: string | null }
   | { type: 'SET_LOADING'; isLoading: boolean }
@@ -135,6 +144,7 @@ export const initialPlayUIState: PlayUIState = {
   pendingDiscardChoice: null,
   pendingReplaceLocationChoice: null,
   pendingAdjacentCardChoice: null,
+  pendingPurseSelectionChoice: null,
   lastError: null,
   isLoading: false,
   gameLog: [],
@@ -336,6 +346,21 @@ export function playReducer(
         ...state,
         step: 'playing',
         pendingAdjacentCardChoice: null,
+      };
+
+    // Choix de bourses a remplir
+    case 'PURSE_SELECTION_CHOICE_REQUIRED':
+      return {
+        ...state,
+        step: 'purse_selection_choice',
+        pendingPurseSelectionChoice: action.purseSelectionChoice,
+      };
+
+    case 'PURSE_SELECTION_CHOICE_MADE':
+      return {
+        ...state,
+        step: 'playing',
+        pendingPurseSelectionChoice: null,
       };
 
     // Erreurs et chargement

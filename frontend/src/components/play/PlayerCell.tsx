@@ -15,6 +15,10 @@ interface PlayerCellProps {
   canUseKey: boolean;
   onClick: () => void;
   onKeyClick: () => void;
+  // Props pour selection directe (sans modale)
+  isHighlighted?: boolean;   // Carte eligible (surbrillance)
+  isSelected?: boolean;      // Carte selectionnee (multi-selection)
+  onSelect?: () => void;     // Handler de selection
 }
 
 export function PlayerCell({
@@ -25,12 +29,35 @@ export function PlayerCell({
   canUseKey,
   onClick,
   onKeyClick,
+  isHighlighted = false,
+  isSelected = false,
+  onSelect,
 }: PlayerCellProps) {
+  // Mode selection: la carte est cliquable pour selection (pas pour placement)
+  const isSelectionMode = isHighlighted && onSelect;
+
   if (card) {
     const hasCoins = card.coinsOnCard > 0;
 
+    // Classes pour l'etat de surbrillance/selection
+    const highlightClasses = isHighlighted
+      ? isSelected
+        ? 'ring-2 ring-gold ring-offset-2 ring-offset-dark'
+        : 'ring-2 ring-gold/60 ring-offset-1 ring-offset-dark animate-pulse'
+      : '';
+
     return (
-      <div className="relative aspect-[5/7] rounded-lg overflow-hidden border border-white/10">
+      <div
+        onClick={isSelectionMode ? onSelect : undefined}
+        role={isSelectionMode ? 'button' : undefined}
+        tabIndex={isSelectionMode ? 0 : undefined}
+        onKeyDown={isSelectionMode ? (e) => { if (e.key === 'Enter' || e.key === ' ') onSelect?.(); } : undefined}
+        className={`relative aspect-[5/7] rounded-lg overflow-hidden border transition-all ${
+          isHighlighted
+            ? 'border-gold cursor-pointer hover:border-gold-light'
+            : 'border-white/10'
+        } ${highlightClasses}`}
+      >
         <img
           src={`${API_BASE}/cards/thumbs/carte_${card.cardId}.webp`}
           alt={`Carte ${card.cardId}`}
@@ -38,7 +65,7 @@ export function PlayerCell({
           loading="lazy"
         />
         {/* Icone cadenas si la carte a une cle disponible */}
-        {hasKey && (
+        {hasKey && !isSelectionMode && (
           <button
             onClick={(e) => { e.stopPropagation(); onKeyClick(); }}
             disabled={!canUseKey}
@@ -59,9 +86,17 @@ export function PlayerCell({
           </button>
         )}
         {/* Pile de pieces si la carte bourse contient des pieces */}
-        {hasCoins && !hasKey && (
+        {hasCoins && !hasKey && !isSelectionMode && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none" style={{ paddingBottom: '25%' }}>
             <CoinStack count={card.coinsOnCard} seed={card.position} />
+          </div>
+        )}
+        {/* Indicateur de selection */}
+        {isSelected && (
+          <div className="absolute top-1 right-1 w-5 h-5 bg-gold rounded-full flex items-center justify-center">
+            <svg className="w-3 h-3 text-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
           </div>
         )}
       </div>

@@ -142,7 +142,7 @@ export function PlaySetup() {
       {/* Content */}
       <div className="flex-1 overflow-auto p-4">
         <p className="text-center text-white/60 mb-4">
-          Configurez les joueurs (2 a 5)
+          Configurez les joueurs (2 à 5)
         </p>
 
         {/* Players list */}

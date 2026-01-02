@@ -29,6 +29,7 @@ export interface CardEffect {
   value?: number;
   feature?: string;
   keys_per_card?: number;
+  max_cards?: number;        // Pour fill_purses_select
   options?: CardEffect[];  // Pour les choix [OU]
 }
 
@@ -522,4 +523,13 @@ export interface AdjacentCardChoice {
   triggerPosition: number;       // Position de la carte avec l'effet activate_adjacent
   triggerCardId: string;         // ID de la carte declencheuse
   adjacentPositions: number[];   // Positions adjacentes valides (cartes avec effets)
+}
+
+// =============================================================================
+// Choix de bourses a remplir (effet "fill_purses_select")
+// =============================================================================
+
+export interface PurseSelectionChoice {
+  maxCards: number;              // Nombre max de cartes a selectionner (ex: 2)
+  availablePositions: number[];  // Positions des cartes bourse non pleines
 }
