@@ -224,9 +224,6 @@ export function validateAction(
     case 'choose_effect':
       return validateChooseEffect(state, player, action);
 
-    case 'shift_board':
-      return validateShiftBoard(state, player, action);
-
     case 'end_turn':
       return validateEndTurn(state);
 
@@ -345,9 +342,27 @@ function validatePlaceCard(
     return { isValid: false, reason: 'Position invalide' };
   }
 
-  const validPositions = getValidPlacementsHelper(player.board);
-  if (!validPositions.includes(action.position)) {
-    return { isValid: false, reason: 'Position non valide pour le placement' };
+  // Si un shift est demande, verifier qu'il est possible
+  if (action.shiftDirection) {
+    if (!canShiftBoard(player.board, action.shiftDirection)) {
+      return { isValid: false, reason: 'Decalage impossible dans cette direction' };
+    }
+    // Apres le shift, la position cible doit etre vide
+    const boardAfterShift = shiftBoardHelper(player.board, action.shiftDirection);
+    if (boardAfterShift[action.position] !== null) {
+      return { isValid: false, reason: 'Position occupee apres decalage' };
+    }
+    // Verifier que le placement est valide apres shift
+    const validPositions = getValidPlacementsHelper(boardAfterShift);
+    if (!validPositions.includes(action.position)) {
+      return { isValid: false, reason: 'Position non valide pour le placement apres decalage' };
+    }
+  } else {
+    // Placement direct sans shift
+    const validPositions = getValidPlacementsHelper(player.board);
+    if (!validPositions.includes(action.position)) {
+      return { isValid: false, reason: 'Position non valide pour le placement' };
+    }
   }
 
   return { isValid: true };
@@ -364,23 +379,6 @@ function validateChooseEffect(
 
   if (action.choiceIndex === undefined) {
     return { isValid: false, reason: 'Choix non specifie' };
-  }
-
-  return { isValid: true };
-}
-
-function validateShiftBoard(
-  _state: PlayGameState,
-  player: PlayPlayer,
-  action: GameAction
-): ActionValidation {
-  // Le decalage est toujours permis (c'est un helper visuel, pas une action de jeu)
-  if (!action.shiftDirection) {
-    return { isValid: false, reason: 'Direction non specifiee' };
-  }
-
-  if (!canShiftBoard(player.board, action.shiftDirection)) {
-    return { isValid: false, reason: 'Decalage impossible dans cette direction' };
   }
 
   return { isValid: true };
@@ -434,10 +432,6 @@ export function executeAction(
 
     case 'choose_effect':
       newState = executeChooseEffect(newState, action);
-      break;
-
-    case 'shift_board':
-      newState = executeShiftBoard(newState, action);
       break;
 
     case 'end_turn':
@@ -553,11 +547,31 @@ function executePlaceCard(
 ): PlayGameState {
   const playerIndex = state.currentPlayerIndex;
   const players = [...state.players];
-  const player = { ...players[playerIndex] };
+  let player = { ...players[playerIndex] };
 
   const cardId = state.purchasedCard!;
   const card = getCard(cardId);
   const position = action.position!;
+
+  // Si un shift est demande, l'executer d'abord
+  if (action.shiftDirection) {
+    const shiftedBoard = shiftBoardHelper(player.board, action.shiftDirection);
+
+    // Mettre a jour les positions dans lockedCards
+    const newLockedCards = new Map<number, boolean>();
+    for (const [oldPos, hasKey] of player.lockedCards) {
+      const oldCard = player.board[oldPos];
+      if (oldCard) {
+        const newPos = shiftedBoard.findIndex(c => c !== null && c.cardId === oldCard.cardId);
+        if (newPos >= 0) {
+          newLockedCards.set(newPos, hasKey);
+        }
+      }
+    }
+
+    player.board = shiftedBoard;
+    player.lockedCards = newLockedCards;
+  }
 
   // Placer la carte
   const board = [...player.board];
@@ -595,36 +609,6 @@ function executeChooseEffect(
   // L'effet sera applique par l'executeur d'effets
   // On passe juste a la phase suivante
   return { ...state, turnPhase: 'post_action' };
-}
-
-function executeShiftBoard(
-  state: PlayGameState,
-  action: GameAction
-): PlayGameState {
-  const playerIndex = state.currentPlayerIndex;
-  const players = [...state.players];
-  const player = { ...players[playerIndex] };
-
-  // Decaler le plateau
-  const newBoard = shiftBoardHelper(player.board, action.shiftDirection!);
-  player.board = newBoard;
-
-  // Mettre a jour les positions dans lockedCards
-  const newLockedCards = new Map<number, boolean>();
-  for (const [oldPos, hasKey] of player.lockedCards) {
-    const card = state.players[playerIndex].board[oldPos];
-    if (card) {
-      const newPos = newBoard.findIndex(c => c !== null && c.cardId === card.cardId);
-      if (newPos >= 0) {
-        newLockedCards.set(newPos, hasKey);
-      }
-    }
-  }
-  player.lockedCards = newLockedCards;
-
-  players[playerIndex] = player;
-
-  return { ...state, players };
 }
 
 function executeEndTurn(state: PlayGameState): PlayGameState {

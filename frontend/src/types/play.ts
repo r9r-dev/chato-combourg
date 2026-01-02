@@ -118,10 +118,9 @@ export type ActionType =
   | 'spend_key'            // Depenser une cle (move messager ou refresh)
   | 'buy_card'             // Acheter une carte
   | 'buy_card_flipped'     // Acheter une carte face cachee
-  | 'place_card'           // Placer une carte sur le plateau
+  | 'place_card'           // Placer une carte (avec shift optionnel)
   | 'apply_effect'         // Appliquer l'effet d'une carte
   | 'choose_effect'        // Choisir entre 2 effets [OU]
-  | 'shift_board'          // Decaler le plateau du joueur
   | 'end_turn';            // Fin du tour
 
 export type ShiftDirection = 'left' | 'right' | 'up' | 'down';
@@ -367,6 +366,58 @@ export function canShiftBoard(
 export function getAvailableShifts(board: (PlacedCard | null)[]): ShiftDirection[] {
   const directions: ShiftDirection[] = ['left', 'right', 'up', 'down'];
   return directions.filter(d => canShiftBoard(board, d));
+}
+
+/**
+ * Zone externe pour placement avec shift automatique
+ * Position apres shift + direction du shift necessaire
+ */
+export interface ExternalZone {
+  position: number;           // Position finale apres shift (0-8)
+  shiftDirection: ShiftDirection;  // Direction du shift a effectuer
+  edge: 'left' | 'right' | 'top' | 'bottom';  // Bord du plateau
+  edgeIndex: number;          // Index sur ce bord (0, 1, 2)
+}
+
+/**
+ * Calcule les zones externes valides pour le placement
+ * Une zone est valide si:
+ * 1. Il y a une carte adjacente (orthogonale) dans la grille
+ * 2. Le shift dans la direction opposee est possible
+ */
+export function getExternalZones(board: (PlacedCard | null)[]): ExternalZone[] {
+  const zones: ExternalZone[] = [];
+
+  // Zones a gauche (shift right pour faire de la place)
+  if (canShiftBoard(board, 'right')) {
+    // Position 0 si carte en 0, position 3 si carte en 3, position 6 si carte en 6
+    if (board[0] !== null) zones.push({ position: 0, shiftDirection: 'right', edge: 'left', edgeIndex: 0 });
+    if (board[3] !== null) zones.push({ position: 3, shiftDirection: 'right', edge: 'left', edgeIndex: 1 });
+    if (board[6] !== null) zones.push({ position: 6, shiftDirection: 'right', edge: 'left', edgeIndex: 2 });
+  }
+
+  // Zones a droite (shift left pour faire de la place)
+  if (canShiftBoard(board, 'left')) {
+    if (board[2] !== null) zones.push({ position: 2, shiftDirection: 'left', edge: 'right', edgeIndex: 0 });
+    if (board[5] !== null) zones.push({ position: 5, shiftDirection: 'left', edge: 'right', edgeIndex: 1 });
+    if (board[8] !== null) zones.push({ position: 8, shiftDirection: 'left', edge: 'right', edgeIndex: 2 });
+  }
+
+  // Zones en haut (shift down pour faire de la place)
+  if (canShiftBoard(board, 'down')) {
+    if (board[0] !== null) zones.push({ position: 0, shiftDirection: 'down', edge: 'top', edgeIndex: 0 });
+    if (board[1] !== null) zones.push({ position: 1, shiftDirection: 'down', edge: 'top', edgeIndex: 1 });
+    if (board[2] !== null) zones.push({ position: 2, shiftDirection: 'down', edge: 'top', edgeIndex: 2 });
+  }
+
+  // Zones en bas (shift up pour faire de la place)
+  if (canShiftBoard(board, 'up')) {
+    if (board[6] !== null) zones.push({ position: 6, shiftDirection: 'up', edge: 'bottom', edgeIndex: 0 });
+    if (board[7] !== null) zones.push({ position: 7, shiftDirection: 'up', edge: 'bottom', edgeIndex: 1 });
+    if (board[8] !== null) zones.push({ position: 8, shiftDirection: 'up', edge: 'bottom', edgeIndex: 2 });
+  }
+
+  return zones;
 }
 
 /** Decale le plateau dans une direction */

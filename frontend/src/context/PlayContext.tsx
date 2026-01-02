@@ -74,11 +74,10 @@ interface PlayContextType {
   executeGameAction: (action: GameAction) => Promise<void>;
   buyCard: (cardId: string) => Promise<void>;
   buyCardFlipped: (cardId: string) => Promise<void>;
-  placeCard: (position: number) => Promise<void>;
+  placeCard: (position: number, shiftDirection?: ShiftDirection) => Promise<void>;
   chooseEffect: (choiceIndex: number) => Promise<void>;
   spendKey: (targetLocation: 'castle' | 'village') => Promise<void>;
   useKeyOnLock: (lockPosition: number) => Promise<void>;
-  shiftBoard: (direction: ShiftDirection) => Promise<void>;
   endTurn: () => Promise<void>;
 
   // Helpers
@@ -153,8 +152,6 @@ function getLogActionType(actionType: string): LogActionType {
     case 'use_key_on_lock':
     case 'spend_key':
       return 'key';
-    case 'shift_board':
-      return 'shift';
     default:
       return 'other';
   }
@@ -589,10 +586,10 @@ export function PlayProvider({ children }: { children: ReactNode }) {
     await executeGameAction({ type: 'buy_card_flipped', playerId, cardId });
   }, [state.gameState, executeGameAction]);
 
-  const placeCard = useCallback(async (position: number) => {
+  const placeCard = useCallback(async (position: number, shiftDirection?: ShiftDirection) => {
     if (!state.gameState) return;
     const playerId = getCurrentPlayer(state.gameState).id;
-    await executeGameAction({ type: 'place_card', playerId, position });
+    await executeGameAction({ type: 'place_card', playerId, position, shiftDirection });
   }, [state.gameState, executeGameAction]);
 
   const chooseEffect = useCallback(async (choiceIndex: number) => {
@@ -611,12 +608,6 @@ export function PlayProvider({ children }: { children: ReactNode }) {
     if (!state.gameState) return;
     const playerId = getCurrentPlayer(state.gameState).id;
     await executeGameAction({ type: 'use_key_on_lock', playerId, lockPosition });
-  }, [state.gameState, executeGameAction]);
-
-  const shiftBoardAction = useCallback(async (direction: ShiftDirection) => {
-    if (!state.gameState) return;
-    const playerId = getCurrentPlayer(state.gameState).id;
-    await executeGameAction({ type: 'shift_board', playerId, shiftDirection: direction });
   }, [state.gameState, executeGameAction]);
 
   const endTurn = useCallback(async () => {
@@ -1040,7 +1031,6 @@ export function PlayProvider({ children }: { children: ReactNode }) {
         chooseEffect,
         spendKey,
         useKeyOnLock,
-        shiftBoard: shiftBoardAction,
         endTurn,
         // Helpers
         getCurrentPlayer: getCurrentPlayerFn,

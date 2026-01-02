@@ -10,7 +10,7 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { usePlay } from '../context/PlayContext';
-import { getValidPlacements, getAvailableShifts } from '../types/play';
+import { getValidPlacements, getExternalZones } from '../types/play';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { GameLog } from '../components/GameLog';
 import { CoinIcon, KeyIcon, ShieldIcon } from '../components/Icons';
@@ -129,7 +129,6 @@ export function Play() {
     endTurn,
     spendKey,
     useKeyOnLock,
-    shiftBoard,
     reset,
     getCurrentPlayer,
     canAffordCard,
@@ -160,12 +159,6 @@ export function Play() {
   const validPlacements = useMemo(() => {
     if (!currentPlayer) return [];
     return getValidPlacements(currentPlayer.board);
-  }, [currentPlayer]);
-
-  // Directions de decalage disponibles
-  const availableShifts = useMemo(() => {
-    if (!currentPlayer) return [];
-    return getAvailableShifts(currentPlayer.board);
   }, [currentPlayer]);
 
   // Phase actuelle
@@ -254,13 +247,25 @@ export function Play() {
     spendKey(target);
   };
 
-  const handleShift = (direction: ShiftDirection) => {
-    if (isCurrentPlayerAI()) return;
-    shiftBoard(direction);
-  };
+  // Zones externes pour placement avec shift automatique
+  const externalZones = useMemo(() => {
+    if (!currentPlayer || !isPlacePhase) return [];
+    return getExternalZones(currentPlayer.board);
+  }, [currentPlayer, isPlacePhase]);
 
-  // Peut-on decaler le plateau ? (y compris pendant le placement)
-  const canShift = !isCurrentPlayerAI();
+  // Calcul des bords actifs pour layout dynamique
+  const activeEdges = useMemo(() => ({
+    left: externalZones.some(z => z.edge === 'left'),
+    right: externalZones.some(z => z.edge === 'right'),
+    top: externalZones.some(z => z.edge === 'top'),
+    bottom: externalZones.some(z => z.edge === 'bottom'),
+  }), [externalZones]);
+
+  // Handler pour placement sur zone externe
+  const handleExternalPlace = (position: number, shiftDirection: ShiftDirection) => {
+    if (!isPlacePhase || isCurrentPlayerAI()) return;
+    placeCard(position, shiftDirection);
+  };
 
   return (
     <div className="flex flex-col h-dvh bg-dark">
@@ -382,85 +387,118 @@ export function Play() {
             </div>
           )}
 
-          {/* Plateau du joueur avec fleches de decalage */}
-          <div className="flex items-center gap-1">
-            {/* Fleche gauche */}
-            <button
-              onClick={() => handleShift('left')}
-              disabled={!canShift || !availableShifts.includes('left')}
-              className={`p-1 rounded transition-all ${
-                canShift && availableShifts.includes('left')
-                  ? 'text-white/60 hover:text-white hover:bg-white/10'
-                  : 'text-transparent'
-              }`}
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
+          {/* Plateau du joueur avec zones externes - grille dynamique */}
+          <div
+            className="grid transition-all duration-300"
+            style={{
+              gridTemplateColumns: `${activeEdges.left ? '20px' : '0'} 1fr 1fr 1fr ${activeEdges.right ? '20px' : '0'}`,
+              gap: '4px',
+            }}
+          >
+            {/* Ligne 1: zones top */}
+            <div style={{ height: activeEdges.top ? '20px' : '0' }} />
+            {[0, 1, 2].map((edgeIndex) => {
+              const zone = externalZones.find(z => z.edge === 'top' && z.edgeIndex === edgeIndex);
+              return (
+                <button
+                  key={`top-${edgeIndex}`}
+                  onClick={() => zone && handleExternalPlace(zone.position, zone.shiftDirection)}
+                  disabled={!zone}
+                  style={{ height: activeEdges.top ? '20px' : '0' }}
+                  className={`rounded transition-all flex items-center justify-center overflow-hidden ${
+                    zone
+                      ? 'bg-gold/20 border-2 border-dashed border-gold/50 hover:bg-gold/30 text-gold/70'
+                      : ''
+                  }`}
+                >
+                  {zone && <span className="text-xs font-bold">+</span>}
+                </button>
+              );
+            })}
+            <div style={{ height: activeEdges.top ? '20px' : '0' }} />
 
-            <div className="flex-1 flex flex-col gap-1">
-              {/* Fleche haut */}
-              <button
-                onClick={() => handleShift('up')}
-                disabled={!canShift || !availableShifts.includes('up')}
-                className={`self-center p-1 rounded transition-all ${
-                  canShift && availableShifts.includes('up')
-                    ? 'text-white/60 hover:text-white hover:bg-white/10'
-                    : 'text-transparent'
-                }`}
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                </svg>
-              </button>
+            {/* Lignes 2-4: zones laterales + grille 3x3 */}
+            {[0, 1, 2].map((row) => (
+              <>
+                {/* Zone gauche */}
+                {(() => {
+                  const zone = externalZones.find(z => z.edge === 'left' && z.edgeIndex === row);
+                  return (
+                    <button
+                      key={`left-${row}`}
+                      onClick={() => zone && handleExternalPlace(zone.position, zone.shiftDirection)}
+                      disabled={!zone}
+                      className={`rounded transition-all flex items-center justify-center overflow-hidden ${
+                        zone
+                          ? 'bg-gold/20 border-2 border-dashed border-gold/50 hover:bg-gold/30 text-gold/70'
+                          : ''
+                      }`}
+                    >
+                      {zone && <span className="text-xs font-bold">+</span>}
+                    </button>
+                  );
+                })()}
 
-              {/* Grille 3x3 */}
-              <div className="grid grid-cols-3 gap-2">
-                {currentPlayer.board.map((card, position) => (
-                  <PlayerCell
-                    key={position}
-                    card={card}
-                    isValid={validPlacements.includes(position)}
-                    isActive={isPlacePhase && !isCurrentPlayerAI()}
-                    hasKey={currentPlayer.lockedCards.get(position) ?? false}
-                    canUseKey={canUseLock}
-                    onClick={() => handlePlace(position)}
-                    onKeyClick={() => useKeyOnLock(position)}
-                  />
-                ))}
-              </div>
+                {/* 3 cellules du plateau */}
+                {[0, 1, 2].map((col) => {
+                  const position = row * 3 + col;
+                  const card = currentPlayer.board[position];
+                  return (
+                    <PlayerCell
+                      key={position}
+                      card={card}
+                      isValid={validPlacements.includes(position)}
+                      isActive={isPlacePhase && !isCurrentPlayerAI()}
+                      hasKey={currentPlayer.lockedCards.get(position) ?? false}
+                      canUseKey={canUseLock}
+                      onClick={() => handlePlace(position)}
+                      onKeyClick={() => useKeyOnLock(position)}
+                    />
+                  );
+                })}
 
-              {/* Fleche bas */}
-              <button
-                onClick={() => handleShift('down')}
-                disabled={!canShift || !availableShifts.includes('down')}
-                className={`self-center p-1 rounded transition-all ${
-                  canShift && availableShifts.includes('down')
-                    ? 'text-white/60 hover:text-white hover:bg-white/10'
-                    : 'text-transparent'
-                }`}
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-            </div>
+                {/* Zone droite */}
+                {(() => {
+                  const zone = externalZones.find(z => z.edge === 'right' && z.edgeIndex === row);
+                  return (
+                    <button
+                      key={`right-${row}`}
+                      onClick={() => zone && handleExternalPlace(zone.position, zone.shiftDirection)}
+                      disabled={!zone}
+                      className={`rounded transition-all flex items-center justify-center overflow-hidden ${
+                        zone
+                          ? 'bg-gold/20 border-2 border-dashed border-gold/50 hover:bg-gold/30 text-gold/70'
+                          : ''
+                      }`}
+                    >
+                      {zone && <span className="text-xs font-bold">+</span>}
+                    </button>
+                  );
+                })()}
+              </>
+            ))}
 
-            {/* Fleche droite */}
-            <button
-              onClick={() => handleShift('right')}
-              disabled={!canShift || !availableShifts.includes('right')}
-              className={`p-1 rounded transition-all ${
-                canShift && availableShifts.includes('right')
-                  ? 'text-white/60 hover:text-white hover:bg-white/10'
-                  : 'text-transparent'
-              }`}
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+            {/* Ligne 5: zones bottom */}
+            <div style={{ height: activeEdges.bottom ? '20px' : '0' }} />
+            {[0, 1, 2].map((edgeIndex) => {
+              const zone = externalZones.find(z => z.edge === 'bottom' && z.edgeIndex === edgeIndex);
+              return (
+                <button
+                  key={`bottom-${edgeIndex}`}
+                  onClick={() => zone && handleExternalPlace(zone.position, zone.shiftDirection)}
+                  disabled={!zone}
+                  style={{ height: activeEdges.bottom ? '20px' : '0' }}
+                  className={`rounded transition-all flex items-center justify-center overflow-hidden ${
+                    zone
+                      ? 'bg-gold/20 border-2 border-dashed border-gold/50 hover:bg-gold/30 text-gold/70'
+                      : ''
+                  }`}
+                >
+                  {zone && <span className="text-xs font-bold">+</span>}
+                </button>
+              );
+            })}
+            <div style={{ height: activeEdges.bottom ? '20px' : '0' }} />
           </div>
         </div>
 
