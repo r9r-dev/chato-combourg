@@ -7,7 +7,7 @@
 
 import { useRef, useEffect } from 'react';
 import type { GameLogEntry, LogActionType } from '../types/play';
-import { CoinIcon, KeyIcon, PositionGrid, BuyIcon, PlaceIcon, EffectIcon } from './Icons';
+import { CoinIcon, KeyIcon, PositionGrid, BuyIcon, PlaceIcon, EffectIcon, HiddenIcon } from './Icons';
 
 interface GameLogProps {
   entries: GameLogEntry[];
@@ -102,9 +102,16 @@ function LogLine({ entry }: { entry: GameLogEntry }) {
       {/* Icone action */}
       <ActionIcon type={entry.actionType} />
 
+      {/* Icone carte cachee */}
+      {entry.isFlipped && (
+        <HiddenIcon className="w-4 h-4 text-white/40 flex-shrink-0" />
+      )}
+
       {/* Texte principal (nom carte ou description) */}
       {text && (
-        <span className="text-white/80 flex-1 truncate">{text}</span>
+        <span className={`flex-1 truncate ${entry.isFlipped ? 'italic text-white/50' : 'text-white/80'}`}>
+          {text}
+        </span>
       )}
 
       {/* Spacer si pas de texte */}

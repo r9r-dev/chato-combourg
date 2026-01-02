@@ -26,6 +26,9 @@ import type {
   ShiftDirection,
   GameLogEntry,
   LogActionType,
+  DiscardChoice,
+  ReplaceLocationChoice,
+  Location,
 } from '../types/play';
 import {
   createGame,
@@ -38,7 +41,7 @@ import {
   getCard,
 } from '../services/play/gameEngine';
 import { createAI } from '../services/play/ai';
-import { executeCardEffect } from '../services/play/effectExecutor';
+import { executeCardEffect, executeDiscardEffect, executeLockEffect, executeReplaceLocationEffect } from '../services/play/effectExecutor';
 import {
   playReducer,
   initialPlayUIState,
@@ -84,10 +87,23 @@ interface PlayContextType {
   isCurrentPlayerAI: () => boolean;
   isMyTurn: (playerId: string) => boolean;
 
+  // Choix de carte a defausser
+  pendingDiscardChoice: DiscardChoice | null;
+  selectDiscardCard: (cardId: string) => Promise<void>;
+
+  // Choix de lieu a remplacer
+  pendingReplaceLocationChoice: ReplaceLocationChoice | null;
+  selectReplaceLocation: (location: Location) => Promise<void>;
+
   // Logs
   toggleGameLog: () => void;
   gameLog: GameLogEntry[];
   showGameLog: boolean;
+
+  // Debug (dev mode only)
+  debugRefreshCards: () => void;
+  debugMoveMessenger: () => void;
+  debugAddResources: () => void;
 }
 
 const PlayContext = createContext<PlayContextType | null>(null);
@@ -159,6 +175,55 @@ function getPositionName(position: number): string {
 }
 
 // =============================================================================
+// Helper pour le choix de lieu par l'IA
+// =============================================================================
+
+/**
+ * L'IA choisit le lieu qui maximise le gain de cles
+ * selon le type d'effet (feature ou shield color)
+ */
+function selectBestLocationForAI(
+  state: PlayGameState,
+  choice: ReplaceLocationChoice
+): Location {
+  // Compter les cles potentielles pour chaque lieu
+  const keysPerCard = choice.keysPerCard ?? 0;
+
+  const countKeysForLocation = (location: Location): number => {
+    const cards = location === 'castle'
+      ? state.board.castleCards
+      : state.board.villageCards;
+
+    let keys = 0;
+    for (const cardId of cards) {
+      const card = getCard(cardId);
+      if (!card) continue;
+
+      if (choice.effectType === 'replace_location_gain_keys_per_feature') {
+        if (choice.feature === 'price_reduction' && card.has_price_reduction) {
+          keys += keysPerCard;
+        } else if (choice.feature === 'coin_purse' && card.has_coin_purse) {
+          keys += keysPerCard;
+        }
+      } else if (choice.effectType === 'replace_location_gain_keys_per_shield') {
+        const hasShield = card.shields.some(s => s.color === choice.color);
+        if (hasShield) {
+          keys += keysPerCard;
+        }
+      }
+    }
+
+    return keys;
+  };
+
+  const keysFromCastle = countKeysForLocation('castle');
+  const keysFromVillage = countKeysForLocation('village');
+
+  // Choisir le lieu avec le plus de cles, ou castle par defaut
+  return keysFromCastle >= keysFromVillage ? 'castle' : 'village';
+}
+
+// =============================================================================
 // Provider
 // =============================================================================
 
@@ -199,6 +264,7 @@ export function PlayProvider({ children }: { children: ReactNode }) {
       cardId?: string;
       description?: string;
       position?: number;
+      isFlipped?: boolean;
       resourcesBefore?: { gold: number; keys: number };
       resourcesAfter?: { gold: number; keys: number };
     }
@@ -213,6 +279,7 @@ export function PlayProvider({ children }: { children: ReactNode }) {
       cardName: options.cardId ? getCardName(options.cardId) : undefined,
       description: options.description,
       position: options.position,
+      isFlipped: options.isFlipped,
       resourcesBefore: options.resourcesBefore,
       resourcesAfter: options.resourcesAfter,
     };
@@ -286,14 +353,31 @@ export function PlayProvider({ children }: { children: ReactNode }) {
     cardId: string,
     position: number,
     choiceIndex?: number
-  ): { newState: PlayGameState; requiresChoice: boolean; choices?: unknown[]; description: string } => {
+  ): {
+    newState: PlayGameState;
+    requiresChoice: boolean;
+    choices?: unknown[];
+    discardChoice?: DiscardChoice;
+    description: string;
+  } => {
     const result = executeCardEffect(gameState, cardId, position, choiceIndex);
 
+    // Choix entre deux effets [OU]
     if (result.requiresChoice && result.choices) {
       return {
         newState: result.newState,
         requiresChoice: true,
         choices: result.choices,
+        description: result.description,
+      };
+    }
+
+    // Choix de carte a defausser
+    if (result.requiresChoice && result.discardChoice) {
+      return {
+        newState: result.newState,
+        requiresChoice: true,
+        discardChoice: result.discardChoice,
         description: result.description,
       };
     }
@@ -337,6 +421,7 @@ export function PlayProvider({ children }: { children: ReactNode }) {
       if (logActionType === 'buy') {
         addLogEntry(playerBefore, turnNumber, logActionType, {
           cardId: action.cardId,
+          isFlipped: action.type === 'buy_card_flipped',
           resourcesBefore,
           resourcesAfter,
         });
@@ -366,11 +451,22 @@ export function PlayProvider({ children }: { children: ReactNode }) {
         const beforeEffect = newState.players[newState.currentPlayerIndex];
         const effectResult = applyCardEffects(newState, cardId, action.position!);
 
+        // Choix entre deux effets [OU]
         if (effectResult.requiresChoice && effectResult.choices) {
           dispatch({
             type: 'EFFECT_CHOICE_REQUIRED',
             options: effectResult.choices as never[],
             cardId,
+          });
+          dispatch({ type: 'SET_GAME_STATE', gameState: newState });
+          return;
+        }
+
+        // Choix de carte a defausser
+        if (effectResult.requiresChoice && effectResult.discardChoice) {
+          dispatch({
+            type: 'DISCARD_CHOICE_REQUIRED',
+            discardChoice: effectResult.discardChoice,
           });
           dispatch({ type: 'SET_GAME_STATE', gameState: newState });
           return;
@@ -423,6 +519,41 @@ export function PlayProvider({ children }: { children: ReactNode }) {
       newState = { ...newState, turnPhase: 'post_action' };
 
       dispatch({ type: 'EFFECT_CHOICE_MADE', choiceIndex });
+    }
+
+    // Appliquer l'effet du cadenas
+    if (action.type === 'use_key_on_lock' && action.lockPosition !== undefined) {
+      const player = newState.players[newState.currentPlayerIndex];
+      const placedCard = player.board[action.lockPosition];
+
+      if (placedCard) {
+        const beforeEffect = newState.players[newState.currentPlayerIndex];
+        const lockResult = executeLockEffect(newState, placedCard.cardId, action.lockPosition);
+
+        if (lockResult.success) {
+          // Verifier si l'effet necessite un choix de lieu
+          if (lockResult.requiresChoice && lockResult.replaceLocationChoice) {
+            dispatch({
+              type: 'REPLACE_LOCATION_CHOICE_REQUIRED',
+              replaceLocationChoice: lockResult.replaceLocationChoice,
+            });
+            dispatch({ type: 'SET_GAME_STATE', gameState: newState });
+            return;
+          }
+
+          newState = lockResult.newState;
+
+          // Logger l'effet du cadenas
+          const afterEffect = newState.players[newState.currentPlayerIndex];
+          if (beforeEffect.gold !== afterEffect.gold || beforeEffect.keys !== afterEffect.keys) {
+            addLogEntry(playerBefore, turnNumber, 'effect', {
+              description: lockResult.description,
+              resourcesBefore: { gold: beforeEffect.gold, keys: beforeEffect.keys },
+              resourcesAfter: { gold: afterEffect.gold, keys: afterEffect.keys },
+            });
+          }
+        }
+      }
     }
 
     // Verifier si la partie est terminee
@@ -491,6 +622,72 @@ export function PlayProvider({ children }: { children: ReactNode }) {
     await executeGameAction({ type: 'end_turn', playerId });
   }, [state.gameState, executeGameAction]);
 
+  // Selection d'une carte a defausser
+  const selectDiscardCard = useCallback(async (cardId: string) => {
+    if (!state.gameState || !state.pendingDiscardChoice) return;
+
+    const playerBefore = state.gameState.players[state.gameState.currentPlayerIndex];
+    const resourcesBefore = { gold: playerBefore.gold, keys: playerBefore.keys };
+    const turnNumber = state.gameState.turnNumber;
+
+    // Executer l'effet de defausse
+    const result = executeDiscardEffect(state.gameState, state.pendingDiscardChoice, cardId);
+
+    if (!result.success) {
+      dispatch({ type: 'SET_ERROR', error: result.description });
+      return;
+    }
+
+    // Logger l'effet
+    const afterEffect = result.newState.players[result.newState.currentPlayerIndex];
+    addLogEntry(playerBefore, turnNumber, 'effect', {
+      description: result.description,
+      resourcesBefore,
+      resourcesAfter: { gold: afterEffect.gold, keys: afterEffect.keys },
+    });
+
+    // Passer a la phase post_action
+    const newState = { ...result.newState, turnPhase: 'post_action' as const };
+
+    dispatch({ type: 'DISCARD_CHOICE_MADE' });
+    dispatch({ type: 'SET_GAME_STATE', gameState: newState });
+  }, [state.gameState, state.pendingDiscardChoice, addLogEntry]);
+
+  // Selection d'un lieu a remplacer
+  const selectReplaceLocation = useCallback(async (location: Location) => {
+    if (!state.gameState || !state.pendingReplaceLocationChoice) return;
+
+    const playerBefore = state.gameState.players[state.gameState.currentPlayerIndex];
+    const resourcesBefore = { gold: playerBefore.gold, keys: playerBefore.keys };
+    const turnNumber = state.gameState.turnNumber;
+
+    // Executer l'effet de remplacement
+    const result = executeReplaceLocationEffect(
+      state.gameState,
+      state.pendingReplaceLocationChoice,
+      location
+    );
+
+    if (!result.success) {
+      dispatch({ type: 'SET_ERROR', error: result.description });
+      return;
+    }
+
+    // Logger l'effet
+    const afterEffect = result.newState.players[result.newState.currentPlayerIndex];
+    addLogEntry(playerBefore, turnNumber, 'effect', {
+      description: result.description,
+      resourcesBefore,
+      resourcesAfter: { gold: afterEffect.gold, keys: afterEffect.keys },
+    });
+
+    // Passer a la phase post_action (le cadenas a ete utilise)
+    const newState = { ...result.newState, turnPhase: 'post_action' as const };
+
+    dispatch({ type: 'REPLACE_LOCATION_CHOICE_MADE' });
+    dispatch({ type: 'SET_GAME_STATE', gameState: newState });
+  }, [state.gameState, state.pendingReplaceLocationChoice, addLogEntry]);
+
   // Boucle IA
   const runAITurn = useCallback(async (gameState: PlayGameState) => {
     if (aiLoopRef.current) return;
@@ -545,6 +742,7 @@ export function PlayProvider({ children }: { children: ReactNode }) {
           if (logActionType === 'buy') {
             addLogEntry(playerBefore, turnNumber, logActionType, {
               cardId: action.cardId,
+              isFlipped: action.type === 'buy_card_flipped',
               resourcesBefore,
               resourcesAfter,
             });
@@ -575,16 +773,103 @@ export function PlayProvider({ children }: { children: ReactNode }) {
 
             const beforeEffect = currentState.players[currentState.currentPlayerIndex];
             const effectResult = executeCardEffect(currentState, purchasedCard, action.position!, choiceIndex);
-            currentState = effectResult.newState;
 
-            // Logger l'effet avec la description
-            const afterEffect = currentState.players[currentState.currentPlayerIndex];
-            if (beforeEffect.gold !== afterEffect.gold || beforeEffect.keys !== afterEffect.keys) {
-              addLogEntry(playerBefore, turnNumber, 'effect', {
-                description: effectResult.description,
-                resourcesBefore: { gold: beforeEffect.gold, keys: beforeEffect.keys },
-                resourcesAfter: { gold: afterEffect.gold, keys: afterEffect.keys },
-              });
+            // Si l'effet necessite une defausse, l'IA choisit automatiquement
+            if (effectResult.requiresChoice && effectResult.discardChoice) {
+              const location = effectResult.discardChoice.location;
+              const availableCards = location === 'castle'
+                ? currentState.board.castleCards
+                : currentState.board.villageCards;
+
+              if (availableCards.length > 0) {
+                // L'IA choisit la carte avec le cout le plus eleve
+                let bestCard = availableCards[0];
+                let bestValue = 0;
+                for (const cardIdToDiscard of availableCards) {
+                  const cardToDiscard = getCard(cardIdToDiscard);
+                  if (cardToDiscard && cardToDiscard.value > bestValue) {
+                    bestValue = cardToDiscard.value;
+                    bestCard = cardIdToDiscard;
+                  }
+                }
+
+                const discardResult = executeDiscardEffect(
+                  currentState,
+                  effectResult.discardChoice,
+                  bestCard
+                );
+                currentState = discardResult.newState;
+
+                // Logger l'effet de defausse
+                const afterDiscard = currentState.players[currentState.currentPlayerIndex];
+                addLogEntry(playerBefore, turnNumber, 'effect', {
+                  description: discardResult.description,
+                  resourcesBefore: { gold: beforeEffect.gold, keys: beforeEffect.keys },
+                  resourcesAfter: { gold: afterDiscard.gold, keys: afterDiscard.keys },
+                });
+              }
+            } else {
+              currentState = effectResult.newState;
+
+              // Logger l'effet avec la description
+              const afterEffect = currentState.players[currentState.currentPlayerIndex];
+              if (beforeEffect.gold !== afterEffect.gold || beforeEffect.keys !== afterEffect.keys) {
+                addLogEntry(playerBefore, turnNumber, 'effect', {
+                  description: effectResult.description,
+                  resourcesBefore: { gold: beforeEffect.gold, keys: beforeEffect.keys },
+                  resourcesAfter: { gold: afterEffect.gold, keys: afterEffect.keys },
+                });
+              }
+            }
+          }
+        }
+
+        // Appliquer l'effet du cadenas pour l'IA
+        if (action.type === 'use_key_on_lock' && action.lockPosition !== undefined) {
+          const aiPlayer = currentState.players[currentState.currentPlayerIndex];
+          const placedCard = aiPlayer.board[action.lockPosition];
+
+          if (placedCard) {
+            const beforeLock = currentState.players[currentState.currentPlayerIndex];
+            const lockResult = executeLockEffect(currentState, placedCard.cardId, action.lockPosition);
+
+            if (lockResult.success) {
+              // Verifier si l'effet necessite un choix de lieu (replace_location)
+              if (lockResult.requiresChoice && lockResult.replaceLocationChoice) {
+                // L'IA choisit le lieu qui maximise le gain de cles
+                const choice = lockResult.replaceLocationChoice;
+                const bestLocation = selectBestLocationForAI(currentState, choice);
+
+                const replaceResult = executeReplaceLocationEffect(
+                  currentState,
+                  choice,
+                  bestLocation
+                );
+
+                if (replaceResult.success) {
+                  currentState = replaceResult.newState;
+
+                  // Logger l'effet
+                  const afterReplace = currentState.players[currentState.currentPlayerIndex];
+                  addLogEntry(playerBefore, turnNumber, 'effect', {
+                    description: replaceResult.description,
+                    resourcesBefore: { gold: beforeLock.gold, keys: beforeLock.keys },
+                    resourcesAfter: { gold: afterReplace.gold, keys: afterReplace.keys },
+                  });
+                }
+              } else {
+                currentState = lockResult.newState;
+
+                // Logger l'effet du cadenas
+                const afterLock = currentState.players[currentState.currentPlayerIndex];
+                if (beforeLock.gold !== afterLock.gold || beforeLock.keys !== afterLock.keys) {
+                  addLogEntry(playerBefore, turnNumber, 'effect', {
+                    description: lockResult.description,
+                    resourcesBefore: { gold: beforeLock.gold, keys: beforeLock.keys },
+                    resourcesAfter: { gold: afterLock.gold, keys: afterLock.keys },
+                  });
+                }
+              }
             }
           }
         }
@@ -656,6 +941,76 @@ export function PlayProvider({ children }: { children: ReactNode }) {
     [state.gameState]
   );
 
+  // =============================================================================
+  // Debug functions (dev mode only)
+  // =============================================================================
+
+  const debugRefreshCards = useCallback(() => {
+    if (!state.gameState) return;
+
+    const board = { ...state.gameState.board };
+
+    // Defausser les cartes actuelles
+    board.castleDiscard = [...board.castleDiscard, ...board.castleCards];
+    board.villageDiscard = [...board.villageDiscard, ...board.villageCards];
+    board.castleCards = [];
+    board.villageCards = [];
+
+    // Piocher 3 nouvelles cartes pour chaque lieu
+    const drawCards = (deck: string[], discard: string[], count: number): { cards: string[]; newDeck: string[]; newDiscard: string[] } => {
+      let currentDeck = [...deck];
+      let currentDiscard = [...discard];
+      const cards: string[] = [];
+
+      for (let i = 0; i < count; i++) {
+        if (currentDeck.length === 0 && currentDiscard.length > 0) {
+          // Remelanger la defausse
+          currentDeck = [...currentDiscard].sort(() => Math.random() - 0.5);
+          currentDiscard = [];
+        }
+        if (currentDeck.length > 0) {
+          cards.push(currentDeck.shift()!);
+        }
+      }
+
+      return { cards, newDeck: currentDeck, newDiscard: currentDiscard };
+    };
+
+    const castleResult = drawCards(board.castleDeck, board.castleDiscard, 3);
+    board.castleCards = castleResult.cards;
+    board.castleDeck = castleResult.newDeck;
+    board.castleDiscard = castleResult.newDiscard;
+
+    const villageResult = drawCards(board.villageDeck, board.villageDiscard, 3);
+    board.villageCards = villageResult.cards;
+    board.villageDeck = villageResult.newDeck;
+    board.villageDiscard = villageResult.newDiscard;
+
+    dispatch({ type: 'SET_GAME_STATE', gameState: { ...state.gameState, board } });
+  }, [state.gameState]);
+
+  const debugMoveMessenger = useCallback(() => {
+    if (!state.gameState) return;
+
+    const newLocation = state.gameState.board.messengerLocation === 'castle' ? 'village' : 'castle';
+    const board = { ...state.gameState.board, messengerLocation: newLocation as 'castle' | 'village' };
+
+    dispatch({ type: 'SET_GAME_STATE', gameState: { ...state.gameState, board } });
+  }, [state.gameState]);
+
+  const debugAddResources = useCallback(() => {
+    if (!state.gameState) return;
+
+    const playerIndex = state.gameState.currentPlayerIndex;
+    const players = [...state.gameState.players];
+    const player = { ...players[playerIndex] };
+    player.gold += 10;
+    player.keys += 10;
+    players[playerIndex] = player;
+
+    dispatch({ type: 'SET_GAME_STATE', gameState: { ...state.gameState, players } });
+  }, [state.gameState]);
+
   return (
     <PlayContext.Provider
       value={{
@@ -686,10 +1041,20 @@ export function PlayProvider({ children }: { children: ReactNode }) {
         canAffordCard: canAffordCardFn,
         isCurrentPlayerAI,
         isMyTurn,
+        // Choix de carte a defausser
+        pendingDiscardChoice: state.pendingDiscardChoice,
+        selectDiscardCard,
+        // Choix de lieu a remplacer
+        pendingReplaceLocationChoice: state.pendingReplaceLocationChoice,
+        selectReplaceLocation,
         // Logs
         toggleGameLog,
         gameLog: state.gameLog,
         showGameLog: state.showGameLog,
+        // Debug
+        debugRefreshCards,
+        debugMoveMessenger,
+        debugAddResources,
       }}
     >
       {children}

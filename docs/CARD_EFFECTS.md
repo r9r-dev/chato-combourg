@@ -39,7 +39,7 @@ Gagnez 1 or par carte qui possède exactement 1 bouclier sur votre tableau.
 
 # 007
 [M]
-Défaussez la carte de votre choix du lieu village. Gagnez autant de clés de son coût en or.
+Défaussez la carte de votre choix du lieu village. Gagnez autant de clés que son coût en or.
 
 # 008
 [M]

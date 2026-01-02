@@ -170,7 +170,8 @@ export interface PlayGameState {
   // Tour en cours
   turnNumber: number;            // 1-9 (chaque joueur fait 9 tours)
   turnPhase: TurnPhase;
-  keyUsedThisTurn: boolean;      // Une seule cle par tour
+  keyUsedThisTurn: boolean;      // Une seule cle par tour (messager/refresh)
+  lockUsedThisTurn: boolean;     // Un seul cadenas par tour
 
   // Carte achetee ce tour (en attente de placement)
   purchasedCard: string | null;
@@ -426,6 +427,36 @@ export interface GameLogEntry {
   cardName?: string;             // Nom de la carte (ex: "Devot") - pour buy
   description?: string;          // Description (position pour place, effet pour effect)
   position?: number;             // Position sur le plateau (0-8) - pour buy et place
+  isFlipped?: boolean;           // Achat face cachee
   resourcesBefore?: { gold: number; keys: number };
   resourcesAfter?: { gold: number; keys: number };
+}
+
+// =============================================================================
+// Choix de defausse (effets type "discard_village_gain_keys")
+// =============================================================================
+
+export interface DiscardChoice {
+  location: Location;            // Lieu ou defausser (village ou castle)
+  resource: 'gold' | 'keys';     // Ressource gagnee
+  cardId: string;                // ID de la carte qui declenche l'effet
+}
+
+// =============================================================================
+// Choix de remplacement de lieu (effets type "replace_location")
+// =============================================================================
+
+export type ReplaceLocationEffectType =
+  | 'replace_location'                      // Remplacement simple
+  | 'replace_location_gain_keys_per_feature'  // +X cles par carte avec feature
+  | 'replace_location_gain_keys_per_shield';  // +X cles par carte avec bouclier
+
+export interface ReplaceLocationChoice {
+  effectType: ReplaceLocationEffectType;
+  cardId: string;                // ID de la carte qui declenche l'effet
+  position: number;              // Position de la carte avec cadenas
+  // Parametres pour les variantes
+  feature?: string;              // "price_reduction" ou "coin_purse"
+  color?: ShieldColor;           // Couleur du bouclier
+  keysPerCard?: number;          // Nombre de cles par carte
 }

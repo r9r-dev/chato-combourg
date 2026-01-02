@@ -13,10 +13,145 @@ import { usePlay } from '../context/PlayContext';
 import { getValidPlacements, getAvailableShifts } from '../types/play';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { GameLog } from '../components/GameLog';
-import { CoinIcon, KeyIcon } from '../components/Icons';
-import type { PlayPlayer, PlacedCard, ShiftDirection } from '../types/play';
+import { CoinIcon, KeyIcon, ShieldIcon, LockIcon } from '../components/Icons';
+import type { PlayPlayer, PlacedCard, ShiftDirection, CardEffect, PlayGameState, ShieldColor, ReplaceLocationChoice } from '../types/play';
+import { getCard } from '../services/play/gameEngine';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
+
+// =============================================================================
+// Helpers pour formater les descriptions d'effets
+// =============================================================================
+
+
+function countShieldsOnBoard(player: PlayPlayer, color: ShieldColor): number {
+  let count = 0;
+  for (const placed of player.board) {
+    if (!placed) continue;
+    const card = getCard(placed.cardId);
+    if (!card) continue;
+    for (const shield of card.shields) {
+      if (shield.color === color) {
+        count += shield.count;
+      }
+    }
+  }
+  return count;
+}
+
+function getNeighborPlayers(state: PlayGameState, playerIndex: number): PlayPlayer[] {
+  const neighbors: PlayPlayer[] = [];
+  const playerCount = state.players.length;
+  if (playerCount <= 1) return neighbors;
+
+  const prevIndex = (playerIndex - 1 + playerCount) % playerCount;
+  neighbors.push(state.players[prevIndex]);
+
+  const nextIndex = (playerIndex + 1) % playerCount;
+  if (nextIndex !== prevIndex) {
+    neighbors.push(state.players[nextIndex]);
+  }
+  return neighbors;
+}
+
+function GoldAmount({ amount }: { amount: number }) {
+  return (
+    <span className="inline-flex items-center gap-1 text-gold">
+      +{amount} <CoinIcon className="w-4 h-4" />
+    </span>
+  );
+}
+
+function KeyAmount({ amount }: { amount: number }) {
+  return (
+    <span className="inline-flex items-center gap-1 text-blue-400">
+      +{amount} <KeyIcon className="w-4 h-4" />
+    </span>
+  );
+}
+
+function getReplaceLocationDescription(choice: ReplaceLocationChoice): string {
+  const keysPerCard = choice.keysPerCard ?? 0;
+
+  switch (choice.effectType) {
+    case 'replace_location':
+      return 'Choisissez un lieu pour remplacer toutes ses cartes.';
+    case 'replace_location_gain_keys_per_feature': {
+      const featureName = choice.feature === 'price_reduction' ? 'reduction' : 'bourse';
+      return `Remplacez toutes les cartes d'un lieu et gagnez ${keysPerCard} cle${keysPerCard > 1 ? 's' : ''} par carte ${featureName}.`;
+    }
+    case 'replace_location_gain_keys_per_shield': {
+      const colorNames: Record<ShieldColor, string> = {
+        blue: 'bleu',
+        pink: 'rose',
+        green: 'vert',
+        red: 'rouge',
+        orange: 'orange',
+        yellow: 'jaune',
+      };
+      const colorName = choice.color ? colorNames[choice.color] : '';
+      return `Remplacez toutes les cartes d'un lieu et gagnez ${keysPerCard} cle${keysPerCard > 1 ? 's' : ''} par carte avec bouclier ${colorName}.`;
+    }
+    default:
+      return 'Choisissez un lieu a remplacer.';
+  }
+}
+
+function EffectDescription({ effect, state }: { effect: CardEffect; state: PlayGameState }) {
+  const player = state.players[state.currentPlayerIndex];
+  const amount = effect.amount ?? 0;
+
+  switch (effect.type) {
+    case 'gain_gold':
+      return <GoldAmount amount={amount} />;
+
+    case 'gain_keys':
+      return <KeyAmount amount={amount} />;
+
+    case 'fill_purses':
+      return <span>Remplir bourses (+{amount})</span>;
+
+    case 'gain_gold_per_shield_neighbor':
+    case 'gain_keys_per_shield_neighbor': {
+      const color = effect.color as ShieldColor;
+      const neighbors = getNeighborPlayers(state, state.currentPlayerIndex);
+      let maxShields = 0;
+      for (const neighbor of neighbors) {
+        const count = countShieldsOnBoard(neighbor, color);
+        maxShields = Math.max(maxShields, count);
+      }
+      const total = maxShields * amount;
+      const isGold = effect.type === 'gain_gold_per_shield_neighbor';
+      return (
+        <span className="inline-flex items-center gap-2">
+          {isGold ? <GoldAmount amount={total} /> : <KeyAmount amount={total} />}
+          <span className="inline-flex items-center gap-1 text-white/60 text-sm">
+            ({maxShields} <ShieldIcon color={color} className="w-4 h-4" />)
+          </span>
+        </span>
+      );
+    }
+
+    case 'gain_gold_per_shield':
+    case 'gain_keys_per_shield': {
+      const color = effect.color as ShieldColor;
+      const shieldCount = countShieldsOnBoard(player, color);
+      const total = shieldCount * amount;
+      const isGold = effect.type === 'gain_gold_per_shield';
+      return (
+        <span className="inline-flex items-center gap-2">
+          {isGold ? <GoldAmount amount={total} /> : <KeyAmount amount={total} />}
+          <span className="inline-flex items-center gap-1 text-white/60 text-sm">
+            ({shieldCount} <ShieldIcon color={color} className="w-4 h-4" />)
+          </span>
+        </span>
+      );
+    }
+
+    default:
+      return <span>{effect.type}</span>;
+  }
+}
 
 // =============================================================================
 // Composants internes
@@ -103,22 +238,49 @@ function PlayerCell({
   card,
   isValid,
   isActive,
+  hasKey,
+  canUseKey,
   onClick,
+  onKeyClick,
 }: {
   card: PlacedCard | null;
   isValid: boolean;
   isActive: boolean;
+  hasKey: boolean;
+  canUseKey: boolean;
   onClick: () => void;
+  onKeyClick: () => void;
 }) {
   if (card) {
     return (
-      <div className="aspect-[5/7] rounded-lg overflow-hidden border border-white/10">
+      <div className="relative aspect-[5/7] rounded-lg overflow-hidden border border-white/10">
         <img
           src={`${API_BASE}/cards/thumbs/carte_${card.cardId}.webp`}
           alt={`Carte ${card.cardId}`}
           className="w-full h-full object-cover"
           loading="lazy"
         />
+        {/* Icone cadenas si la carte a une cle disponible */}
+        {hasKey && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onKeyClick(); }}
+            disabled={!canUseKey}
+            className={`absolute inset-0 flex items-center justify-center transition-all ${
+              canUseKey
+                ? 'bg-black/30 hover:bg-black/40 cursor-pointer'
+                : 'bg-black/20 cursor-not-allowed'
+            }`}
+            title="Utiliser l'effet du cadenas"
+          >
+            <div className={`p-3 rounded-full ${
+              canUseKey
+                ? 'bg-blue-500 shadow-lg shadow-blue-500/50'
+                : 'bg-blue-500/50'
+            }`}>
+              <LockIcon className="w-8 h-8 text-white" />
+            </div>
+          </button>
+        )}
       </div>
     );
   }
@@ -281,6 +443,7 @@ export function Play() {
     chooseEffect,
     endTurn,
     spendKey,
+    useKeyOnLock,
     shiftBoard,
     reset,
     getCurrentPlayer,
@@ -289,7 +452,16 @@ export function Play() {
     toggleGameLog,
     gameLog,
     showGameLog,
+    pendingDiscardChoice,
+    selectDiscardCard,
+    pendingReplaceLocationChoice,
+    selectReplaceLocation,
+    debugRefreshCards,
+    debugMoveMessenger,
+    debugAddResources,
   } = usePlay();
+
+  const isDev = import.meta.env.DEV;
 
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayPlayer | null>(null);
@@ -312,8 +484,22 @@ export function Play() {
   // Phase actuelle
   const isBuyPhase = gameState?.turnPhase === 'pre_action' || gameState?.turnPhase === 'buy';
   const isPlacePhase = gameState?.turnPhase === 'place';
+  const isPostActionPhase = gameState?.turnPhase === 'post_action';
   const isEffectPhase = state.step === 'effect_choice';
+
+  // Peut utiliser un cadenas : en pre_action ou post_action, si pas deja utilise ce tour
+  const canUseLock = (isBuyPhase || isPostActionPhase) && !gameState?.lockUsedThisTurn && !isCurrentPlayerAI();
+  const isDiscardPhase = state.step === 'discard_choice';
+  const isReplaceLocationPhase = state.step === 'replace_location_choice';
   const canEndTurn = gameState?.turnPhase === 'post_action' || gameState?.turnPhase === 'end';
+
+  // Cartes disponibles pour la defausse
+  const discardableCards = useMemo(() => {
+    if (!gameState || !pendingDiscardChoice) return [];
+    return pendingDiscardChoice.location === 'castle'
+      ? gameState.board.castleCards
+      : gameState.board.villageCards;
+  }, [gameState, pendingDiscardChoice]);
 
   // Autres joueurs
   const otherPlayers = useMemo(() => {
@@ -449,6 +635,30 @@ export function Play() {
           <div className={`flex items-center justify-between mt-2 pt-1 border-t-2 ${gameState.board.messengerLocation === 'village' ? 'border-gold' : 'border-transparent'}`}>
             <span className="text-sm text-village font-medium">Village</span>
           </div>
+
+          {/* Debug buttons (dev mode only) */}
+          {isDev && (
+            <div className="flex gap-2 mt-3 pt-3 border-t border-dashed border-red-500/30">
+              <button
+                onClick={debugRefreshCards}
+                className="flex-1 py-1.5 px-2 rounded bg-red-900/50 text-red-300 text-xs font-medium hover:bg-red-900/70"
+              >
+                Rafraichir
+              </button>
+              <button
+                onClick={debugMoveMessenger}
+                className="flex-1 py-1.5 px-2 rounded bg-red-900/50 text-red-300 text-xs font-medium hover:bg-red-900/70"
+              >
+                Messager
+              </button>
+              <button
+                onClick={debugAddResources}
+                className="flex-1 py-1.5 px-2 rounded bg-red-900/50 text-red-300 text-xs font-medium hover:bg-red-900/70"
+              >
+                +10 or/cle
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Joueur actuel */}
@@ -536,7 +746,10 @@ export function Play() {
                     card={card}
                     isValid={validPlacements.includes(position)}
                     isActive={isPlacePhase && !isCurrentPlayerAI()}
+                    hasKey={currentPlayer.lockedCards.get(position) ?? false}
+                    canUseKey={canUseLock}
                     onClick={() => handlePlace(position)}
+                    onKeyClick={() => useKeyOnLock(position)}
                   />
                 ))}
               </div>
@@ -661,7 +874,7 @@ export function Play() {
       )}
 
       {/* Modal choix d'effet */}
-      {isEffectPhase && state.pendingEffectChoice && (
+      {isEffectPhase && state.pendingEffectChoice && gameState && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
           <div className="bg-dark-card rounded-2xl p-6 max-w-sm w-full">
             <h3 className="text-white font-semibold text-lg mb-4 text-center">Choisissez un effet</h3>
@@ -672,14 +885,73 @@ export function Play() {
                   onClick={() => chooseEffect(index)}
                   className="w-full py-4 px-4 rounded-xl bg-dark-lighter hover:bg-white/10 transition-colors text-left"
                 >
-                  <span className="text-white">
-                    {option.type === 'gain_gold' && `+${option.amount} or`}
-                    {option.type === 'gain_keys' && `+${option.amount} cle(s)`}
-                    {option.type === 'fill_purses' && `Remplir bourses (+${option.amount})`}
-                    {!['gain_gold', 'gain_keys', 'fill_purses'].includes(option.type) && option.type}
-                  </span>
+                  <EffectDescription effect={option} state={gameState} />
                 </button>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal choix de carte a defausser */}
+      {isDiscardPhase && pendingDiscardChoice && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+          <div className="bg-dark-card rounded-2xl p-6 max-w-md w-full">
+            <h3 className="text-white font-semibold text-lg mb-2 text-center">
+              Defaussez une carte
+            </h3>
+            <p className="text-white/60 text-sm mb-4 text-center">
+              Choisissez une carte du {pendingDiscardChoice.location === 'castle' ? 'chateau' : 'village'} pour gagner son cout en {pendingDiscardChoice.resource === 'gold' ? 'or' : 'cles'}
+            </p>
+            <div className="grid grid-cols-3 gap-3">
+              {discardableCards.map((cardId) => (
+                <button
+                  key={cardId}
+                  onClick={() => selectDiscardCard(cardId)}
+                  className="aspect-[5/7] rounded-lg overflow-hidden border-2 border-white/30 hover:border-gold transition-colors"
+                >
+                  <img
+                    src={`${API_BASE}/cards/thumbs/carte_${cardId}.webp`}
+                    alt={`Carte ${cardId}`}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal choix de lieu a remplacer */}
+      {isReplaceLocationPhase && pendingReplaceLocationChoice && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+          <div className="bg-dark-card rounded-2xl p-6 max-w-sm w-full">
+            <h3 className="text-white font-semibold text-lg mb-2 text-center">
+              Remplacer les cartes
+            </h3>
+            <p className="text-white/60 text-sm mb-4 text-center">
+              {getReplaceLocationDescription(pendingReplaceLocationChoice)}
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => selectReplaceLocation('castle')}
+                className="py-4 px-4 rounded-xl bg-castle/20 border-2 border-castle hover:bg-castle/30 transition-colors"
+              >
+                <div className="text-castle font-semibold text-lg mb-1">Chateau</div>
+                <div className="text-white/60 text-sm">
+                  {gameState?.board.castleCards.length ?? 0} cartes
+                </div>
+              </button>
+              <button
+                onClick={() => selectReplaceLocation('village')}
+                className="py-4 px-4 rounded-xl bg-village/20 border-2 border-village hover:bg-village/30 transition-colors"
+              >
+                <div className="text-village font-semibold text-lg mb-1">Village</div>
+                <div className="text-white/60 text-sm">
+                  {gameState?.board.villageCards.length ?? 0} cartes
+                </div>
+              </button>
             </div>
           </div>
         </div>

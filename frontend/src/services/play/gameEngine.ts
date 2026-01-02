@@ -34,8 +34,6 @@ import {
 
 const INITIAL_GOLD = 15;
 const INITIAL_KEYS = 2;
-const FLIPPED_CARD_GOLD = 6;
-const FLIPPED_CARD_KEYS = 2;
 const FLIPPED_VILLAGE_ID = '089';
 const FLIPPED_CASTLE_ID = '090';
 
@@ -146,6 +144,7 @@ export function createGame(config: PlayGameConfig): PlayGameState {
     turnNumber: 1,
     turnPhase: 'pre_action',
     keyUsedThisTurn: false,
+    lockUsedThisTurn: false,
     purchasedCard: null,
     purchasedCardCost: 0,
     board,
@@ -243,6 +242,10 @@ function validateUseKeyOnLock(
 ): ActionValidation {
   if (state.turnPhase !== 'pre_action' && state.turnPhase !== 'post_action') {
     return { isValid: false, reason: 'Vous ne pouvez pas utiliser de cadenas maintenant' };
+  }
+
+  if (state.lockUsedThisTurn) {
+    return { isValid: false, reason: 'Vous avez deja utilise un cadenas ce tour' };
   }
 
   if (action.lockPosition === undefined) {
@@ -465,7 +468,7 @@ function executeUseKeyOnLock(
   // L'effet du cadenas sera applique par l'executeur d'effets
   players[playerIndex] = player;
 
-  return { ...state, players };
+  return { ...state, players, lockUsedThisTurn: true };
 }
 
 function executeSpendKey(
@@ -519,11 +522,8 @@ function executeBuyCard(
     player.gold -= cost;
   }
 
-  if (isFlipped) {
-    // Bonus carte retournee
-    player.gold += FLIPPED_CARD_GOLD;
-    player.keys += FLIPPED_CARD_KEYS;
-  }
+  // Note: le bonus des cartes retournees (6 or + 2 cles) est applique
+  // via les effets des cartes 089/090 au moment du placement
 
   players[playerIndex] = player;
 
@@ -674,8 +674,25 @@ function executeEndTurn(state: PlayGameState): PlayGameState {
   );
 
   if (gameEnded) {
+    // Recuperer les cles non utilisees sur les cadenas
+    const finalPlayers = state.players.map(p => {
+      let keysFromLocks = 0;
+      for (const [, hasKey] of p.lockedCards) {
+        if (hasKey) keysFromLocks++;
+      }
+      if (keysFromLocks > 0) {
+        return {
+          ...p,
+          keys: p.keys + keysFromLocks,
+          lockedCards: new Map(), // Vider les cadenas
+        };
+      }
+      return p;
+    });
+
     return {
       ...state,
+      players: finalPlayers,
       board,
       phase: 'ended',
       turnPhase: 'end',
@@ -689,6 +706,7 @@ function executeEndTurn(state: PlayGameState): PlayGameState {
     turnNumber,
     turnPhase: 'pre_action',
     keyUsedThisTurn: false,
+    lockUsedThisTurn: false,
     actionHistory: [], // Reset pour le nouveau tour
   };
 }

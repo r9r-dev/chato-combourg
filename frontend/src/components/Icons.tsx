@@ -62,6 +62,64 @@ export function KeyIcon({ className = 'w-4 h-4' }: IconProps) {
   );
 }
 
+/** Couleurs des boucliers */
+const SHIELD_COLORS: Record<string, string> = {
+  blue: '#3b82f6',
+  pink: '#ec4899',
+  green: '#22c55e',
+  red: '#ef4444',
+  orange: '#f97316',
+  yellow: '#eab308',
+};
+
+interface ShieldIconProps {
+  className?: string;
+  color: 'blue' | 'pink' | 'green' | 'red' | 'orange' | 'yellow';
+}
+
+/** Icone bouclier colore */
+export function ShieldIcon({ className = 'w-4 h-4', color }: ShieldIconProps) {
+  const fillColor = SHIELD_COLORS[color] || '#9ca3af';
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill={fillColor}>
+      <path d="M12 2L4 6v6c0 5.25 3.4 10.15 8 11.4 4.6-1.25 8-6.15 8-11.4V6l-8-4z" />
+      <path d="M12 4L6 7v5c0 4.2 2.7 8.12 6 9.14V4z" fill="white" fillOpacity="0.2" />
+    </svg>
+  );
+}
+
+/** Icone cadenas (pour les cartes avec effet cadenas) */
+export function LockIcon({ className = 'w-4 h-4' }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      {/* Corps du cadenas */}
+      <rect x="4" y="10" width="16" height="12" rx="2" />
+      {/* Anse du cadenas */}
+      <path
+        d="M8 10V7a4 4 0 118 0v3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+      {/* Trou de serrure */}
+      <circle cx="12" cy="16" r="2" fill="white" fillOpacity="0.8" />
+    </svg>
+  );
+}
+
+/** Icone oeil barre (carte cachee) */
+export function HiddenIcon({ className = 'w-4 h-4' }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
+      <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
+      <path d="M1 1l22 22" />
+      <circle cx="12" cy="12" r="3" opacity="0.5" />
+    </svg>
+  );
+}
+
 interface PositionGridProps {
   position: number; // 0-8
   size?: number;    // Taille en pixels (defaut 16)

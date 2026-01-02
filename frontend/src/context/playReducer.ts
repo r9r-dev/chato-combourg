@@ -11,6 +11,8 @@ import type {
   AILevel,
   CardEffect,
   GameLogEntry,
+  DiscardChoice,
+  ReplaceLocationChoice,
 } from '../types/play';
 
 // =============================================================================
@@ -21,7 +23,9 @@ export type PlayStep =
   | 'setup'           // Configuration de la partie
   | 'playing'         // Partie en cours
   | 'ai_thinking'     // L'IA reflechit
-  | 'effect_choice'   // Choix d'effet en attente
+  | 'effect_choice'   // Choix d'effet [OU] en attente
+  | 'discard_choice'  // Choix de carte a defausser en attente
+  | 'replace_location_choice'  // Choix de lieu a remplacer en attente
   | 'results';        // Resultats finaux
 
 export interface PlayUIState {
@@ -38,11 +42,17 @@ export interface PlayUIState {
   aiThinking: boolean;
   aiError: string | null;
 
-  // Choix d'effet en attente
+  // Choix d'effet [OU] en attente
   pendingEffectChoice: {
     options: CardEffect[];
     cardId: string;
   } | null;
+
+  // Choix de carte a defausser en attente
+  pendingDiscardChoice: DiscardChoice | null;
+
+  // Choix de lieu a remplacer en attente
+  pendingReplaceLocationChoice: ReplaceLocationChoice | null;
 
   // Erreurs
   lastError: string | null;
@@ -81,9 +91,17 @@ export type PlayUIAction =
   | { type: 'AI_THINKING_END' }
   | { type: 'AI_ERROR'; error: string }
 
-  // Choix d'effet
+  // Choix d'effet [OU]
   | { type: 'EFFECT_CHOICE_REQUIRED'; options: CardEffect[]; cardId: string }
   | { type: 'EFFECT_CHOICE_MADE'; choiceIndex: number }
+
+  // Choix de carte a defausser
+  | { type: 'DISCARD_CHOICE_REQUIRED'; discardChoice: DiscardChoice }
+  | { type: 'DISCARD_CHOICE_MADE' }
+
+  // Choix de lieu a remplacer
+  | { type: 'REPLACE_LOCATION_CHOICE_REQUIRED'; replaceLocationChoice: ReplaceLocationChoice }
+  | { type: 'REPLACE_LOCATION_CHOICE_MADE' }
 
   // Erreurs et chargement
   | { type: 'SET_ERROR'; error: string | null }
@@ -105,6 +123,8 @@ export const initialPlayUIState: PlayUIState = {
   aiThinking: false,
   aiError: null,
   pendingEffectChoice: null,
+  pendingDiscardChoice: null,
+  pendingReplaceLocationChoice: null,
   lastError: null,
   isLoading: false,
   gameLog: [],
@@ -261,6 +281,36 @@ export function playReducer(
         ...state,
         step: 'playing',
         pendingEffectChoice: null,
+      };
+
+    // Choix de carte a defausser
+    case 'DISCARD_CHOICE_REQUIRED':
+      return {
+        ...state,
+        step: 'discard_choice',
+        pendingDiscardChoice: action.discardChoice,
+      };
+
+    case 'DISCARD_CHOICE_MADE':
+      return {
+        ...state,
+        step: 'playing',
+        pendingDiscardChoice: null,
+      };
+
+    // Choix de lieu a remplacer
+    case 'REPLACE_LOCATION_CHOICE_REQUIRED':
+      return {
+        ...state,
+        step: 'replace_location_choice',
+        pendingReplaceLocationChoice: action.replaceLocationChoice,
+      };
+
+    case 'REPLACE_LOCATION_CHOICE_MADE':
+      return {
+        ...state,
+        step: 'playing',
+        pendingReplaceLocationChoice: null,
       };
 
     // Erreurs et chargement

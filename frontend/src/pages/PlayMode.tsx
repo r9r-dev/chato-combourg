@@ -22,6 +22,7 @@ function PlayModeContent() {
     case 'playing':
     case 'ai_thinking':
     case 'effect_choice':
+    case 'discard_choice':
       return <Play />;
 
     case 'results':

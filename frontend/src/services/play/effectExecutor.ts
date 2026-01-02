@@ -15,6 +15,9 @@ import type {
   CardEffect,
   ShieldColor,
   Location,
+  DiscardChoice,
+  ReplaceLocationChoice,
+  ReplaceLocationEffectType,
 } from '../../types/play';
 import { getCard } from './gameEngine';
 
@@ -28,6 +31,8 @@ export interface EffectResult {
   description: string;
   requiresChoice?: boolean;
   choices?: CardEffect[];
+  discardChoice?: DiscardChoice;  // Pour les effets de defausse
+  replaceLocationChoice?: ReplaceLocationChoice;  // Pour les effets de remplacement de lieu
 }
 
 // =============================================================================
@@ -64,7 +69,7 @@ export function executeCardEffect(
 
     // Executer l'effet choisi
     const chosenEffect = choiceEffect.options[choiceIndex];
-    return executeSingleEffect(state, chosenEffect, position);
+    return executeSingleEffect(state, chosenEffect, position, cardId);
   }
 
   // Executer tous les effets sequentiellement
@@ -74,7 +79,13 @@ export function executeCardEffect(
   for (const effect of card.effects) {
     if (effect.type === 'choice') continue; // Deja gere
 
-    const result = executeSingleEffect(currentState, effect, position);
+    const result = executeSingleEffect(currentState, effect, position, cardId);
+
+    // Si un effet necessite un choix de defausse, retourner immediatement
+    if (result.requiresChoice && result.discardChoice) {
+      return result;
+    }
+
     currentState = result.newState;
     descriptions.push(result.description);
   }
@@ -100,7 +111,7 @@ export function executeLockEffect(
     };
   }
 
-  return executeSingleEffect(state, card.lock_effect, position);
+  return executeSingleEffect(state, card.lock_effect, position, cardId);
 }
 
 // =============================================================================
@@ -110,7 +121,8 @@ export function executeLockEffect(
 function executeSingleEffect(
   state: PlayGameState,
   effect: CardEffect,
-  position: number
+  position: number,
+  cardId?: string
 ): EffectResult {
   const playerIndex = state.currentPlayerIndex;
 
@@ -206,13 +218,13 @@ function executeSingleEffect(
 
     // Defausser une carte
     case 'discard_village_gain_gold':
-      return applyDiscardAndGain(state, 'village', 'gold');
+      return applyDiscardAndGain(state, 'village', 'gold', cardId ?? '');
 
     case 'discard_village_gain_keys':
-      return applyDiscardAndGain(state, 'village', 'keys');
+      return applyDiscardAndGain(state, 'village', 'keys', cardId ?? '');
 
     case 'discard_castle_gain_gold':
-      return applyDiscardAndGain(state, 'castle', 'gold');
+      return applyDiscardAndGain(state, 'castle', 'gold', cardId ?? '');
 
     // Effets sur les adversaires
     case 'all_opponents_gain_gold':
@@ -226,13 +238,13 @@ function executeSingleEffect(
 
     // Effets de cadenas speciaux
     case 'replace_location':
-      return applyReplaceLocation(state);
+      return applyReplaceLocation(state, cardId ?? '', position);
 
     case 'replace_location_gain_keys_per_feature':
-      return applyReplaceLocationGainKeys(state, playerIndex, effect.feature!, effect.keys_per_card ?? 1);
+      return applyReplaceLocationGainKeys(state, cardId ?? '', position, effect.feature!, effect.keys_per_card ?? 1);
 
     case 'replace_location_gain_keys_per_shield':
-      return applyReplaceLocationGainKeysPerShield(state, playerIndex, effect.color!, effect.keys_per_card ?? 1);
+      return applyReplaceLocationGainKeysPerShield(state, cardId ?? '', position, effect.color!, effect.keys_per_card ?? 1);
 
     case 'activate_adjacent':
       return applyActivateAdjacent(state, position);
@@ -574,16 +586,24 @@ function applyFillPurses(
 function applyDiscardAndGain(
   state: PlayGameState,
   location: Location,
-  _resource: 'gold' | 'keys'
+  resource: 'gold' | 'keys',
+  cardId: string
 ): EffectResult {
-  // Note: Dans le vrai jeu, le joueur choisit quelle carte defausser
-  // Pour l'instant, on retourne juste un succes
-  // L'interface devra gerer le choix
+  // Le joueur doit choisir une carte a defausser
+  // On retourne les infos necessaires pour l'interface
+  const locationName = location === 'castle' ? 'chateau' : 'village';
+  const resourceName = resource === 'gold' ? 'or' : 'cles';
+
   return {
     success: true,
     newState: state,
-    description: `Defausser une carte du ${location === 'castle' ? 'chateau' : 'village'}`,
+    description: `Defaussez une carte du ${locationName} pour gagner son cout en ${resourceName}`,
     requiresChoice: true,
+    discardChoice: {
+      location,
+      resource,
+      cardId,
+    },
   };
 }
 
@@ -640,43 +660,81 @@ function applyAllPlayersGain(
   };
 }
 
-function applyReplaceLocation(state: PlayGameState): EffectResult {
+function applyReplaceLocation(
+  state: PlayGameState,
+  cardId: string,
+  position: number
+): EffectResult {
   // Le joueur doit choisir le lieu
   return {
     success: true,
     newState: state,
     description: 'Remplacer toutes les cartes d\'un lieu',
     requiresChoice: true,
+    replaceLocationChoice: {
+      effectType: 'replace_location' as ReplaceLocationEffectType,
+      cardId,
+      position,
+    },
   };
 }
 
 function applyReplaceLocationGainKeys(
   state: PlayGameState,
-  _playerIndex: number,
+  cardId: string,
+  position: number,
   feature: string,
   keysPerCard: number
 ): EffectResult {
-  // Le joueur doit choisir le lieu, puis on compte les cartes avec la feature
+  const featureName = feature === 'price_reduction' ? 'reduction' : 'bourse';
   return {
     success: true,
     newState: state,
-    description: `Remplacer un lieu et gagner ${keysPerCard} cle(s) par carte ${feature}`,
+    description: `Remplacer un lieu et gagner ${keysPerCard} cle(s) par carte ${featureName}`,
     requiresChoice: true,
+    replaceLocationChoice: {
+      effectType: 'replace_location_gain_keys_per_feature' as ReplaceLocationEffectType,
+      cardId,
+      position,
+      feature,
+      keysPerCard,
+    },
   };
 }
 
 function applyReplaceLocationGainKeysPerShield(
   state: PlayGameState,
-  _playerIndex: number,
+  cardId: string,
+  position: number,
   color: ShieldColor,
   keysPerCard: number
 ): EffectResult {
+  const colorName = getColorName(color);
   return {
     success: true,
     newState: state,
-    description: `Remplacer un lieu et gagner ${keysPerCard} cle(s) par carte avec bouclier ${color}`,
+    description: `Remplacer un lieu et gagner ${keysPerCard} cle(s) par carte avec bouclier ${colorName}`,
     requiresChoice: true,
+    replaceLocationChoice: {
+      effectType: 'replace_location_gain_keys_per_shield' as ReplaceLocationEffectType,
+      cardId,
+      position,
+      color,
+      keysPerCard,
+    },
   };
+}
+
+function getColorName(color: ShieldColor): string {
+  const names: Record<ShieldColor, string> = {
+    blue: 'bleu',
+    pink: 'rose',
+    green: 'vert',
+    red: 'rouge',
+    orange: 'orange',
+    yellow: 'jaune',
+  };
+  return names[color] ?? color;
 }
 
 function applyActivateAdjacent(
@@ -767,4 +825,213 @@ function getNeighborPlayers(
   }
 
   return neighbors;
+}
+
+// =============================================================================
+// Execution de l'effet de defausse (apres choix du joueur)
+// =============================================================================
+
+/**
+ * Execute l'effet de defausse apres que le joueur ait choisi une carte.
+ * - Defausse la carte choisie du lieu
+ * - Pioche une nouvelle carte pour remplacer
+ * - Donne au joueur la ressource correspondante (or ou cles) egale au cout de la carte
+ */
+export function executeDiscardEffect(
+  state: PlayGameState,
+  discardChoice: DiscardChoice,
+  chosenCardId: string
+): EffectResult {
+  const playerIndex = state.currentPlayerIndex;
+  const card = getCard(chosenCardId);
+
+  if (!card) {
+    return {
+      success: false,
+      newState: state,
+      description: 'Carte inconnue',
+    };
+  }
+
+  // Calculer le gain (= cout de la carte defaussee)
+  const gainAmount = card.value;
+
+  // Mettre a jour les ressources du joueur
+  const players = [...state.players];
+  const player = { ...players[playerIndex] };
+
+  if (discardChoice.resource === 'gold') {
+    player.gold += gainAmount;
+  } else {
+    player.keys += gainAmount;
+  }
+  players[playerIndex] = player;
+
+  // Defausser la carte et piocher une nouvelle
+  let board = { ...state.board };
+  const location = discardChoice.location;
+
+  if (location === 'castle') {
+    // Retirer la carte du chateau
+    const cardIndex = board.castleCards.indexOf(chosenCardId);
+    if (cardIndex >= 0) {
+      board.castleCards = [...board.castleCards];
+      board.castleCards.splice(cardIndex, 1);
+
+      // Ajouter a la defausse
+      board.castleDiscard = [...board.castleDiscard, chosenCardId];
+
+      // Piocher une nouvelle carte si possible
+      if (board.castleDeck.length > 0) {
+        const newCard = board.castleDeck[0];
+        board.castleDeck = board.castleDeck.slice(1);
+        board.castleCards.push(newCard);
+      }
+    }
+  } else {
+    // Retirer la carte du village
+    const cardIndex = board.villageCards.indexOf(chosenCardId);
+    if (cardIndex >= 0) {
+      board.villageCards = [...board.villageCards];
+      board.villageCards.splice(cardIndex, 1);
+
+      // Ajouter a la defausse
+      board.villageDiscard = [...board.villageDiscard, chosenCardId];
+
+      // Piocher une nouvelle carte si possible
+      if (board.villageDeck.length > 0) {
+        const newCard = board.villageDeck[0];
+        board.villageDeck = board.villageDeck.slice(1);
+        board.villageCards.push(newCard);
+      }
+    }
+  }
+
+  const locationName = location === 'castle' ? 'chateau' : 'village';
+  const resourceName = discardChoice.resource === 'gold' ? 'or' : 'cle(s)';
+
+  return {
+    success: true,
+    newState: { ...state, players, board },
+    description: `Carte defaussee du ${locationName}: +${gainAmount} ${resourceName}`,
+  };
+}
+
+// =============================================================================
+// Execution de l'effet de remplacement de lieu (apres choix du joueur)
+// =============================================================================
+
+/**
+ * Execute l'effet de remplacement de lieu apres que le joueur ait choisi.
+ * - Defausse toutes les cartes du lieu choisi
+ * - Pioche de nouvelles cartes pour remplacer
+ * - Selon l'effet, donne des cles basees sur les cartes defaussees
+ */
+export function executeReplaceLocationEffect(
+  state: PlayGameState,
+  choice: ReplaceLocationChoice,
+  chosenLocation: Location
+): EffectResult {
+  const playerIndex = state.currentPlayerIndex;
+
+  // Recuperer les cartes du lieu choisi
+  const cardsToDiscard = chosenLocation === 'castle'
+    ? [...state.board.castleCards]
+    : [...state.board.villageCards];
+
+  // Compter les cles a gagner selon le type d'effet
+  let keysGained = 0;
+  const keysPerCard = choice.keysPerCard ?? 0;
+
+  if (choice.effectType === 'replace_location_gain_keys_per_feature') {
+    // Compter les cartes avec la feature
+    for (const cardId of cardsToDiscard) {
+      const card = getCard(cardId);
+      if (!card) continue;
+
+      if (choice.feature === 'price_reduction' && card.has_price_reduction) {
+        keysGained += keysPerCard;
+      } else if (choice.feature === 'coin_purse' && card.has_coin_purse) {
+        keysGained += keysPerCard;
+      }
+    }
+  } else if (choice.effectType === 'replace_location_gain_keys_per_shield') {
+    // Compter les cartes avec le bouclier de la couleur
+    for (const cardId of cardsToDiscard) {
+      const card = getCard(cardId);
+      if (!card) continue;
+
+      const hasShieldColor = card.shields.some(s => s.color === choice.color);
+      if (hasShieldColor) {
+        keysGained += keysPerCard;
+      }
+    }
+  }
+
+  // Mettre a jour les ressources du joueur
+  const players = [...state.players];
+  const player = { ...players[playerIndex] };
+  player.keys += keysGained;
+  players[playerIndex] = player;
+
+  // Defausser et piocher de nouvelles cartes
+  let board = { ...state.board };
+
+  if (chosenLocation === 'castle') {
+    // Defausser les cartes du chateau
+    board.castleDiscard = [...board.castleDiscard, ...board.castleCards];
+    board.castleCards = [];
+
+    // Piocher 3 nouvelles cartes
+    if (board.castleDeck.length < 3 && board.castleDiscard.length > 0) {
+      // Remelanger la defausse dans la pioche
+      const reshuffled = [...board.castleDiscard];
+      shuffle(reshuffled);
+      board.castleDeck = [...board.castleDeck, ...reshuffled];
+      board.castleDiscard = [];
+    }
+
+    // Piocher jusqu'a 3 cartes
+    const cardsToDraw = Math.min(3, board.castleDeck.length);
+    board.castleCards = board.castleDeck.slice(0, cardsToDraw);
+    board.castleDeck = board.castleDeck.slice(cardsToDraw);
+  } else {
+    // Defausser les cartes du village
+    board.villageDiscard = [...board.villageDiscard, ...board.villageCards];
+    board.villageCards = [];
+
+    // Piocher 3 nouvelles cartes
+    if (board.villageDeck.length < 3 && board.villageDiscard.length > 0) {
+      // Remelanger la defausse dans la pioche
+      const reshuffled = [...board.villageDiscard];
+      shuffle(reshuffled);
+      board.villageDeck = [...board.villageDeck, ...reshuffled];
+      board.villageDiscard = [];
+    }
+
+    // Piocher jusqu'a 3 cartes
+    const cardsToDraw = Math.min(3, board.villageDeck.length);
+    board.villageCards = board.villageDeck.slice(0, cardsToDraw);
+    board.villageDeck = board.villageDeck.slice(cardsToDraw);
+  }
+
+  const locationName = chosenLocation === 'castle' ? 'chateau' : 'village';
+  let description = `Cartes du ${locationName} remplacees`;
+  if (keysGained > 0) {
+    description += `: +${keysGained} cle${keysGained > 1 ? 's' : ''}`;
+  }
+
+  return {
+    success: true,
+    newState: { ...state, players, board },
+    description,
+  };
+}
+
+// Helper pour melanger un tableau
+function shuffle<T>(array: T[]): void {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
 }
