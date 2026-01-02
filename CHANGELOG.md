@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.2.1 (2026-01-02)
+
+Corrections et améliorations mineures.
+
 ## v3.2.0 (2026-01-02)
 
 - Ajout du logo du château de Combourg sur la page d'accueil
