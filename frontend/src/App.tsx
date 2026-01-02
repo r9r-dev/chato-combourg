@@ -4,6 +4,7 @@ import { GameProvider, useGame } from './context/GameContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Landing } from './pages/Landing';
 import { Players } from './pages/Players';
+import { GameDate } from './pages/GameDate';
 import { Keys } from './pages/Keys';
 import { Coins } from './pages/Coins';
 import { Camera } from './pages/Camera';
@@ -31,6 +32,8 @@ function AppContent() {
       return <Landing />;
     case 'players':
       return <Players />;
+    case 'game-date':
+      return <GameDate />;
     case 'keys':
       return <Keys />;
     case 'coins':

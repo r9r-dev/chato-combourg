@@ -58,6 +58,8 @@ interface GameContextType {
   setLegacyCardScores: (scores: number[]) => void;
   saveLegacyPlayerAndNext: () => Promise<boolean>;
   saveLegacyGame: () => Promise<GameDetail | null>;
+  // Date de la partie
+  setPlayedAt: (playedAt: string) => void;
 }
 
 const GameContext = createContext<GameContextType | null>(null);
@@ -88,7 +90,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const setSelectedPlayersAndContinue = useCallback(
     (players: Player[]) => {
-      const navigateTo = state.isLegacyMode ? 'legacy-scores' : 'keys';
+      // En mode legacy, on passe d'abord par la sélection de date
+      const navigateTo = state.isLegacyMode ? 'game-date' : 'keys';
       dispatch({ type: 'SET_SELECTED_PLAYERS', players, navigateTo });
     },
     [state.isLegacyMode]
@@ -213,6 +216,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }
   }, [state.selectedPlayers]);
 
+  // Date de la partie
+  const setPlayedAt = useCallback(
+    (playedAt: string) => dispatch({ type: 'SET_PLAYED_AT', playedAt }),
+    []
+  );
+
   return (
     <GameContext.Provider
       value={{
@@ -241,6 +250,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setLegacyCardScores: legacy.setLegacyCardScores,
         saveLegacyPlayerAndNext: legacy.saveLegacyPlayerAndNext,
         saveLegacyGame: legacy.saveLegacyGame,
+        // Date de la partie
+        setPlayedAt,
       }}
     >
       {children}

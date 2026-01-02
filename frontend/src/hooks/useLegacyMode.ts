@@ -79,7 +79,10 @@ export function useLegacyMode({ state, dispatch }: UseLegacyModeOptions): UseLeg
         keys: p.keys,
         card_scores: p.legacyCardScores ?? [0, 0, 0, 0, 0, 0, 0, 0, 0],
       }));
-      await createLegacyGame({ players });
+      await createLegacyGame({
+        players,
+        played_at: state.playedAt,
+      });
     } catch (error) {
       console.error('Failed to save legacy game:', error);
     }
@@ -89,7 +92,7 @@ export function useLegacyMode({ state, dispatch }: UseLegacyModeOptions): UseLeg
     dispatch({ type: 'SET_STEP', step: 'summary' });
 
     return false;
-  }, [state.legacyCardScores, state.keys, state.currentPlayerIndex, state.selectedPlayers, dispatch]);
+  }, [state.legacyCardScores, state.keys, state.currentPlayerIndex, state.selectedPlayers, state.playedAt, dispatch]);
 
   const saveLegacyGame = useCallback(async (): Promise<GameDetail | null> => {
     if (state.selectedPlayers.length < 2) return null;
@@ -101,12 +104,15 @@ export function useLegacyMode({ state, dispatch }: UseLegacyModeOptions): UseLeg
         card_scores: p.legacyCardScores ?? [0, 0, 0, 0, 0, 0, 0, 0, 0],
       }));
 
-      return await createLegacyGame({ players });
+      return await createLegacyGame({
+        players,
+        played_at: state.playedAt,
+      });
     } catch (error) {
       console.error('Failed to save legacy game:', error);
       return null;
     }
-  }, [state.selectedPlayers]);
+  }, [state.selectedPlayers, state.playedAt]);
 
   return {
     setLegacyMode,

@@ -41,11 +41,17 @@ export type GameAction =
   // Mode legacy
   | { type: 'SET_LEGACY_MODE'; isLegacy: boolean }
   | { type: 'SET_LEGACY_CARD_SCORES'; scores: number[] }
-  | { type: 'SAVE_LEGACY_PLAYER'; totalScore: number; cardScores: number[] };
+  | { type: 'SAVE_LEGACY_PLAYER'; totalScore: number; cardScores: number[] }
+
+  // Date de la partie
+  | { type: 'SET_PLAYED_AT'; playedAt: string };
 
 // =============================================================================
 // État initial
 // =============================================================================
+
+// Date par défaut : 13 septembre 2024
+const DEFAULT_PLAYED_AT = '2024-09-13';
 
 export const initialGameState: GameState = {
   step: 'landing',
@@ -59,6 +65,7 @@ export const initialGameState: GameState = {
   originalCards: undefined,
   isLegacyMode: false,
   legacyCardScores: undefined,
+  playedAt: DEFAULT_PLAYED_AT,
 };
 
 // =============================================================================
@@ -214,6 +221,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
       return { ...state, selectedPlayers: updatedPlayers };
     }
+
+    // Date de la partie
+    case 'SET_PLAYED_AT':
+      return { ...state, playedAt: action.playedAt };
 
     default:
       return state;

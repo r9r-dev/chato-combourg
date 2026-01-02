@@ -99,7 +99,7 @@ export interface GameCard {
 }
 
 export interface GameState {
-  step: 'landing' | 'players' | 'keys' | 'coins' | 'camera' | 'review' | 'summary' | 'games' | 'settings' | 'license' | 'developer' | 'legacy-scores' | 'play';
+  step: 'landing' | 'players' | 'game-date' | 'keys' | 'coins' | 'camera' | 'review' | 'summary' | 'games' | 'settings' | 'license' | 'developer' | 'legacy-scores' | 'play';
   cards: GameCard[];
   keys: number;
   coins: number;
@@ -110,6 +110,7 @@ export interface GameState {
   originalCards?: GameCard[]; // Original cards before corrections
   isLegacyMode?: boolean; // True when importing legacy games
   legacyCardScores?: number[]; // 9 individual card scores for current player
+  playedAt?: string; // Date when the game was played (ISO format, for legacy mode)
 }
 
 // User & Players (from API)
