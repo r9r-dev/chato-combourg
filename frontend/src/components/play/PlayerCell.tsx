@@ -2,7 +2,7 @@
  * PlayerCell - Case du plateau joueur
  */
 
-import { LockIcon } from '../Icons';
+import { LockIcon, CoinStack } from '../Icons';
 import type { PlacedCard } from '../../types/play';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -27,6 +27,8 @@ export function PlayerCell({
   onKeyClick,
 }: PlayerCellProps) {
   if (card) {
+    const hasCoins = card.coinsOnCard > 0;
+
     return (
       <div className="relative aspect-[5/7] rounded-lg overflow-hidden border border-white/10">
         <img
@@ -55,6 +57,12 @@ export function PlayerCell({
               <LockIcon className="w-8 h-8 text-white" />
             </div>
           </button>
+        )}
+        {/* Pile de pieces si la carte bourse contient des pieces */}
+        {hasCoins && !hasKey && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none" style={{ paddingBottom: '25%' }}>
+            <CoinStack count={card.coinsOnCard} seed={card.position} />
+          </div>
         )}
       </div>
     );

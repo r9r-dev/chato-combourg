@@ -209,7 +209,7 @@ Gagnez 1 or par bouclier vert sur votre tableau.
 Gagnez 1 clé par bouclier rouge chez un de vos voisins (joueur précédent ou joueur suivant).
 
 # 053
-Gagnez 2 or par carte possédant une bourse sur votre plateau.
+Déposez 2 or depuis la réserve sur chacune de vos cartes qui comportent une bourse sans dépasser le maximum.
 
 # 054
 Gagnez 1 or par bouclier différent sur votre tableau.

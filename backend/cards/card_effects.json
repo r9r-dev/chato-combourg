@@ -398,7 +398,7 @@
   "053": {
     "has_messenger": false,
     "effects": [
-      { "type": "gain_gold_per_card_with_purse", "amount": 2 }
+      { "type": "fill_purses", "amount": 2 }
     ],
     "lock_effect": null
   },

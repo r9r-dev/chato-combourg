@@ -52,6 +52,108 @@ export function CoinIcon({ className = 'w-4 h-4' }: IconProps) {
   );
 }
 
+interface CoinStackProps {
+  count: number;
+  seed?: number; // Pour la variance visuelle
+  className?: string;
+}
+
+// Positions de base pour les pièces de 1 (relatives au centre)
+// Index = nombre de pièces de 1 - 1
+const ONES_POSITIONS: Array<Array<{ x: number; y: number }>> = [
+  // 1 pièce : centre
+  [{ x: 0, y: 0 }],
+  // 2 pièces : diagonale
+  [{ x: -8, y: 6 }, { x: 8, y: -6 }],
+  // 3 pièces : triangle
+  [{ x: 0, y: -8 }, { x: -9, y: 6 }, { x: 9, y: 6 }],
+  // 4 pièces : carré écarté
+  [{ x: -10, y: -8 }, { x: 10, y: -8 }, { x: -10, y: 8 }, { x: 10, y: 8 }],
+];
+
+// Décalage des pièces de 1 quand il y a une pièce de 5 en dessous
+const ONES_OFFSET_WITH_FIVE = { x: 2, y: -2 };
+
+/**
+ * Pile de pieces avec denominations de 5 (or) et 1 (bronze).
+ * Empilement organique avec variance visuelle.
+ */
+export function CoinStack({ count, seed = 0, className = '' }: CoinStackProps) {
+  if (count <= 0) return null;
+
+  const hasFive = count >= 5;
+  const ones = count % 5;
+
+  // Générateur pseudo-aléatoire simple basé sur le seed
+  const variance = (index: number, axis: 'x' | 'y') => {
+    const hash = Math.sin(seed * 9999 + index * 7 + (axis === 'x' ? 0 : 100)) * 10000;
+    return (hash - Math.floor(hash)) * 12 - 6; // Variance de -6 à +6 pixels
+  };
+
+  // Variance de rotation
+  const rotationVariance = (index: number) => {
+    const hash = Math.sin(seed * 1234 + index * 13) * 10000;
+    return (hash - Math.floor(hash)) * 30 - 15; // Rotation de -15 à +15 degrés
+  };
+
+  // Calculer les positions des pièces de 1
+  const onesPositions = ones > 0 ? ONES_POSITIONS[ones - 1] : [];
+
+  return (
+    <div className={`relative w-16 h-16 ${className}`}>
+      {/* Pièce de 5 (argent) en fond */}
+      {hasFive && (
+        <div
+          className="absolute flex items-center justify-center rounded-full font-extrabold border-2
+            w-12 h-12 border-slate-400"
+          style={{
+            left: '50%',
+            top: '50%',
+            transform: `translate(-50%, -50%) translate(${variance(0, 'x')}px, ${variance(0, 'y')}px) rotate(${rotationVariance(0)}deg)`,
+            zIndex: 1,
+            background: 'linear-gradient(145deg, #e8e8e8 0%, #c0c0c0 30%, #a8a8a8 50%, #c0c0c0 70%, #d8d8d8 100%)',
+            boxShadow: 'inset 2px 2px 4px rgba(255,255,255,0.6), inset -2px -2px 4px rgba(0,0,0,0.2), 2px 2px 6px rgba(0,0,0,0.3)',
+            fontSize: '2.25rem',
+            color: '#374151',
+            textShadow: '1px 1px 0 rgba(255,255,255,0.5), -1px -1px 0 rgba(0,0,0,0.2)',
+          }}
+        >
+          5
+        </div>
+      )}
+      {/* Pièces de 1 (or) empilées */}
+      {onesPositions.map((pos, i) => {
+        const baseX = hasFive ? pos.x * 0.7 + ONES_OFFSET_WITH_FIVE.x : pos.x;
+        const baseY = hasFive ? pos.y * 0.7 + ONES_OFFSET_WITH_FIVE.y : pos.y;
+        const vx = variance(i + 1, 'x');
+        const vy = variance(i + 1, 'y');
+        const rot = rotationVariance(i + 1);
+
+        return (
+          <div
+            key={i}
+            className="absolute flex items-center justify-center rounded-full font-extrabold border-2
+              w-8 h-8 border-yellow-600"
+            style={{
+              left: '50%',
+              top: '50%',
+              transform: `translate(-50%, -50%) translate(${baseX + vx}px, ${baseY + vy}px) rotate(${rot}deg)`,
+              zIndex: 2 + i,
+              background: 'linear-gradient(145deg, #ffd700 0%, #daa520 30%, #b8860b 50%, #daa520 70%, #ffd700 100%)',
+              boxShadow: 'inset 2px 2px 4px rgba(255,255,255,0.5), inset -2px -2px 4px rgba(0,0,0,0.2), 2px 2px 6px rgba(0,0,0,0.3)',
+              fontSize: '0.95rem',
+              color: '#78350f',
+              textShadow: '1px 1px 0 rgba(255,255,255,0.4), -1px -1px 0 rgba(0,0,0,0.15)',
+            }}
+          >
+            1
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 /** Icone cle */
 export function KeyIcon({ className = 'w-4 h-4' }: IconProps) {
   return (
