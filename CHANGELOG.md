@@ -1,5 +1,10 @@
 # Changelog
 
+## v3.1.3 (2026-01-02)
+
+- Affichage des pièces sur les cartes porte-monnaie avec empilement organique
+- Implémentation de l'effet de verrou activation_adjacent
+
 ## v3.1.2 (2026-01-02)
 
 - Changement des libellés
