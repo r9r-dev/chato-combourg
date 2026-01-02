@@ -1,5 +1,10 @@
 # Changelog
 
+## v3.2.2 (2026-01-02)
+
+- Ajout de la page GameDate pour afficher et gérer la date de partie
+- Support de la date de partie en mode legacy
+
 ## v3.2.1 (2026-01-02)
 
 Corrections et améliorations mineures.
