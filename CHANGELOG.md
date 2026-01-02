@@ -1,5 +1,10 @@
 # Changelog
 
+## v3.1.2 (2026-01-02)
+
+- Changement des libellés
+- Amélioration des boutons d'achat avec des icônes
+
 ## v3.1.1 (2026-01-02)
 
 - Correction d'avertissement React : ajout de clés uniques pour les éléments de liste
