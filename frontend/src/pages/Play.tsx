@@ -532,8 +532,10 @@ export function Play() {
 
       {/* Footer: Actions + Status */}
       <footer className="border-t border-white/10 bg-dark-lighter">
-        {/* Boutons d'action */}
+        {/* Boutons d'action (visible seulement s'il y a des boutons) */}
         {!isCurrentPlayerAI() && (
+          (gameState.turnPhase === 'pre_action' && currentPlayer.keys > 0 && !gameState.keyUsedThisTurn) || canEndTurn
+        ) && (
           <div className="p-3 flex gap-2">
             {/* Bouton cle */}
             {gameState.turnPhase === 'pre_action' && currentPlayer.keys > 0 && !gameState.keyUsedThisTurn && (
@@ -561,13 +563,6 @@ export function Play() {
               >
                 Terminer le tour
               </button>
-            )}
-
-            {/* Indicateur si achat en cours */}
-            {isPlacePhase && (
-              <div className="flex-1 py-3 px-4 rounded-xl bg-gold/20 text-gold text-center font-medium">
-                Placez la carte achetee
-              </div>
             )}
           </div>
         )}
