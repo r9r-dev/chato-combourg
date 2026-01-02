@@ -89,7 +89,14 @@ Single-pass detection and identification using YOLO11 with 92 classes (one per c
 - `value` - Card cost (0-8)
 - `shields` - Array of {count, color}
 - `category` - "village" | "castle" | null
+- `has_messenger` - Boolean (moves messenger on purchase)
 - `has_price_reduction`, `has_lock`, `has_coin_purse`, `max_coins`
+
+#### Card Effects (backend/cards/card_effects.json)
+Card effects for Play mode (triggered when placing a card):
+- `has_messenger` - Boolean
+- `effects` - Array of effect objects (gain_gold, gain_keys, reduction, etc.)
+- `lock_effect` - Effect triggered when using a key on the card's lock
 
 #### Card Images
 - **PNG originals** (`backend/cards/`) - 630x880px, used for YOLO training

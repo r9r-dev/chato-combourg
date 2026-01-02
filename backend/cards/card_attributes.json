@@ -2,16 +2,11 @@
   "001": {
     "value": 6,
     "shields": [
-      {
-        "count": 1,
-        "color": "blue"
-      },
-      {
-        "count": 1,
-        "color": "pink"
-      }
+      { "count": 1, "color": "blue" },
+      { "count": 1, "color": "pink" }
     ],
     "category": "castle",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -20,12 +15,10 @@
   "002": {
     "value": 0,
     "shields": [
-      {
-        "count": 1,
-        "color": "orange"
-      }
+      { "count": 1, "color": "orange" }
     ],
     "category": "castle",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": true,
     "has_coin_purse": false,
@@ -34,12 +27,10 @@
   "003": {
     "value": 5,
     "shields": [
-      {
-        "count": 2,
-        "color": "blue"
-      }
+      { "count": 2, "color": "blue" }
     ],
     "category": "castle",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -48,12 +39,10 @@
   "004": {
     "value": 1,
     "shields": [
-      {
-        "count": 1,
-        "color": "pink"
-      }
+      { "count": 1, "color": "pink" }
     ],
     "category": "castle",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": true,
     "has_coin_purse": false,
@@ -62,12 +51,10 @@
   "005": {
     "value": 6,
     "shields": [
-      {
-        "count": 1,
-        "color": "pink"
-      }
+      { "count": 1, "color": "pink" }
     ],
     "category": "castle",
+    "has_messenger": true,
     "has_price_reduction": true,
     "has_lock": false,
     "has_coin_purse": false,
@@ -76,12 +63,10 @@
   "006": {
     "value": 5,
     "shields": [
-      {
-        "count": 1,
-        "color": "pink"
-      }
+      { "count": 1, "color": "pink" }
     ],
     "category": "castle",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -90,12 +75,10 @@
   "007": {
     "value": 5,
     "shields": [
-      {
-        "count": 2,
-        "color": "orange"
-      }
+      { "count": 2, "color": "orange" }
     ],
     "category": "castle",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -104,12 +87,10 @@
   "008": {
     "value": 5,
     "shields": [
-      {
-        "count": 1,
-        "color": "orange"
-      }
+      { "count": 1, "color": "orange" }
     ],
     "category": "castle",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -118,16 +99,11 @@
   "009": {
     "value": 4,
     "shields": [
-      {
-        "count": 1,
-        "color": "blue"
-      },
-      {
-        "count": 1,
-        "color": "red"
-      }
+      { "count": 1, "color": "blue" },
+      { "count": 1, "color": "red" }
     ],
     "category": "castle",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -136,20 +112,12 @@
   "010": {
     "value": 8,
     "shields": [
-      {
-        "count": 1,
-        "color": "blue"
-      },
-      {
-        "count": 1,
-        "color": "pink"
-      },
-      {
-        "count": 1,
-        "color": "green"
-      }
+      { "count": 1, "color": "blue" },
+      { "count": 1, "color": "pink" },
+      { "count": 1, "color": "green" }
     ],
     "category": "castle",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": true,
     "has_coin_purse": false,
@@ -158,12 +126,10 @@
   "011": {
     "value": 4,
     "shields": [
-      {
-        "count": 1,
-        "color": "green"
-      }
+      { "count": 1, "color": "green" }
     ],
     "category": "castle",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -172,16 +138,11 @@
   "012": {
     "value": 2,
     "shields": [
-      {
-        "count": 1,
-        "color": "blue"
-      },
-      {
-        "count": 1,
-        "color": "orange"
-      }
+      { "count": 1, "color": "blue" },
+      { "count": 1, "color": "orange" }
     ],
     "category": "castle",
+    "has_messenger": false,
     "has_price_reduction": true,
     "has_lock": false,
     "has_coin_purse": false,
@@ -190,12 +151,10 @@
   "013": {
     "value": 6,
     "shields": [
-      {
-        "count": 1,
-        "color": "blue"
-      }
+      { "count": 1, "color": "blue" }
     ],
     "category": "castle",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -204,12 +163,10 @@
   "014": {
     "value": 0,
     "shields": [
-      {
-        "count": 1,
-        "color": "blue"
-      }
+      { "count": 1, "color": "blue" }
     ],
     "category": "castle",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": true,
@@ -218,12 +175,10 @@
   "015": {
     "value": 3,
     "shields": [
-      {
-        "count": 1,
-        "color": "green"
-      }
+      { "count": 1, "color": "green" }
     ],
     "category": "castle",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": true,
     "has_coin_purse": false,
@@ -232,12 +187,10 @@
   "016": {
     "value": 4,
     "shields": [
-      {
-        "count": 1,
-        "color": "green"
-      }
+      { "count": 1, "color": "green" }
     ],
     "category": "castle",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -246,16 +199,11 @@
   "017": {
     "value": 5,
     "shields": [
-      {
-        "count": 1,
-        "color": "pink"
-      },
-      {
-        "count": 1,
-        "color": "red"
-      }
+      { "count": 1, "color": "pink" },
+      { "count": 1, "color": "red" }
     ],
     "category": "castle",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -264,12 +212,10 @@
   "018": {
     "value": 7,
     "shields": [
-      {
-        "count": 1,
-        "color": "blue"
-      }
+      { "count": 1, "color": "blue" }
     ],
     "category": "castle",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -278,12 +224,10 @@
   "019": {
     "value": 3,
     "shields": [
-      {
-        "count": 1,
-        "color": "blue"
-      }
+      { "count": 1, "color": "blue" }
     ],
     "category": "castle",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -292,12 +236,10 @@
   "020": {
     "value": 7,
     "shields": [
-      {
-        "count": 1,
-        "color": "orange"
-      }
+      { "count": 1, "color": "orange" }
     ],
     "category": "castle",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -306,12 +248,10 @@
   "021": {
     "value": 5,
     "shields": [
-      {
-        "count": 2,
-        "color": "green"
-      }
+      { "count": 2, "color": "green" }
     ],
     "category": "castle",
+    "has_messenger": false,
     "has_price_reduction": true,
     "has_lock": false,
     "has_coin_purse": false,
@@ -320,12 +260,10 @@
   "022": {
     "value": 5,
     "shields": [
-      {
-        "count": 1,
-        "color": "red"
-      }
+      { "count": 1, "color": "red" }
     ],
     "category": "castle",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -334,12 +272,10 @@
   "023": {
     "value": 5,
     "shields": [
-      {
-        "count": 1,
-        "color": "red"
-      }
+      { "count": 1, "color": "red" }
     ],
     "category": "castle",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -348,12 +284,10 @@
   "024": {
     "value": 4,
     "shields": [
-      {
-        "count": 1,
-        "color": "green"
-      }
+      { "count": 1, "color": "green" }
     ],
     "category": "castle",
+    "has_messenger": true,
     "has_price_reduction": true,
     "has_lock": false,
     "has_coin_purse": false,
@@ -362,12 +296,10 @@
   "025": {
     "value": 3,
     "shields": [
-      {
-        "count": 2,
-        "color": "blue"
-      }
+      { "count": 2, "color": "blue" }
     ],
     "category": "castle",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": true,
@@ -376,12 +308,10 @@
   "026": {
     "value": 3,
     "shields": [
-      {
-        "count": 1,
-        "color": "blue"
-      }
+      { "count": 1, "color": "blue" }
     ],
     "category": "castle",
+    "has_messenger": false,
     "has_price_reduction": true,
     "has_lock": false,
     "has_coin_purse": false,
@@ -390,12 +320,10 @@
   "027": {
     "value": 7,
     "shields": [
-      {
-        "count": 1,
-        "color": "red"
-      }
+      { "count": 1, "color": "red" }
     ],
     "category": "castle",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -404,12 +332,10 @@
   "028": {
     "value": 3,
     "shields": [
-      {
-        "count": 1,
-        "color": "blue"
-      }
+      { "count": 1, "color": "blue" }
     ],
     "category": "castle",
+    "has_messenger": true,
     "has_price_reduction": true,
     "has_lock": false,
     "has_coin_purse": false,
@@ -418,12 +344,10 @@
   "029": {
     "value": 6,
     "shields": [
-      {
-        "count": 1,
-        "color": "red"
-      }
+      { "count": 1, "color": "red" }
     ],
     "category": "castle",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -432,16 +356,11 @@
   "030": {
     "value": 4,
     "shields": [
-      {
-        "count": 1,
-        "color": "green"
-      },
-      {
-        "count": 1,
-        "color": "orange"
-      }
+      { "count": 1, "color": "green" },
+      { "count": 1, "color": "orange" }
     ],
     "category": "castle",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -450,12 +369,10 @@
   "031": {
     "value": 5,
     "shields": [
-      {
-        "count": 2,
-        "color": "red"
-      }
+      { "count": 2, "color": "red" }
     ],
     "category": "castle",
+    "has_messenger": true,
     "has_price_reduction": true,
     "has_lock": false,
     "has_coin_purse": false,
@@ -464,12 +381,10 @@
   "032": {
     "value": 6,
     "shields": [
-      {
-        "count": 1,
-        "color": "green"
-      }
+      { "count": 1, "color": "green" }
     ],
     "category": "castle",
+    "has_messenger": false,
     "has_price_reduction": true,
     "has_lock": false,
     "has_coin_purse": false,
@@ -478,12 +393,10 @@
   "033": {
     "value": 3,
     "shields": [
-      {
-        "count": 1,
-        "color": "green"
-      }
+      { "count": 1, "color": "green" }
     ],
     "category": "castle",
+    "has_messenger": true,
     "has_price_reduction": true,
     "has_lock": false,
     "has_coin_purse": false,
@@ -492,12 +405,10 @@
   "034": {
     "value": 7,
     "shields": [
-      {
-        "count": 1,
-        "color": "blue"
-      }
+      { "count": 1, "color": "blue" }
     ],
     "category": "castle",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": true,
     "has_coin_purse": false,
@@ -506,12 +417,10 @@
   "035": {
     "value": 0,
     "shields": [
-      {
-        "count": 1,
-        "color": "red"
-      }
+      { "count": 1, "color": "red" }
     ],
     "category": "castle",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": true,
     "has_coin_purse": false,
@@ -520,16 +429,11 @@
   "036": {
     "value": 3,
     "shields": [
-      {
-        "count": 1,
-        "color": "pink"
-      },
-      {
-        "count": 1,
-        "color": "green"
-      }
+      { "count": 1, "color": "pink" },
+      { "count": 1, "color": "green" }
     ],
     "category": "castle",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": true,
@@ -538,12 +442,10 @@
   "037": {
     "value": 3,
     "shields": [
-      {
-        "count": 1,
-        "color": "pink"
-      }
+      { "count": 1, "color": "pink" }
     ],
     "category": "castle",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -552,12 +454,10 @@
   "038": {
     "value": 7,
     "shields": [
-      {
-        "count": 1,
-        "color": "pink"
-      }
+      { "count": 1, "color": "pink" }
     ],
     "category": "castle",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -566,12 +466,10 @@
   "039": {
     "value": 7,
     "shields": [
-      {
-        "count": 1,
-        "color": "green"
-      }
+      { "count": 1, "color": "green" }
     ],
     "category": "castle",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -580,12 +478,10 @@
   "040": {
     "value": 4,
     "shields": [
-      {
-        "count": 1,
-        "color": "orange"
-      }
+      { "count": 1, "color": "orange" }
     ],
     "category": "castle",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -594,12 +490,10 @@
   "041": {
     "value": 2,
     "shields": [
-      {
-        "count": 2,
-        "color": "red"
-      }
+      { "count": 2, "color": "red" }
     ],
     "category": "village",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": true,
@@ -608,12 +502,10 @@
   "042": {
     "value": 4,
     "shields": [
-      {
-        "count": 1,
-        "color": "pink"
-      }
+      { "count": 1, "color": "pink" }
     ],
     "category": "castle",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -622,12 +514,10 @@
   "043": {
     "value": 2,
     "shields": [
-      {
-        "count": 1,
-        "color": "red"
-      }
+      { "count": 1, "color": "red" }
     ],
     "category": "village",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -636,12 +526,10 @@
   "044": {
     "value": 4,
     "shields": [
-      {
-        "count": 1,
-        "color": "pink"
-      }
+      { "count": 1, "color": "pink" }
     ],
     "category": "castle",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -650,12 +538,10 @@
   "045": {
     "value": 2,
     "shields": [
-      {
-        "count": 1,
-        "color": "red"
-      }
+      { "count": 1, "color": "red" }
     ],
     "category": "village",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -664,16 +550,11 @@
   "046": {
     "value": 6,
     "shields": [
-      {
-        "count": 1,
-        "color": "blue"
-      },
-      {
-        "count": 1,
-        "color": "green"
-      }
+      { "count": 1, "color": "blue" },
+      { "count": 1, "color": "green" }
     ],
     "category": "castle",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -682,12 +563,10 @@
   "047": {
     "value": 5,
     "shields": [
-      {
-        "count": 2,
-        "color": "pink"
-      }
+      { "count": 2, "color": "pink" }
     ],
     "category": "castle",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -696,12 +575,10 @@
   "048": {
     "value": 4,
     "shields": [
-      {
-        "count": 1,
-        "color": "pink"
-      }
+      { "count": 1, "color": "pink" }
     ],
     "category": "castle",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -710,12 +587,10 @@
   "049": {
     "value": 0,
     "shields": [
-      {
-        "count": 1,
-        "color": "yellow"
-      }
+      { "count": 1, "color": "yellow" }
     ],
     "category": "village",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -724,12 +599,10 @@
   "050": {
     "value": 2,
     "shields": [
-      {
-        "count": 2,
-        "color": "pink"
-      }
+      { "count": 2, "color": "pink" }
     ],
     "category": "village",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": true,
@@ -738,12 +611,10 @@
   "051": {
     "value": 0,
     "shields": [
-      {
-        "count": 1,
-        "color": "pink"
-      }
+      { "count": 1, "color": "pink" }
     ],
     "category": "village",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": true,
@@ -752,16 +623,11 @@
   "052": {
     "value": 4,
     "shields": [
-      {
-        "count": 1,
-        "color": "green"
-      },
-      {
-        "count": 1,
-        "color": "red"
-      }
+      { "count": 1, "color": "green" },
+      { "count": 1, "color": "red" }
     ],
     "category": "village",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -770,12 +636,10 @@
   "053": {
     "value": 2,
     "shields": [
-      {
-        "count": 1,
-        "color": "yellow"
-      }
+      { "count": 1, "color": "yellow" }
     ],
     "category": "village",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": true,
@@ -784,16 +648,11 @@
   "054": {
     "value": 6,
     "shields": [
-      {
-        "count": 1,
-        "color": "red"
-      },
-      {
-        "count": 1,
-        "color": "yellow"
-      }
+      { "count": 1, "color": "red" },
+      { "count": 1, "color": "yellow" }
     ],
     "category": "village",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -802,16 +661,11 @@
   "055": {
     "value": 4,
     "shields": [
-      {
-        "count": 1,
-        "color": "blue"
-      },
-      {
-        "count": 1,
-        "color": "yellow"
-      }
+      { "count": 1, "color": "blue" },
+      { "count": 1, "color": "yellow" }
     ],
     "category": "village",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -820,20 +674,12 @@
   "056": {
     "value": 5,
     "shields": [
-      {
-        "count": 1,
-        "color": "red"
-      },
-      {
-        "count": 1,
-        "color": "orange"
-      },
-      {
-        "count": 1,
-        "color": "yellow"
-      }
+      { "count": 1, "color": "red" },
+      { "count": 1, "color": "orange" },
+      { "count": 1, "color": "yellow" }
     ],
     "category": "village",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": true,
     "has_coin_purse": false,
@@ -842,16 +688,11 @@
   "057": {
     "value": 5,
     "shields": [
-      {
-        "count": 1,
-        "color": "red"
-      },
-      {
-        "count": 1,
-        "color": "orange"
-      }
+      { "count": 1, "color": "red" },
+      { "count": 1, "color": "orange" }
     ],
     "category": "village",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -860,12 +701,10 @@
   "058": {
     "value": 0,
     "shields": [
-      {
-        "count": 1,
-        "color": "orange"
-      }
+      { "count": 1, "color": "orange" }
     ],
     "category": "village",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": true,
@@ -874,12 +713,10 @@
   "059": {
     "value": 2,
     "shields": [
-      {
-        "count": 2,
-        "color": "orange"
-      }
+      { "count": 2, "color": "orange" }
     ],
     "category": "village",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": true,
@@ -888,12 +725,10 @@
   "060": {
     "value": 3,
     "shields": [
-      {
-        "count": 1,
-        "color": "orange"
-      }
+      { "count": 1, "color": "orange" }
     ],
     "category": "village",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -902,16 +737,11 @@
   "061": {
     "value": 3,
     "shields": [
-      {
-        "count": 1,
-        "color": "pink"
-      },
-      {
-        "count": 1,
-        "color": "orange"
-      }
+      { "count": 1, "color": "pink" },
+      { "count": 1, "color": "orange" }
     ],
     "category": "village",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": true,
@@ -920,12 +750,10 @@
   "062": {
     "value": 0,
     "shields": [
-      {
-        "count": 1,
-        "color": "yellow"
-      }
+      { "count": 1, "color": "yellow" }
     ],
     "category": "village",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -934,12 +762,10 @@
   "063": {
     "value": 5,
     "shields": [
-      {
-        "count": 2,
-        "color": "yellow"
-      }
+      { "count": 2, "color": "yellow" }
     ],
     "category": "village",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -948,12 +774,10 @@
   "064": {
     "value": 4,
     "shields": [
-      {
-        "count": 1,
-        "color": "yellow"
-      }
+      { "count": 1, "color": "yellow" }
     ],
     "category": "village",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -962,12 +786,10 @@
   "065": {
     "value": 3,
     "shields": [
-      {
-        "count": 1,
-        "color": "orange"
-      }
+      { "count": 1, "color": "orange" }
     ],
     "category": "village",
+    "has_messenger": false,
     "has_price_reduction": true,
     "has_lock": false,
     "has_coin_purse": false,
@@ -976,16 +798,11 @@
   "066": {
     "value": 4,
     "shields": [
-      {
-        "count": 1,
-        "color": "orange"
-      },
-      {
-        "count": 1,
-        "color": "yellow"
-      }
+      { "count": 1, "color": "orange" },
+      { "count": 1, "color": "yellow" }
     ],
     "category": "village",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -994,12 +811,10 @@
   "067": {
     "value": 5,
     "shields": [
-      {
-        "count": 1,
-        "color": "yellow"
-      }
+      { "count": 1, "color": "yellow" }
     ],
     "category": "village",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -1008,12 +823,10 @@
   "068": {
     "value": 5,
     "shields": [
-      {
-        "count": 1,
-        "color": "green"
-      }
+      { "count": 1, "color": "green" }
     ],
     "category": "village",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -1022,12 +835,10 @@
   "069": {
     "value": 7,
     "shields": [
-      {
-        "count": 1,
-        "color": "yellow"
-      }
+      { "count": 1, "color": "yellow" }
     ],
     "category": "village",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -1036,12 +847,10 @@
   "070": {
     "value": 4,
     "shields": [
-      {
-        "count": 1,
-        "color": "yellow"
-      }
+      { "count": 1, "color": "yellow" }
     ],
     "category": "village",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": true,
     "has_coin_purse": false,
@@ -1050,12 +859,10 @@
   "071": {
     "value": 0,
     "shields": [
-      {
-        "count": 1,
-        "color": "orange"
-      }
+      { "count": 1, "color": "orange" }
     ],
     "category": "village",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -1064,12 +871,10 @@
   "072": {
     "value": 2,
     "shields": [
-      {
-        "count": 1,
-        "color": "red"
-      }
+      { "count": 1, "color": "red" }
     ],
     "category": "village",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -1078,12 +883,10 @@
   "073": {
     "value": 3,
     "shields": [
-      {
-        "count": 1,
-        "color": "orange"
-      }
+      { "count": 1, "color": "orange" }
     ],
     "category": "village",
+    "has_messenger": true,
     "has_price_reduction": true,
     "has_lock": false,
     "has_coin_purse": false,
@@ -1092,12 +895,10 @@
   "074": {
     "value": 5,
     "shields": [
-      {
-        "count": 1,
-        "color": "yellow"
-      }
+      { "count": 1, "color": "yellow" }
     ],
     "category": "village",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -1106,12 +907,10 @@
   "075": {
     "value": 4,
     "shields": [
-      {
-        "count": 1,
-        "color": "green"
-      }
+      { "count": 1, "color": "green" }
     ],
     "category": "village",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": true,
     "has_coin_purse": false,
@@ -1120,16 +919,11 @@
   "076": {
     "value": 2,
     "shields": [
-      {
-        "count": 1,
-        "color": "green"
-      },
-      {
-        "count": 1,
-        "color": "yellow"
-      }
+      { "count": 1, "color": "green" },
+      { "count": 1, "color": "yellow" }
     ],
     "category": "village",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -1138,12 +932,10 @@
   "077": {
     "value": 7,
     "shields": [
-      {
-        "count": 1,
-        "color": "orange"
-      }
+      { "count": 1, "color": "orange" }
     ],
     "category": "village",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": true,
     "has_coin_purse": false,
@@ -1152,12 +944,10 @@
   "078": {
     "value": 2,
     "shields": [
-      {
-        "count": 2,
-        "color": "green"
-      }
+      { "count": 2, "color": "green" }
     ],
     "category": "village",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -1166,12 +956,10 @@
   "079": {
     "value": 3,
     "shields": [
-      {
-        "count": 1,
-        "color": "red"
-      }
+      { "count": 1, "color": "red" }
     ],
     "category": "village",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": true,
     "has_coin_purse": false,
@@ -1180,12 +968,10 @@
   "080": {
     "value": 0,
     "shields": [
-      {
-        "count": 1,
-        "color": "red"
-      }
+      { "count": 1, "color": "red" }
     ],
     "category": "village",
+    "has_messenger": false,
     "has_price_reduction": true,
     "has_lock": false,
     "has_coin_purse": false,
@@ -1194,12 +980,10 @@
   "081": {
     "value": 0,
     "shields": [
-      {
-        "count": 1,
-        "color": "yellow"
-      }
+      { "count": 1, "color": "yellow" }
     ],
     "category": "village",
+    "has_messenger": true,
     "has_price_reduction": true,
     "has_lock": false,
     "has_coin_purse": true,
@@ -1208,12 +992,10 @@
   "082": {
     "value": 0,
     "shields": [
-      {
-        "count": 1,
-        "color": "orange"
-      }
+      { "count": 1, "color": "orange" }
     ],
     "category": "village",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -1222,12 +1004,10 @@
   "083": {
     "value": 2,
     "shields": [
-      {
-        "count": 1,
-        "color": "green"
-      }
+      { "count": 1, "color": "green" }
     ],
     "category": "village",
+    "has_messenger": false,
     "has_price_reduction": true,
     "has_lock": false,
     "has_coin_purse": false,
@@ -1236,12 +1016,10 @@
   "084": {
     "value": 0,
     "shields": [
-      {
-        "count": 1,
-        "color": "red"
-      }
+      { "count": 1, "color": "red" }
     ],
     "category": "village",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -1250,12 +1028,10 @@
   "085": {
     "value": 0,
     "shields": [
-      {
-        "count": 1,
-        "color": "yellow"
-      }
+      { "count": 1, "color": "yellow" }
     ],
     "category": "village",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -1264,12 +1040,10 @@
   "086": {
     "value": 0,
     "shields": [
-      {
-        "count": 1,
-        "color": "yellow"
-      }
+      { "count": 1, "color": "yellow" }
     ],
     "category": "village",
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -1278,12 +1052,10 @@
   "087": {
     "value": 2,
     "shields": [
-      {
-        "count": 2,
-        "color": "yellow"
-      }
+      { "count": 2, "color": "yellow" }
     ],
     "category": "village",
+    "has_messenger": false,
     "has_price_reduction": true,
     "has_lock": false,
     "has_coin_purse": false,
@@ -1292,12 +1064,10 @@
   "088": {
     "value": 1,
     "shields": [
-      {
-        "count": 2,
-        "color": "yellow"
-      }
+      { "count": 2, "color": "yellow" }
     ],
     "category": "village",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": true,
     "has_coin_purse": false,
@@ -1307,6 +1077,7 @@
     "value": 0,
     "shields": [],
     "category": null,
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -1316,6 +1087,7 @@
     "value": 0,
     "shields": [],
     "category": null,
+    "has_messenger": false,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -1324,12 +1096,10 @@
   "091": {
     "value": 4,
     "shields": [
-      {
-        "count": 1,
-        "color": "yellow"
-      }
+      { "count": 1, "color": "yellow" }
     ],
     "category": "village",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,
@@ -1338,16 +1108,11 @@
   "092": {
     "value": 4,
     "shields": [
-      {
-        "count": 1,
-        "color": "pink"
-      },
-      {
-        "count": 1,
-        "color": "yellow"
-      }
+      { "count": 1, "color": "pink" },
+      { "count": 1, "color": "yellow" }
     ],
     "category": "village",
+    "has_messenger": true,
     "has_price_reduction": false,
     "has_lock": false,
     "has_coin_purse": false,

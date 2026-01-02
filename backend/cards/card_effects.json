@@ -1,0 +1,705 @@
+{
+  "001": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "all_opponents_gain_gold", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "002": {
+    "has_messenger": false,
+    "effects": [],
+    "lock_effect": {
+      "type": "replace_location_gain_keys_per_feature",
+      "feature": "price_reduction",
+      "keys_per_card": 3
+    }
+  },
+  "003": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "gain_keys", "amount": 2 }
+    ],
+    "lock_effect": null
+  },
+  "004": {
+    "has_messenger": true,
+    "effects": [],
+    "lock_effect": {
+      "type": "gain_gold_per_shield",
+      "color": "red",
+      "amount": 2
+    }
+  },
+  "005": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "reduction_village" }
+    ],
+    "lock_effect": null
+  },
+  "006": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "gain_gold_per_card_with_shields", "shield_count": 1, "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "007": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "discard_village_gain_keys" }
+    ],
+    "lock_effect": null
+  },
+  "008": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "gain_gold_per_shield", "color": "pink", "amount": 1 },
+      { "type": "gain_gold_per_shield", "color": "orange", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "009": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "all_players_gain_keys", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "010": {
+    "has_messenger": true,
+    "effects": [],
+    "lock_effect": {
+      "type": "replace_location_gain_keys_per_shield",
+      "color": "orange",
+      "keys_per_card": 2
+    }
+  },
+  "011": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "gain_gold_per_unique_shield", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "012": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "reduction_castle" }
+    ],
+    "lock_effect": null
+  },
+  "013": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "gain_gold_per_shield", "color": "blue", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "014": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "fill_purses", "amount": 2 }
+    ],
+    "lock_effect": null
+  },
+  "015": {
+    "has_messenger": false,
+    "effects": [],
+    "lock_effect": {
+      "type": "gain_gold_per_castle",
+      "amount": 1
+    }
+  },
+  "016": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "gain_keys", "amount": 2 }
+    ],
+    "lock_effect": null
+  },
+  "017": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "gain_gold_per_shield_neighbor", "color": "pink", "amount": 1 },
+      { "type": "gain_keys_per_shield", "color": "red", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "018": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "gain_keys_per_shield", "color": "blue", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "019": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "gain_gold_per_shield", "color": "blue", "amount": 2 }
+    ],
+    "lock_effect": null
+  },
+  "020": {
+    "has_messenger": true,
+    "effects": [
+      {
+        "type": "choice",
+        "options": [
+          { "type": "fill_purses", "amount": 2 },
+          { "type": "gain_keys", "amount": 3 }
+        ]
+      }
+    ],
+    "lock_effect": null
+  },
+  "021": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "reduction_castle" }
+    ],
+    "lock_effect": null
+  },
+  "022": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "gain_gold_per_shield", "color": "blue", "amount": 1 },
+      { "type": "gain_gold_per_shield", "color": "red", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "023": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "gain_gold_per_castle", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "024": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "reduction_village" }
+    ],
+    "lock_effect": null
+  },
+  "025": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "fill_purses", "amount": 2 }
+    ],
+    "lock_effect": null
+  },
+  "026": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "reduction_both" }
+    ],
+    "lock_effect": null
+  },
+  "027": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "gain_keys_per_unique_shield", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "028": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "reduction_castle" }
+    ],
+    "lock_effect": null
+  },
+  "029": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "gain_keys_per_shield", "color": "red", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "030": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "gain_keys_per_card_with_shields", "shield_count": 2, "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "031": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "reduction_village" }
+    ],
+    "lock_effect": null
+  },
+  "032": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "reduction_both" }
+    ],
+    "lock_effect": null
+  },
+  "033": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "reduction_castle" }
+    ],
+    "lock_effect": null
+  },
+  "034": {
+    "has_messenger": true,
+    "effects": [],
+    "lock_effect": {
+      "type": "replace_location"
+    }
+  },
+  "035": {
+    "has_messenger": false,
+    "effects": [],
+    "lock_effect": {
+      "type": "gain_gold_per_shield",
+      "color": "pink",
+      "amount": 2
+    }
+  },
+  "036": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "discard_village_gain_gold" }
+    ],
+    "lock_effect": null
+  },
+  "037": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "gain_gold_per_castle", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "038": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "gain_keys", "amount": 3 },
+      { "type": "all_opponents_gain_keys", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "039": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "all_opponents_gain_gold", "amount": 2 }
+    ],
+    "lock_effect": null
+  },
+  "040": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "gain_gold_per_card_with_value", "value": 4, "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "041": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "gain_gold_per_shield", "color": "red", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "042": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "gain_gold_per_shield", "color": "pink", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "043": {
+    "has_messenger": true,
+    "effects": [
+      {
+        "type": "choice",
+        "options": [
+          { "type": "gain_gold_per_shield_neighbor", "color": "yellow", "amount": 1 },
+          { "type": "gain_keys", "amount": 2 }
+        ]
+      }
+    ],
+    "lock_effect": null
+  },
+  "044": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "gain_gold_per_empty_slot", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "045": {
+    "has_messenger": false,
+    "effects": [
+      {
+        "type": "choice",
+        "options": [
+          { "type": "gain_gold_per_shield_neighbor", "color": "orange", "amount": 1 },
+          { "type": "gain_keys", "amount": 2 }
+        ]
+      }
+    ],
+    "lock_effect": null
+  },
+  "046": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "gain_keys_per_shield", "color": "green", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "047": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "gain_keys", "amount": 4 }
+    ],
+    "lock_effect": null
+  },
+  "048": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "gain_keys_per_castle", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "049": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "gain_gold_per_card", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "050": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "gain_keys_per_card_with_purse", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "051": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "gain_gold_per_village", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "052": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "gain_gold_per_shield", "color": "green", "amount": 1 },
+      { "type": "gain_keys_per_shield_neighbor", "color": "red", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "053": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "gain_gold_per_card_with_purse", "amount": 2 }
+    ],
+    "lock_effect": null
+  },
+  "054": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "gain_gold_per_unique_shield", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "055": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "gain_keys_per_shield", "color": "blue", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "056": {
+    "has_messenger": true,
+    "effects": [],
+    "lock_effect": {
+      "type": "replace_location_gain_keys_per_shield",
+      "color": "green",
+      "keys_per_card": 2
+    }
+  },
+  "057": {
+    "has_messenger": false,
+    "effects": [
+      {
+        "type": "choice",
+        "options": [
+          { "type": "gain_gold_per_shield_neighbor", "color": "blue", "amount": 1 },
+          { "type": "gain_keys", "amount": 2 }
+        ]
+      }
+    ],
+    "lock_effect": null
+  },
+  "058": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "fill_purses", "amount": 2 },
+      { "type": "all_opponents_gain_gold", "amount": 2 }
+    ],
+    "lock_effect": null
+  },
+  "059": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "fill_purses", "amount": 2 }
+    ],
+    "lock_effect": null
+  },
+  "060": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "gain_gold_per_shield", "color": "orange", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "061": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "gain_keys_per_shield", "color": "pink", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "062": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "gain_gold_per_card", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "063": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "gain_keys_per_shield", "color": "yellow", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "064": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "gain_gold_per_shield", "color": "yellow", "amount": 1 },
+      { "type": "gain_keys_per_shield_neighbor", "color": "pink", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "065": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "reduction_both" }
+    ],
+    "lock_effect": null
+  },
+  "066": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "gain_keys_per_shield", "color": "orange", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "067": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "gain_gold_per_empty_slot", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "068": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "gain_gold_per_shield", "color": "green", "amount": 1 },
+      { "type": "gain_gold_per_shield", "color": "yellow", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "069": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "gain_keys_per_castle_neighbor", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "070": {
+    "has_messenger": false,
+    "effects": [],
+    "lock_effect": {
+      "type": "gain_gold_per_castle_neighbor",
+      "amount": 1
+    }
+  },
+  "071": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "gain_gold_per_shield", "color": "orange", "amount": 2 }
+    ],
+    "lock_effect": null
+  },
+  "072": {
+    "has_messenger": true,
+    "effects": [
+      {
+        "type": "choice",
+        "options": [
+          { "type": "gain_gold_per_shield_neighbor", "color": "green", "amount": 1 },
+          { "type": "gain_keys", "amount": 2 }
+        ]
+      }
+    ],
+    "lock_effect": null
+  },
+  "073": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "reduction_village" }
+    ],
+    "lock_effect": null
+  },
+  "074": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "gain_keys_per_card_with_shields", "shield_count": 1, "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "075": {
+    "has_messenger": false,
+    "effects": [],
+    "lock_effect": {
+      "type": "activate_adjacent"
+    }
+  },
+  "076": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "gain_gold_per_village", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "077": {
+    "has_messenger": true,
+    "effects": [],
+    "lock_effect": {
+      "type": "replace_location"
+    }
+  },
+  "078": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "gain_gold_per_shield", "color": "green", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "079": {
+    "has_messenger": false,
+    "effects": [],
+    "lock_effect": {
+      "type": "replace_location_gain_keys_per_feature",
+      "feature": "coin_purse",
+      "keys_per_card": 3
+    }
+  },
+  "080": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "reduction_both" }
+    ],
+    "lock_effect": null
+  },
+  "081": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "reduction_village" }
+    ],
+    "lock_effect": null
+  },
+  "082": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "gain_keys_per_missing_shield", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "083": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "reduction_castle" }
+    ],
+    "lock_effect": null
+  },
+  "084": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "discard_castle_gain_gold" }
+    ],
+    "lock_effect": null
+  },
+  "085": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "gain_gold_per_shield", "color": "yellow", "amount": 1 },
+      { "type": "gain_keys_per_village", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "086": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "gain_gold_per_card_with_value", "value": 0, "amount": 3 }
+    ],
+    "lock_effect": null
+  },
+  "087": {
+    "has_messenger": false,
+    "effects": [
+      { "type": "reduction_castle" }
+    ],
+    "lock_effect": null
+  },
+  "088": {
+    "has_messenger": true,
+    "effects": [],
+    "lock_effect": {
+      "type": "activate_adjacent"
+    }
+  },
+  "089": {
+    "has_messenger": false,
+    "is_flipped": true,
+    "flipped_from": "village",
+    "effects": [
+      { "type": "gain_gold", "amount": 6 },
+      { "type": "gain_keys", "amount": 2 }
+    ],
+    "lock_effect": null
+  },
+  "090": {
+    "has_messenger": false,
+    "is_flipped": true,
+    "flipped_from": "castle",
+    "effects": [
+      { "type": "gain_gold", "amount": 6 },
+      { "type": "gain_keys", "amount": 2 }
+    ],
+    "lock_effect": null
+  },
+  "091": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "gain_keys_per_village", "amount": 1 }
+    ],
+    "lock_effect": null
+  },
+  "092": {
+    "has_messenger": true,
+    "effects": [
+      { "type": "gain_keys_per_shield", "color": "pink", "amount": 1 }
+    ],
+    "lock_effect": null
+  }
+}
