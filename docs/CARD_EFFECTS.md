@@ -66,7 +66,7 @@ Gagnez une réduction permanente de 1 or au château.
 Gagnez 1 or par bouclier bleu sur votre tableau.
 
 # 014
-Déposez 2 or depuis la réserve sur chacune de vos cartes qui comportent une bourse sans dépasser le maximum.
+Déposez 2 or sur jusqu'à deux cartes avec une bourse jusqu'à les remplir.
 
 # 015
 [EFFET CADENAS] Gagnez 1 or par carte château sur votre tableau.
