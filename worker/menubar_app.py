@@ -11,6 +11,10 @@ import threading
 import time
 from pathlib import Path
 
+# Hide Dock icon - must be called before any GUI initialization
+from AppKit import NSApplication, NSApplicationActivationPolicyAccessory
+NSApplication.sharedApplication().setActivationPolicy_(NSApplicationActivationPolicyAccessory)
+
 import rumps
 
 # Worker configuration
