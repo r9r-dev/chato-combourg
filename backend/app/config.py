@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     )
 
     # App version
-    app_version: str = "3.1.4"
+    app_version: str = "3.2.0"
 
     # Paths
     base_dir: Path = Path(__file__).parent.parent
