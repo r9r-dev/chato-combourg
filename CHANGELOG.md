@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.2.0 (2026-01-02)
+
+- Ajout du logo du château de Combourg sur la page d'accueil
+
 ## v3.1.4 (2026-01-02)
 
 - Amélioration globale de l'expérience de jeu
