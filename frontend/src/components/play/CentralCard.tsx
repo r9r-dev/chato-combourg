@@ -3,6 +3,7 @@
  */
 
 import { useState } from 'react';
+import { BuyIcon, HiddenIcon, CoinIcon, KeyIcon } from '../Icons';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
@@ -57,19 +58,25 @@ export function CentralCard({
           <button
             onClick={() => { onBuy(); setShowMenu(false); }}
             disabled={!canAfford}
-            className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${
+            className={`px-3 py-1.5 rounded-lg text-sm font-semibold flex items-center gap-1.5 ${
               canAfford
                 ? 'bg-gold text-dark'
                 : 'bg-white/10 text-white/40 cursor-not-allowed'
             }`}
           >
-            Acheter ({cost})
+            <BuyIcon className="w-4 h-4" />
+            <span>-{cost}</span>
+            <CoinIcon className="w-4 h-4 drop-shadow-[0_0_2px_rgba(0,0,0,0.8)]" />
           </button>
           <button
             onClick={() => { onBuyFlipped(); setShowMenu(false); }}
-            className="px-3 py-1.5 rounded-lg text-sm bg-white/10 text-white hover:bg-white/20"
+            className="px-3 py-1.5 rounded-lg text-sm bg-white/10 text-white hover:bg-white/20 flex items-center gap-1.5"
           >
-            Face cachee (+6, +2)
+            <HiddenIcon className="w-4 h-4" />
+            <span className="text-gold">+6</span>
+            <CoinIcon className="w-4 h-4" />
+            <span className="text-blue-400">+2</span>
+            <KeyIcon className="w-4 h-4 text-blue-400" />
           </button>
           <button
             onClick={() => setShowMenu(false)}
