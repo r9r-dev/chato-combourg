@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.1.4 (2026-01-02)
+
+- Amélioration globale de l'expérience de jeu
+- Amélioration de l'icône de pièce et clé
+- Correction d'un effet de carte erroné
+
 ## v3.1.3 (2026-01-02)
 
 - Affichage des pièces sur les cartes porte-monnaie avec empilement organique
