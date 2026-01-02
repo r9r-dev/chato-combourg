@@ -2,10 +2,15 @@
  * Normal AI - IA Normale
  *
  * Comportement :
- * - Evalue les cartes selon des heuristiques
- * - Privilegie les cartes avec synergies (boucliers, categories)
- * - Utilise les cles de maniere basique
- * - Placement intelligent (optimise les lignes/colonnes)
+ * - Evalue son plateau et maintient une strategie coherente
+ * - Connait les synergies entre cartes et evite les contradictions
+ * - Utilise les cles de maniere reflechie (messager, refresh)
+ * - Place intelligemment selon les strategies actives
+ * - Gere ses ressources (or, cles) de maniere equilibree
+ *
+ * L'IA Normale connait les regles du jeu mais ne fait pas de calculs
+ * complexes a plusieurs tours. Elle joue de maniere coherente et
+ * evite les erreurs grossieres.
  */
 
 import type {
@@ -15,8 +20,6 @@ import type {
   AIKeyAction,
   AIEffectOption,
   PlayGameState,
-  PlayPlayer,
-  ShieldColor,
   DiscardChoice,
   ReplaceLocationChoice,
   AdjacentCardChoice,
@@ -25,13 +28,27 @@ import type {
 } from '../../../types/play';
 import {
   getCard,
-  canAffordCard,
   getCurrentPlayer,
 } from '../gameEngine';
+import type { StrategyAnalysis } from './normalAI/strategies';
+import { analyzePlayerStrategies } from './normalAI/strategies';
+import type { CardEvaluation } from './normalAI/evaluation';
+import {
+  evaluateCard,
+  evaluatePositions,
+  decideKeyAction,
+  chooseBestLock,
+  shouldConsiderFlippedPurchase,
+  evaluateGoldSituation,
+} from './normalAI/evaluation';
 
 export class NormalAI implements AIPlayer {
   level: AILevel = 'normal';
   name = 'IA Normale';
+
+  // Cache de l'analyse strategique (mis a jour a chaque tour)
+  private cachedAnalysis: StrategyAnalysis | null = null;
+  private cachedPlayerId: string | null = null;
 
   // ===========================================================================
   // Actions obligatoires
@@ -39,53 +56,71 @@ export class NormalAI implements AIPlayer {
 
   selectBuyAction(state: PlayGameState, availableCards: string[]): AIBuyDecision {
     const player = getCurrentPlayer(state);
+    this.updateAnalysisCache(player);
+    const analysis = this.cachedAnalysis!;
 
-    // Evaluer chaque carte
-    const cardScores: { cardId: string; score: number; canAfford: boolean }[] = [];
+    // Evaluer toutes les cartes
+    const evaluations: CardEvaluation[] = availableCards.map(cardId =>
+      evaluateCard(cardId, player, analysis)
+    );
 
-    for (const cardId of availableCards) {
-      const { canAfford, cost } = canAffordCard(player, cardId);
-      const score = this.evaluateCard(cardId, player, cost);
-      cardScores.push({ cardId, score, canAfford });
-    }
+    // Trier par score
+    evaluations.sort((a, b) => b.score - a.score);
 
-    // Filtrer les cartes abordables et trier par score
-    const affordableCards = cardScores
-      .filter(c => c.canAfford)
-      .sort((a, b) => b.score - a.score);
+    // Filtrer les cartes abordables
+    const affordableCards = evaluations.filter(e => e.canAfford && e.score > -100);
 
+    // Si aucune carte abordable interessante
     if (affordableCards.length === 0) {
-      // Prendre une carte face cachee - la moins chere
-      const cheapest = cardScores.sort((a, b) => {
-        const cardA = getCard(a.cardId);
-        const cardB = getCard(b.cardId);
+      // Considerer l'achat face cachee ?
+      if (shouldConsiderFlippedPurchase(player, analysis, evaluations)) {
+        // Prendre la carte la moins chere face cachee
+        const sortedByCost = [...availableCards].sort((a, b) => {
+          const cardA = getCard(a);
+          const cardB = getCard(b);
+          return (cardA?.value ?? 0) - (cardB?.value ?? 0);
+        });
+        return { cardId: sortedByCost[0], flipped: true };
+      }
+
+      // Sinon, prendre la meilleure carte meme si score negatif
+      // (sauf si score = -1000 qui indique un conflit fatal)
+      const bestNonFatal = evaluations.find(e => e.canAfford && e.score > -1000);
+      if (bestNonFatal) {
+        return { cardId: bestNonFatal.cardId, flipped: false };
+      }
+
+      // En dernier recours, carte face cachee
+      const cheapest = [...availableCards].sort((a, b) => {
+        const cardA = getCard(a);
+        const cardB = getCard(b);
         return (cardA?.value ?? 0) - (cardB?.value ?? 0);
       })[0];
-
-      return { cardId: cheapest.cardId, flipped: true };
+      return { cardId: cheapest, flipped: true };
     }
 
-    // Prendre la meilleure carte
+    // Prendre la meilleure carte abordable
     return { cardId: affordableCards[0].cardId, flipped: false };
   }
 
   selectPlaceAction(state: PlayGameState, cardId: string, validPositions: number[]): number {
     const player = getCurrentPlayer(state);
+    this.updateAnalysisCache(player);
+    const analysis = this.cachedAnalysis!;
 
     if (validPositions.length === 0) {
       return 4; // Centre par defaut
     }
 
-    // Evaluer chaque position
-    const positionScores = validPositions.map(pos => ({
-      position: pos,
-      score: this.evaluatePosition(cardId, pos, player),
-    }));
+    if (validPositions.length === 1) {
+      return validPositions[0];
+    }
 
-    // Trier par score et prendre la meilleure
-    positionScores.sort((a, b) => b.score - a.score);
+    // Evaluer toutes les positions
+    const positionEvals = evaluatePositions(cardId, validPositions, player, analysis);
 
-    return positionScores[0].position;
+    // Prendre la meilleure position
+    return positionEvals[0].position;
   }
 
   // ===========================================================================
@@ -95,39 +130,16 @@ export class NormalAI implements AIPlayer {
   selectKeyAction(state: PlayGameState): AIKeyAction | null {
     const player = getCurrentPlayer(state);
 
-    // Compter les cartes abordables dans le lieu actuel
-    const currentLocation = state.board.messengerLocation;
-    const currentCards = currentLocation === 'castle'
-      ? state.board.castleCards
-      : state.board.villageCards;
+    if (player.keys === 0) return null;
 
-    const affordableCount = currentCards.filter(
-      cardId => canAffordCard(player, cardId).canAfford
-    ).length;
-
-    // Si aucune carte abordable, deplacer le messager
-    if (affordableCount === 0) {
-      const otherLocation = currentLocation === 'castle' ? 'village' : 'castle';
-      return {
-        type: 'move_messenger',
-        targetLocation: otherLocation,
-      };
-    }
-
-    return null;
+    // Utiliser la logique d'evaluation
+    return decideKeyAction(state);
   }
 
   selectLockAction(state: PlayGameState, availableLocks: number[]): number | null {
-    const player = getCurrentPlayer(state);
-    const cardCount = player.board.filter(c => c !== null).length;
+    if (availableLocks.length === 0) return null;
 
-    // En fin de partie (>= 6 cartes), utiliser les cadenas
-    if (cardCount >= 6 && availableLocks.length > 0) {
-      // Choisir le premier cadenas disponible
-      return availableLocks[0];
-    }
-
-    return null;
+    return chooseBestLock(state, availableLocks);
   }
 
   // ===========================================================================
@@ -138,54 +150,96 @@ export class NormalAI implements AIPlayer {
     if (options.length === 0) return 0;
 
     const player = getCurrentPlayer(state);
-    const cardCount = player.board.filter(c => c !== null).length;
+    this.updateAnalysisCache(player);
+    const analysis = this.cachedAnalysis!;
 
-    // En fin de partie, preferer les cles (souvent option 1)
-    // En debut de partie, preferer l'or (souvent option 0)
-    const preferKeys = cardCount >= 6;
+    // Analyser les options
+    // L'option 0 donne souvent de l'or, l'option 1 des cles
 
-    return preferKeys ? Math.min(1, options.length - 1) : 0;
+    // Si strategie cles (017/066), preferer les cles
+    const hasKeyScoring = analysis.strategies.some(
+      s => s.definition.type === 'keys_count' && !s.isInvalidated
+    );
+    if (hasKeyScoring && options.length > 1) {
+      // Verifier si l'option 1 donne des cles (heuristique basee sur la description)
+      const option1 = options[1]?.description?.toLowerCase() ?? '';
+      if (option1.includes('cle') || option1.includes('key')) {
+        return 1;
+      }
+    }
+
+    // Si manque d'or, preferer l'or
+    const goldSituation = evaluateGoldSituation(player);
+    if (goldSituation === 'tight' || goldSituation === 'broke') {
+      return 0; // Option 0 = or generalement
+    }
+
+    // Par defaut, option 0
+    return 0;
   }
 
   selectLocation(state: PlayGameState, choice: ReplaceLocationChoice): Location {
-    // Choisir le lieu qui maximise le gain de cles
-    const keysPerCard = choice.keysPerCard ?? 0;
+    const player = getCurrentPlayer(state);
+    this.updateAnalysisCache(player);
+    const analysis = this.cachedAnalysis!;
 
-    const countKeysForLocation = (location: Location): number => {
-      const cards = location === 'castle'
-        ? state.board.castleCards
-        : state.board.villageCards;
+    // Si l'effet donne des cles selon une feature ou un bouclier
+    if (
+      choice.effectType === 'replace_location_gain_keys_per_feature' ||
+      choice.effectType === 'replace_location_gain_keys_per_shield'
+    ) {
+      const keysPerCard = choice.keysPerCard ?? 0;
 
-      let keys = 0;
-      for (const cardId of cards) {
-        const card = getCard(cardId);
-        if (!card) continue;
+      const countKeysForLocation = (location: Location): number => {
+        const cards = location === 'castle'
+          ? state.board.castleCards
+          : state.board.villageCards;
 
-        if (choice.effectType === 'replace_location_gain_keys_per_feature') {
-          if (choice.feature === 'price_reduction' && card.has_price_reduction) {
-            keys += keysPerCard;
-          } else if (choice.feature === 'coin_purse' && card.has_coin_purse) {
-            keys += keysPerCard;
-          }
-        } else if (choice.effectType === 'replace_location_gain_keys_per_shield') {
-          const hasShield = card.shields.some(s => s.color === choice.color);
-          if (hasShield) {
-            keys += keysPerCard;
+        let keys = 0;
+        for (const cardId of cards) {
+          const card = getCard(cardId);
+          if (!card) continue;
+
+          if (choice.effectType === 'replace_location_gain_keys_per_feature') {
+            if (choice.feature === 'price_reduction' && card.has_price_reduction) {
+              keys += keysPerCard;
+            } else if (choice.feature === 'coin_purse' && card.has_coin_purse) {
+              keys += keysPerCard;
+            }
+          } else if (choice.effectType === 'replace_location_gain_keys_per_shield') {
+            const hasShield = card.shields.some(s => s.color === choice.color);
+            if (hasShield) {
+              keys += keysPerCard;
+            }
           }
         }
-      }
 
-      return keys;
-    };
+        return keys;
+      };
 
-    const keysFromCastle = countKeysForLocation('castle');
-    const keysFromVillage = countKeysForLocation('village');
+      const keysFromCastle = countKeysForLocation('castle');
+      const keysFromVillage = countKeysForLocation('village');
 
-    return keysFromCastle >= keysFromVillage ? 'castle' : 'village';
+      return keysFromCastle >= keysFromVillage ? 'castle' : 'village';
+    }
+
+    // Sinon, choisir le lieu avec les cartes les moins interessantes (pour les remplacer)
+    const castleEvals = state.board.castleCards.map(id =>
+      evaluateCard(id, player, analysis)
+    );
+    const villageEvals = state.board.villageCards.map(id =>
+      evaluateCard(id, player, analysis)
+    );
+
+    const avgCastle = castleEvals.reduce((sum, e) => sum + e.score, 0) / 3;
+    const avgVillage = villageEvals.reduce((sum, e) => sum + e.score, 0) / 3;
+
+    // Remplacer le lieu avec les cartes les moins bonnes
+    return avgCastle < avgVillage ? 'castle' : 'village';
   }
 
   selectDiscardCard(_state: PlayGameState, _choice: DiscardChoice, availableCards: string[]): string {
-    // Defausser la carte la plus chere (maximise le gain)
+    // Defausser la carte qui rapporte le plus de ressources (la plus chere)
     let bestCard = availableCards[0];
     let bestValue = 0;
 
@@ -202,8 +256,10 @@ export class NormalAI implements AIPlayer {
 
   selectAdjacentCard(state: PlayGameState, choice: AdjacentCardChoice): number {
     const player = getCurrentPlayer(state);
+    this.updateAnalysisCache(player);
+    const analysis = this.cachedAnalysis!;
 
-    // Choisir la carte adjacente qui donne le plus de ressources
+    // Choisir la carte adjacente qui donne le plus de valeur
     let bestPosition = choice.adjacentPositions[0];
     let bestScore = -Infinity;
 
@@ -214,13 +270,18 @@ export class NormalAI implements AIPlayer {
       const card = getCard(placed.cardId);
       if (!card) continue;
 
-      // Score simple : nombre d'effets * 10 + valeur
-      let score = card.effects.length * 10 + card.value;
-
-      // Bonus si l'effet donne de l'or
+      // Score base sur les effets
+      let score = 0;
       for (const effect of card.effects) {
         if (effect.type.includes('gold')) {
-          score += 5;
+          score += (effect.amount ?? 0) * 1.5;
+        } else if (effect.type.includes('key')) {
+          const hasKeyScoring = analysis.strategies.some(
+            s => s.definition.type === 'keys_count'
+          );
+          score += (effect.amount ?? 0) * (hasKeyScoring ? 3 : 1);
+        } else {
+          score += 2;
         }
       }
 
@@ -235,24 +296,39 @@ export class NormalAI implements AIPlayer {
 
   selectPurses(state: PlayGameState, choice: PurseSelectionChoice): number[] {
     const player = getCurrentPlayer(state);
+    this.updateAnalysisCache(player);
+    const analysis = this.cachedAnalysis!;
 
-    // Trier par capacite restante (remplir les bourses presque pleines en priorite)
-    const pursesWithCapacity = choice.availablePositions.map(pos => {
+    // Strategie bourses ?
+    const hasPurseScoring = analysis.strategies.some(
+      s => s.cardId === '020' && !s.isInvalidated
+    );
+
+    // Trier les bourses par priorite
+    const pursesWithPriority = choice.availablePositions.map(pos => {
       const placed = player.board[pos];
-      if (!placed) return { pos, remaining: Infinity };
+      if (!placed) return { pos, priority: -Infinity };
 
       const card = getCard(placed.cardId);
-      if (!card) return { pos, remaining: Infinity };
+      if (!card) return { pos, priority: -Infinity };
 
       const current = placed.coinsOnCard ?? 0;
       const max = card.max_coins ?? 0;
-      return { pos, remaining: max - current };
+      const remaining = max - current;
+
+      // Priorite = remplir les bourses presque pleines en premier
+      // Si strategie 020, maximiser le total de pieces
+      let priority = hasPurseScoring
+        ? remaining // Plus de pieces = mieux
+        : max - remaining; // Presque plein = mieux
+
+      return { pos, priority };
     });
 
-    // Trier par capacite restante (petite = prioritaire)
-    pursesWithCapacity.sort((a, b) => a.remaining - b.remaining);
+    // Trier par priorite decroissante
+    pursesWithPriority.sort((a, b) => b.priority - a.priority);
 
-    return pursesWithCapacity.slice(0, choice.maxCards).map(p => p.pos);
+    return pursesWithPriority.slice(0, choice.maxCards).map(p => p.pos);
   }
 
   // ===========================================================================
@@ -264,117 +340,14 @@ export class NormalAI implements AIPlayer {
   }
 
   // ===========================================================================
-  // Evaluation
+  // Cache
   // ===========================================================================
 
-  private evaluateCard(
-    cardId: string,
-    player: PlayPlayer,
-    cost: number
-  ): number {
-    const card = getCard(cardId);
-    if (!card) return 0;
-
-    let score = 0;
-
-    // Bonus pour les boucliers qui matchent ceux qu'on a deja
-    const existingColors = this.getExistingShieldColors(player);
-    for (const shield of card.shields) {
-      if (existingColors.has(shield.color)) {
-        score += shield.count * 3; // Synergie de couleur
-      } else {
-        score += shield.count * 1; // Nouvelle couleur (diversite)
-      }
+  private updateAnalysisCache(player: { id: string; board: unknown[] }): void {
+    // Mettre a jour le cache si le joueur a change
+    if (this.cachedPlayerId !== player.id || this.cachedAnalysis === null) {
+      this.cachedAnalysis = analyzePlayerStrategies(player as any);
+      this.cachedPlayerId = player.id;
     }
-
-    // Bonus pour les reductions
-    if (card.has_price_reduction) {
-      score += 5;
-    }
-
-    // Bonus pour le messager (flexibilite)
-    if (card.has_messenger) {
-      score += 2;
-    }
-
-    // Bonus pour les bourses
-    if (card.has_coin_purse) {
-      score += (card.max_coins ?? 0) * 0.5;
-    }
-
-    // Malus pour le cout eleve
-    score -= cost * 0.5;
-
-    return score;
-  }
-
-  private evaluatePosition(
-    cardId: string,
-    position: number,
-    player: PlayPlayer
-  ): number {
-    const card = getCard(cardId);
-    if (!card) return 0;
-
-    let score = 0;
-    const row = Math.floor(position / 3);
-    const col = position % 3;
-
-    // Compter les boucliers sur la meme ligne et colonne
-    for (let i = 0; i < 9; i++) {
-      const placed = player.board[i];
-      if (!placed) continue;
-
-      const placedCard = getCard(placed.cardId);
-      if (!placedCard) continue;
-
-      const placedRow = Math.floor(i / 3);
-      const placedCol = i % 3;
-
-      // Meme ligne
-      if (placedRow === row) {
-        for (const shield of card.shields) {
-          for (const placedShield of placedCard.shields) {
-            if (shield.color === placedShield.color) {
-              score += 2; // Synergie sur la ligne
-            }
-          }
-        }
-      }
-
-      // Meme colonne
-      if (placedCol === col) {
-        for (const shield of card.shields) {
-          for (const placedShield of placedCard.shields) {
-            if (shield.color === placedShield.color) {
-              score += 2; // Synergie sur la colonne
-            }
-          }
-        }
-      }
-    }
-
-    // Bonus pour le centre (plus de flexibilite)
-    if (position === 4) {
-      score += 1;
-    }
-
-    return score;
-  }
-
-  private getExistingShieldColors(player: PlayPlayer): Set<ShieldColor> {
-    const colors = new Set<ShieldColor>();
-
-    for (const placed of player.board) {
-      if (!placed) continue;
-      const card = getCard(placed.cardId);
-      if (!card) continue;
-
-      for (const shield of card.shields) {
-        colors.add(shield.color as ShieldColor);
-      }
-    }
-
-    return colors;
   }
 }
