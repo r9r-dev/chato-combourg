@@ -10,8 +10,25 @@ import { usePlay } from '../context/PlayContext';
 import { useGame } from '../context/GameContext';
 import { useAuth } from '../context/AuthContext';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { AIEasyIcon, AINormalIcon, AIHardIcon, AIExtremeIcon } from '../components/Icons';
 import type { Player } from '../types';
 import type { AILevel } from '../types/play';
+
+/** Retourne le composant d'icone pour un niveau d'IA */
+function AIIcon({ level, className = 'w-5 h-5 text-white' }: { level: AILevel; className?: string }) {
+  switch (level) {
+    case 'easy':
+      return <AIEasyIcon className={className} />;
+    case 'normal':
+      return <AINormalIcon className={className} />;
+    case 'hard':
+      return <AIHardIcon className={className} />;
+    case 'neural':
+      return <AIExtremeIcon className={className} />;
+    default:
+      return <AINormalIcon className={className} />;
+  }
+}
 
 const AI_COLORS = [
   '#6b7280', // Gris
@@ -21,9 +38,9 @@ const AI_COLORS = [
 
 const AI_LEVELS: { value: AILevel; label: string; description: string }[] = [
   { value: 'easy', label: 'Facile', description: '"Oh, elle est jolie cette carte !"' },
-  { value: 'normal', label: 'Normale', description: '"Je connais bien les regles."' },
-  { value: 'hard', label: 'Difficile', description: '"Je n\'ai aucune pitie."' },
-  { value: 'neural', label: 'Extreme', description: '"Prie pour avoir de la chance."' },
+  { value: 'normal', label: 'Normale', description: '"Je connais bien les règles."' },
+  { value: 'hard', label: 'Difficile', description: '"Je n\'ai aucune pitié."' },
+  { value: 'neural', label: 'Extrême', description: '"Prie pour avoir de la chance."' },
 ];
 
 interface AIPlayer {
@@ -152,7 +169,7 @@ export function PlaySetup() {
       {/* Content */}
       <div className="flex-1 overflow-auto p-4">
         <p className="text-center text-white/60 mb-4">
-          Selectionnez 2 a 5 joueurs ({totalPlayers}/5)
+          Sélectionnez 2 à 5 joueurs ({totalPlayers}/5)
         </p>
 
         {/* Human players list */}
@@ -278,10 +295,7 @@ export function PlaySetup() {
                       className="w-10 h-10 rounded-full flex items-center justify-center"
                       style={{ backgroundColor: ai.color }}
                     >
-                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                          d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
+                      <AIIcon level={ai.level} className="w-6 h-6 text-white" />
                     </div>
 
                     {/* Order badge */}
@@ -336,10 +350,15 @@ export function PlaySetup() {
                     <button
                       key={level.value}
                       onClick={() => handleAddAI(level.value)}
-                      className="py-3 px-4 rounded-lg bg-dark-lighter hover:bg-white/10 transition-colors text-left"
+                      className="py-3 px-4 rounded-lg bg-dark-lighter hover:bg-white/10 transition-colors text-left flex items-start gap-3"
                     >
-                      <span className="text-white font-medium block">{level.label}</span>
-                      <span className="text-white/40 text-xs">{level.description}</span>
+                      <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <AIIcon level={level.value} className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <span className="text-white font-medium block">{level.label}</span>
+                        <span className="text-white/40 text-xs">{level.description}</span>
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -358,7 +377,7 @@ export function PlaySetup() {
         {!hasHuman && aiPlayers.length > 0 && (
           <div className="mt-4 p-3 rounded-xl bg-orange-900/30 border border-orange-500/30">
             <p className="text-orange-300 text-sm text-center">
-              Selectionnez au moins un joueur humain
+              Sélectionnez au moins un joueur humain
             </p>
           </div>
         )}
