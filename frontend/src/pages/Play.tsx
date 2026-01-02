@@ -8,7 +8,7 @@
  * - Barre d'actions
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { usePlay } from '../context/PlayContext';
 import { getValidPlacements, getAvailableShifts } from '../types/play';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -150,6 +150,7 @@ export function Play() {
 
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayPlayer | null>(null);
+  const playerBoardRef = useRef<HTMLDivElement>(null);
 
   const gameState = state.gameState;
   const currentPlayer = getCurrentPlayer();
@@ -171,6 +172,13 @@ export function Play() {
   const isPlacePhase = gameState?.turnPhase === 'place';
   const isPostActionPhase = gameState?.turnPhase === 'post_action';
   const isEffectPhase = state.step === 'effect_choice';
+
+  // Scroll vers le plateau du joueur quand on entre en phase de placement
+  useEffect(() => {
+    if (isPlacePhase && playerBoardRef.current) {
+      playerBoardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [isPlacePhase]);
 
   // Peut utiliser un cadenas : en pre_action ou post_action, si pas deja utilise ce tour
   const canUseLock = (isBuyPhase || isPostActionPhase) && !gameState?.lockUsedThisTurn && !isCurrentPlayerAI();
@@ -239,27 +247,33 @@ export function Play() {
   };
 
   const handleShift = (direction: ShiftDirection) => {
-    if (isPlacePhase || isCurrentPlayerAI()) return;
+    if (isCurrentPlayerAI()) return;
     shiftBoard(direction);
   };
 
-  // Peut-on decaler le plateau ? (pas pendant le placement)
-  const canShift = !isPlacePhase && !isCurrentPlayerAI();
+  // Peut-on decaler le plateau ? (y compris pendant le placement)
+  const canShift = !isCurrentPlayerAI();
 
   return (
     <div className="flex flex-col h-dvh bg-dark">
       {/* Header */}
-      <header className="flex items-center justify-between p-3 border-b border-white/10">
-        <button onClick={() => setShowQuitConfirm(true)} className="text-white/60 hover:text-white text-sm">
+      <header className="relative flex items-center justify-between p-3 border-b border-white/10">
+        <button onClick={() => setShowQuitConfirm(true)} className="text-white/60 hover:text-white text-sm z-10">
           Quitter
         </button>
-        <div className="text-center">
-          <span className="text-white font-medium">Tour {gameState.turnNumber}</span>
-          <span className="text-white/40 text-sm ml-2">
-            {state.aiThinking ? 'IA reflechit...' : ''}
-          </span>
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1 text-gold font-medium">
+              <CoinIcon className="w-5 h-5" />
+              {currentPlayer.gold}
+            </span>
+            <span className="flex items-center gap-1 text-blue-400 font-medium">
+              <KeyIcon className="w-5 h-5" />
+              {currentPlayer.keys}
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 z-10">
           <span className="text-gold text-sm">{currentPlayer.name}</span>
           <button
             onClick={toggleGameLog}
@@ -347,37 +361,7 @@ export function Play() {
         </div>
 
         {/* Joueur actuel */}
-        <div className="p-3 border-b border-white/10">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold"
-                style={{ backgroundColor: currentPlayer.color }}
-              >
-                {currentPlayer.isAI ? (
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M13 7H7v6h6V7z" />
-                    <path fillRule="evenodd" d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z" clipRule="evenodd" />
-                  </svg>
-                ) : (
-                  currentPlayer.name.charAt(0).toUpperCase()
-                )}
-              </div>
-              <span className="text-white font-medium">{currentPlayer.name}</span>
-            </div>
-
-            <div className="flex items-center gap-4 text-sm">
-              <span className="flex items-center gap-1 text-gold">
-                <CoinIcon className="w-5 h-5" />
-                {currentPlayer.gold}
-              </span>
-              <span className="flex items-center gap-1 text-blue-400">
-                <KeyIcon className="w-5 h-5" />
-                {currentPlayer.keys}
-              </span>
-            </div>
-          </div>
-
+        <div ref={playerBoardRef} className="p-3 border-b border-white/10">
           {/* Reductions */}
           {(currentPlayer.reductionCastle > 0 || currentPlayer.reductionVillage > 0) && (
             <div className="flex gap-3 mb-3 text-xs">
@@ -470,22 +454,6 @@ export function Play() {
               </svg>
             </button>
           </div>
-
-          {/* Message de phase */}
-          <div className="mt-3 text-center text-sm">
-            {state.aiThinking && (
-              <span className="text-gold animate-pulse">L'IA reflechit...</span>
-            )}
-            {!state.aiThinking && isBuyPhase && !isCurrentPlayerAI() && (
-              <span className="text-white/60">Cliquez sur une carte pour l'acheter</span>
-            )}
-            {!state.aiThinking && isPlacePhase && !isCurrentPlayerAI() && (
-              <span className="text-gold">Placez la carte sur votre plateau</span>
-            )}
-            {!state.aiThinking && canEndTurn && !isCurrentPlayerAI() && (
-              <span className="text-white/60">Terminez votre tour</span>
-            )}
-          </div>
         </div>
 
         {/* Autres joueurs */}
@@ -516,10 +484,11 @@ export function Play() {
         )}
       </div>
 
-      {/* Actions */}
-      {!isCurrentPlayerAI() && (
-        <footer className="p-3 border-t border-white/10 bg-dark-lighter">
-          <div className="flex gap-2">
+      {/* Footer: Actions + Status */}
+      <footer className="border-t border-white/10 bg-dark-lighter">
+        {/* Boutons d'action */}
+        {!isCurrentPlayerAI() && (
+          <div className="p-3 flex gap-2">
             {/* Bouton cle */}
             {gameState.turnPhase === 'pre_action' && currentPlayer.keys > 0 && !gameState.keyUsedThisTurn && (
               <div className="flex-1 flex gap-2">
@@ -555,8 +524,27 @@ export function Play() {
               </div>
             )}
           </div>
-        </footer>
-      )}
+        )}
+
+        {/* Barre de statut */}
+        <div className="px-3 py-2 text-center text-sm border-t border-white/5">
+          {state.aiThinking && (
+            <span className="text-gold animate-pulse">L'IA reflechit...</span>
+          )}
+          {!state.aiThinking && isBuyPhase && !isCurrentPlayerAI() && (
+            <span className="text-white/60">Cliquez sur une carte pour l'acheter</span>
+          )}
+          {!state.aiThinking && isPlacePhase && !isCurrentPlayerAI() && (
+            <span className="text-gold">Placez la carte sur votre plateau</span>
+          )}
+          {!state.aiThinking && canEndTurn && !isCurrentPlayerAI() && (
+            <span className="text-white/60">Terminez votre tour</span>
+          )}
+          {!state.aiThinking && isCurrentPlayerAI() && !canEndTurn && (
+            <span className="text-white/40">Tour de l'IA</span>
+          )}
+        </div>
+      </footer>
 
       {/* Modal choix d'effet */}
       {isEffectPhase && state.pendingEffectChoice && gameState && (
