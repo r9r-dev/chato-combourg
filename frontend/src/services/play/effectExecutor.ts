@@ -11,7 +11,6 @@
 
 import type {
   PlayGameState,
-  PlayPlayer,
   CardEffect,
   ShieldColor,
   Location,
@@ -20,6 +19,14 @@ import type {
   ReplaceLocationEffectType,
 } from '../../types/play';
 import { getCard } from './gameEngine';
+import {
+  countShieldsOnBoard,
+  countUniqueShieldColors,
+  countCardsOfCategory,
+  getNeighborPlayers,
+  getColorName,
+  shuffle,
+} from '../../utils/boardHelpers';
 
 // =============================================================================
 // Types
@@ -725,18 +732,6 @@ function applyReplaceLocationGainKeysPerShield(
   };
 }
 
-function getColorName(color: ShieldColor): string {
-  const names: Record<ShieldColor, string> = {
-    blue: 'bleu',
-    pink: 'rose',
-    green: 'vert',
-    red: 'rouge',
-    orange: 'orange',
-    yellow: 'jaune',
-  };
-  return names[color] ?? color;
-}
-
 function applyActivateAdjacent(
   state: PlayGameState,
   _position: number
@@ -748,83 +743,6 @@ function applyActivateAdjacent(
     description: 'Activer l\'effet d\'une carte adjacente',
     requiresChoice: true,
   };
-}
-
-// =============================================================================
-// Helpers
-// =============================================================================
-
-function countShieldsOnBoard(player: PlayPlayer, color: ShieldColor): number {
-  let count = 0;
-
-  for (const placed of player.board) {
-    if (!placed) continue;
-    const card = getCard(placed.cardId);
-    if (!card) continue;
-
-    for (const shield of card.shields) {
-      if (shield.color === color) {
-        count += shield.count;
-      }
-    }
-  }
-
-  return count;
-}
-
-function countUniqueShieldColors(player: PlayPlayer): number {
-  const colors = new Set<ShieldColor>();
-
-  for (const placed of player.board) {
-    if (!placed) continue;
-    const card = getCard(placed.cardId);
-    if (!card) continue;
-
-    for (const shield of card.shields) {
-      colors.add(shield.color as ShieldColor);
-    }
-  }
-
-  return colors.size;
-}
-
-function countCardsOfCategory(
-  player: PlayPlayer,
-  category: 'castle' | 'village'
-): number {
-  let count = 0;
-
-  for (const placed of player.board) {
-    if (!placed) continue;
-    const card = getCard(placed.cardId);
-    if (card?.category === category) {
-      count++;
-    }
-  }
-
-  return count;
-}
-
-function getNeighborPlayers(
-  state: PlayGameState,
-  playerIndex: number
-): PlayPlayer[] {
-  const neighbors: PlayPlayer[] = [];
-  const playerCount = state.players.length;
-
-  if (playerCount <= 1) return neighbors;
-
-  // Joueur precedent
-  const prevIndex = (playerIndex - 1 + playerCount) % playerCount;
-  neighbors.push(state.players[prevIndex]);
-
-  // Joueur suivant (si different du precedent)
-  const nextIndex = (playerIndex + 1) % playerCount;
-  if (nextIndex !== prevIndex) {
-    neighbors.push(state.players[nextIndex]);
-  }
-
-  return neighbors;
 }
 
 // =============================================================================
@@ -1026,12 +944,4 @@ export function executeReplaceLocationEffect(
     newState: { ...state, players, board },
     description,
   };
-}
-
-// Helper pour melanger un tableau
-function shuffle<T>(array: T[]): void {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
 }
