@@ -1,5 +1,15 @@
 # Changelog
 
+## v3.1.0 (2026-01-02)
+
+- Ajout du shift helper automatique pour optimiser les points de position
+- Correction de la balise apple-mobile-web-app-capable (deprecated)
+- Layout dynamique avec bords actifs plutôt qu'un déplacement manuel
+- Le décalage des cartes est toujours permis
+- Scroll automatique vers le haut lors de l'entrée en phase d'achat
+- Amélioration de l'ergonomie du mode Play
+- Refactoring Phase 1 - Extraction des helpers et composants Play
+
 ## v3.0.2 (2026-01-02)
 
 - Mise à jour des libellés de l'interface : "Nouvelle partie" → "Enregistrer une partie" et "Jouer avec IA (Instable)" → "Jouer avec l'IA (version alpha)"
