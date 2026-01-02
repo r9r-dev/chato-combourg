@@ -22,9 +22,10 @@ const PLAYER_COLORS = [
 ];
 
 const AI_LEVELS: { value: AILevel; label: string; description: string }[] = [
-  { value: 'easy', label: 'Facile', description: 'Choix aleatoires' },
-  { value: 'normal', label: 'Normal', description: 'Heuristiques basiques' },
-  { value: 'hard', label: 'Difficile', description: 'MCTS strategique' },
+  { value: 'easy', label: 'Facile', description: '"Oh, elle est jolie cette carte !"' },
+  { value: 'normal', label: 'Normale', description: '"Je connais bien les règles."' },
+  { value: 'hard', label: 'Difficile', description: '"Je n\'ai aucune pitié."' },
+  { value: 'neural', label: 'Extrême', description: '"Prie pour avoir de la chance."' },
 ];
 
 interface PlayerSetup {
