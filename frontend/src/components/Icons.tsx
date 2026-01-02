@@ -42,12 +42,42 @@ export function EffectIcon({ className = 'w-4 h-4' }: IconProps) {
   );
 }
 
-/** Icone piece d'or */
+/** Icone piece d'or medievale avec fleur de lys */
 export function CoinIcon({ className = 'w-4 h-4' }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <circle cx="12" cy="12" r="10" className="text-gold" />
-      <circle cx="12" cy="12" r="7" className="text-yellow-600" fill="currentColor" fillOpacity="0.3" />
+    <svg className={className} viewBox="0 0 24 24">
+      <defs>
+        {/* Degrade dore realiste */}
+        <linearGradient id="coinGold" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#ffd700" />
+          <stop offset="30%" stopColor="#daa520" />
+          <stop offset="50%" stopColor="#b8860b" />
+          <stop offset="70%" stopColor="#daa520" />
+          <stop offset="100%" stopColor="#ffd700" />
+        </linearGradient>
+        {/* Ombre interieure pour relief */}
+        <radialGradient id="coinShadow" cx="30%" cy="30%" r="70%">
+          <stop offset="0%" stopColor="white" stopOpacity="0.4" />
+          <stop offset="100%" stopColor="black" stopOpacity="0.2" />
+        </radialGradient>
+      </defs>
+      {/* Piece principale */}
+      <circle cx="12" cy="12" r="10" fill="url(#coinGold)" />
+      {/* Relief/ombre */}
+      <circle cx="12" cy="12" r="10" fill="url(#coinShadow)" />
+      {/* Bordure decorative */}
+      <circle cx="12" cy="12" r="8.5" fill="none" stroke="#b8860b" strokeWidth="0.5" strokeOpacity="0.6" />
+      {/* Fleur de lys gravee */}
+      <g transform="translate(12, 12) scale(0.35)" fill="#78350f" fillOpacity="0.7">
+        {/* Petale central */}
+        <path d="M0,-12 C3,-8 3,-4 0,0 C-3,-4 -3,-8 0,-12" />
+        {/* Petale gauche */}
+        <path d="M-8,-6 C-6,-4 -4,-2 -2,0 C-4,0 -7,-1 -8,-6" />
+        {/* Petale droit */}
+        <path d="M8,-6 C6,-4 4,-2 2,0 C4,0 7,-1 8,-6" />
+        {/* Base */}
+        <path d="M-3,0 L-2,6 L0,4 L2,6 L3,0 C2,2 -2,2 -3,0" />
+      </g>
     </svg>
   );
 }
@@ -109,7 +139,8 @@ export function CoinStack({ count, seed = 0, className = '' }: CoinStackProps) {
           style={{
             left: '50%',
             top: '50%',
-            transform: `translate(-50%, -50%) translate(${variance(0, 'x')}px, ${variance(0, 'y')}px) rotate(${rotationVariance(0)}deg)`,
+            // Décaler vers le haut si des pièces de 1 sont présentes
+            transform: `translate(-50%, -50%) translate(${variance(0, 'x')}px, ${variance(0, 'y') + (ones > 0 ? -8 : 0)}px) rotate(${rotationVariance(0)}deg)`,
             zIndex: 1,
             background: 'linear-gradient(145deg, #e8e8e8 0%, #c0c0c0 30%, #a8a8a8 50%, #c0c0c0 70%, #d8d8d8 100%)',
             boxShadow: 'inset 2px 2px 4px rgba(255,255,255,0.6), inset -2px -2px 4px rgba(0,0,0,0.2), 2px 2px 6px rgba(0,0,0,0.3)',
@@ -154,12 +185,22 @@ export function CoinStack({ count, seed = 0, className = '' }: CoinStackProps) {
   );
 }
 
-/** Icone cle */
+/** Icone cle medievale */
 export function KeyIcon({ className = 'w-4 h-4' }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="8" cy="8" r="3" />
-      <path d="M10.5 10.5L21 21M18 18l2-2M18 21l2-2" />
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      {/* Tete de cle ornementee (trefle) - centree */}
+      <circle cx="12" cy="6" r="4" />
+      <circle cx="9" cy="3" r="2.2" />
+      <circle cx="15" cy="3" r="2.2" />
+      <circle cx="12" cy="1.3" r="1.8" />
+      {/* Trou de la cle */}
+      <circle cx="12" cy="6" r="1.5" className="text-dark" />
+      {/* Tige */}
+      <rect x="10.7" y="9" width="2.6" height="14" rx="0.5" />
+      {/* Dents */}
+      <rect x="13.3" y="15" width="4" height="2.2" rx="0.4" />
+      <rect x="13.3" y="19" width="2.8" height="2.2" rx="0.4" />
     </svg>
   );
 }
