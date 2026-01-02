@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.4.0 (2026-01-03)
+
+- Refonte du système IA Normale avec un système de stratégies cohérent et amélioré
+
 ## v3.3.1 (2026-01-02)
 
 Corrections et ameliorations mineures
