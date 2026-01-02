@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.0.0 (2026-01-02)
+
+- Ajout du mode Jouer avec IA (version instable)
+
 ## v2.4.4 (2026-01-02)
 
 - Ajout des attributs Play mode dans les données des cartes
