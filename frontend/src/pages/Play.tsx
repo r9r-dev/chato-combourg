@@ -8,7 +8,7 @@
  * - Barre d'actions
  */
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, Fragment } from 'react';
 import { usePlay } from '../context/PlayContext';
 import { getValidPlacements, getExternalZones } from '../types/play';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -420,7 +420,7 @@ export function Play() {
 
             {/* Lignes 2-4: zones laterales + grille 3x3 */}
             {[0, 1, 2].map((row) => (
-              <>
+              <Fragment key={`row-${row}`}>
                 {/* Zone gauche */}
                 {(() => {
                   const zone = externalZones.find(z => z.edge === 'left' && z.edgeIndex === row);
@@ -476,7 +476,7 @@ export function Play() {
                     </button>
                   );
                 })()}
-              </>
+              </Fragment>
             ))}
 
             {/* Ligne 5: zones bottom */}
@@ -533,20 +533,18 @@ export function Play() {
 
       {/* Bandeau flottant carte achetee - visible partiellement, appui long pour voir */}
       {isPlacePhase && gameState?.purchasedCard && !isCurrentPlayerAI() && (
-        <div
-          className="fixed bottom-0 left-1/2 -translate-x-1/2 z-0 touch-none select-none"
-          onPointerDown={() => setShowPurchasedCard(true)}
-          onPointerUp={() => setShowPurchasedCard(false)}
-          onPointerLeave={() => setShowPurchasedCard(false)}
-          onPointerCancel={() => setShowPurchasedCard(false)}
-        >
+        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 z-0 pointer-events-none select-none">
           <img
             src={`${API_BASE}/cards/thumbs/carte_${gameState.purchasedCard}.webp`}
             alt="Carte achetee"
-            className={`w-40 rounded-t-xl shadow-lg border-2 border-b-0 border-gold/50 transition-transform duration-150 ${
+            className={`w-40 rounded-t-xl shadow-lg border-2 border-b-0 border-gold/50 transition-transform duration-150 pointer-events-auto ${
               showPurchasedCard ? '-translate-y-12' : 'translate-y-[50%]'
             }`}
             draggable={false}
+            onPointerDown={() => setShowPurchasedCard(true)}
+            onPointerUp={() => setShowPurchasedCard(false)}
+            onPointerLeave={() => setShowPurchasedCard(false)}
+            onPointerCancel={() => setShowPurchasedCard(false)}
           />
         </div>
       )}
