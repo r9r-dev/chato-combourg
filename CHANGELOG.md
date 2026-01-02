@@ -1,5 +1,14 @@
 # Changelog
 
+## v3.0.1 (2026-01-02)
+
+- Correction de l'ordre du refill des lieux
+- Implémentation de l'effet cadenas replace_location
+- Ajout d'un panneau d'historique des actions en mode Play
+- Ajout d'une limite d'une clé par tour et décalage du plateau
+- Simplification de l'UI du mode Play et amélioration de l'affichage des joueurs
+- Masquage de l'icône du Dock pour le worker
+
 ## v3.0.0 (2026-01-02)
 
 - Ajout du mode Jouer avec IA (version instable)
