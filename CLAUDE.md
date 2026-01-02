@@ -145,8 +145,8 @@ Game engine for playing against AI (work in progress).
 **Files:**
 - `gameEngine.ts` - Game initialization, action validation, execution
 - `effectExecutor.ts` - Executes card effects when placed
-- `ai/index.ts` - AI factory and exports
-- `ai/easyAI.ts` - Random choices among valid actions
+- `ai/index.ts` - SafeAIRunner wrapper, fallbacks, AI factory
+- `ai/easyAI.ts` - Naive beginner behavior
 - `ai/normalAI.ts` - Heuristic-based (synergies, reductions)
 - `ai/hardAI.ts` - MCTS (500 iterations, 1s limit)
 
@@ -155,10 +155,29 @@ Game engine for playing against AI (work in progress).
 - `PlayPlayer` - Player with board, resources, reductions
 - `CentralBoard` - 2x3 cards + messenger + decks
 - `GameAction` - Union of all action types
+- `AIPlayer` - Interface for AI implementations
 - Turn phases: `pre_action | buy | place | effect | post_action | end`
 
+**AI Architecture:**
+- `AIPlayer` interface with typed methods for each action type
+- `SafeAIRunner` wrapper validates actions and provides fallbacks
+- Anti-infinite-loop protection (max 100 iterations per turn)
+
+**AI Interface Methods:**
+| Method | Type | Description |
+|--------|------|-------------|
+| `selectBuyAction` | Required | Choose card to buy |
+| `selectPlaceAction` | Required | Choose placement position |
+| `selectKeyAction` | Optional | Use key (move messenger/refresh) |
+| `selectLockAction` | Optional | Open a lock |
+| `selectEffectOption` | Effect | [OR] choice between options |
+| `selectLocation` | Effect | Choose castle/village |
+| `selectDiscardCard` | Effect | Choose card to discard |
+| `selectAdjacentCard` | Effect | Choose adjacent card |
+| `selectPurses` | Effect | Choose purses to fill |
+
 **AI Levels:**
-- Easy: Random valid actions
+- Easy: Naive beginner (loves positioning cards, big displayed scores, avoids locks/reductions, rarely uses keys)
 - Normal: Evaluates card synergies, position quality
 - Hard: Monte Carlo Tree Search with UCB1
 
