@@ -16,7 +16,6 @@ import type {
   PlayGameState,
   GameAction,
   PlayPlayer,
-  TurnPhase,
 } from '../../../types/play';
 import { getValidPlacements } from '../../../types/play';
 import {
@@ -25,7 +24,6 @@ import {
   canAffordCard,
   getCurrentPlayer,
   executeAction,
-  validateAction,
 } from '../gameEngine';
 
 // =============================================================================

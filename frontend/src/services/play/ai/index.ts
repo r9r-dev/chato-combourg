@@ -2,7 +2,7 @@
  * AI Module - Interface commune et factory pour les IA
  */
 
-import type { AIPlayer, AILevel, PlayGameState, GameAction } from '../../../types/play';
+import type { AIPlayer, AILevel } from '../../../types/play';
 import { EasyAI } from './easyAI';
 import { NormalAI } from './normalAI';
 import { HardAI } from './hardAI';

@@ -14,7 +14,6 @@ import type {
   PlayPlayer,
   CardEffect,
   ShieldColor,
-  PlacedCard,
   Location,
 } from '../../types/play';
 import { getCard } from './gameEngine';
@@ -575,7 +574,7 @@ function applyFillPurses(
 function applyDiscardAndGain(
   state: PlayGameState,
   location: Location,
-  resource: 'gold' | 'keys'
+  _resource: 'gold' | 'keys'
 ): EffectResult {
   // Note: Dans le vrai jeu, le joueur choisit quelle carte defausser
   // Pour l'instant, on retourne juste un succes
@@ -653,7 +652,7 @@ function applyReplaceLocation(state: PlayGameState): EffectResult {
 
 function applyReplaceLocationGainKeys(
   state: PlayGameState,
-  playerIndex: number,
+  _playerIndex: number,
   feature: string,
   keysPerCard: number
 ): EffectResult {
@@ -668,7 +667,7 @@ function applyReplaceLocationGainKeys(
 
 function applyReplaceLocationGainKeysPerShield(
   state: PlayGameState,
-  playerIndex: number,
+  _playerIndex: number,
   color: ShieldColor,
   keysPerCard: number
 ): EffectResult {
@@ -682,7 +681,7 @@ function applyReplaceLocationGainKeysPerShield(
 
 function applyActivateAdjacent(
   state: PlayGameState,
-  position: number
+  _position: number
 ): EffectResult {
   // Le joueur doit choisir une carte adjacente
   return {

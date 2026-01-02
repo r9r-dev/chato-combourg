@@ -10,7 +10,7 @@ from fastapi.exceptions import RequestValidationError
 
 from app.config import settings
 from app.exceptions import AppException
-from app.routers import analyze, calculator, players, games, users, captures, model, statistics
+from app.routers import analyze, calculator, players, games, users, captures, model, statistics, cards
 from app.services.card_database import card_database
 from app.services.yolo_detector import (
     yolo_detector,
@@ -234,6 +234,7 @@ app.include_router(users.router)
 app.include_router(captures.router)
 app.include_router(model.router)
 app.include_router(statistics.router)
+app.include_router(cards.router)
 
 # Mount static files for card images
 app.mount("/cards", StaticFiles(directory=str(CARDS_DIR)), name="cards")

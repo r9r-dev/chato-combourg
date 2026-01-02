@@ -28,21 +28,22 @@ Ce document decrit l'implementation du mode "Jouer avec IA" pour Chateau Combo.
 ### Ce qui reste a faire
 
 #### Phase 1 : Contexte React
-- [ ] `src/context/PlayContext.tsx` - Gestion de l'etat du jeu
-- [ ] `src/context/playReducer.ts` - Reducer pour les actions
+- [x] `src/context/PlayContext.tsx` - Gestion de l'etat du jeu
+- [x] `src/context/playReducer.ts` - Reducer pour les actions
 
 #### Phase 2 : Interface Mobile-First
-- [ ] `src/pages/PlaySetup.tsx` - Configuration de partie (joueurs, IA)
-- [ ] `src/pages/Play.tsx` - Interface de jeu principale
-- [ ] `src/components/play/CentralBoard.tsx` - Plateau central (2x3 cartes)
-- [ ] `src/components/play/PlayerBoard.tsx` - Plateau joueur (3x3)
-- [ ] `src/components/play/PlayerList.tsx` - Liste des joueurs (scrollable)
-- [ ] `src/components/play/ActionBar.tsx` - Barre d'actions du joueur
-- [ ] `src/components/play/MessengerIndicator.tsx` - Indicateur messager
+- [x] `src/pages/PlaySetup.tsx` - Configuration de partie (joueurs, IA)
+- [x] `src/pages/Play.tsx` - Interface de jeu principale
+- [x] `src/pages/PlayResults.tsx` - Ecran de resultats
+- [x] `src/pages/PlayMode.tsx` - Routeur interne
+- [x] `src/context/PlayContext.tsx` - Contexte React avec game engine
+- [x] `src/context/playReducer.ts` - Reducer pour l'etat UI
 
 #### Phase 3 : Integration
-- [ ] Modifier `src/pages/Landing.tsx` - Ajouter bouton "Jouer avec IA"
-- [ ] Modifier `src/App.tsx` - Ajouter routes pour Play
+- [x] Modifier `src/pages/Landing.tsx` - Ajouter bouton "Jouer avec IA"
+- [x] Modifier `src/App.tsx` - Ajouter routes pour Play
+- [x] Modifier `src/types/index.ts` - Ajouter step 'play'
+- [x] API `/api/cards/attributes` et `/api/cards/effects`
 - [ ] Tests unitaires du moteur de jeu
 - [ ] Tests des IA
 

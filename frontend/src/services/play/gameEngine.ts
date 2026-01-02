@@ -15,12 +15,9 @@ import type {
   CentralBoard,
   GameAction,
   PlacedCard,
-  TurnPhase,
   Location,
   PlayCard,
   CardCategory,
-  getValidPlacements,
-  getEffectiveCost,
 } from '../../types/play';
 
 // Importer les helpers depuis les types
@@ -53,14 +50,7 @@ export async function loadCardData(): Promise<Record<string, PlayCard>> {
   ]);
 
   if (!attributesResponse.ok || !effectsResponse.ok) {
-    // Fallback: charger depuis les fichiers statiques
-    const [attributes, effects] = await Promise.all([
-      import('../../../cards/card_attributes.json'),
-      import('../../../cards/card_effects.json'),
-    ]);
-
-    cardAttributesCache = mergeCardData(attributes.default, effects.default);
-    return cardAttributesCache;
+    throw new Error('Failed to load card data from API');
   }
 
   const attributes = await attributesResponse.json();
@@ -349,7 +339,7 @@ function validatePlaceCard(
 
 function validateChooseEffect(
   state: PlayGameState,
-  player: PlayPlayer,
+  _player: PlayPlayer,
   action: GameAction
 ): ActionValidation {
   if (state.turnPhase !== 'effect') {
@@ -566,7 +556,7 @@ function executePlaceCard(
 
 function executeChooseEffect(
   state: PlayGameState,
-  action: GameAction
+  _action: GameAction
 ): PlayGameState {
   // L'effet sera applique par l'executeur d'effets
   // On passe juste a la phase suivante

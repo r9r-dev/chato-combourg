@@ -69,6 +69,21 @@ export function Landing() {
             </button>
 
             <button
+              onClick={() => setStep('play')}
+              disabled={loading}
+              className="w-full py-4 px-8 bg-dark-lighter text-white font-semibold text-lg rounded-xl
+                         hover:bg-dark-card transition-colors border border-gold/30
+                         disabled:opacity-50 disabled:cursor-not-allowed
+                         flex items-center justify-center gap-2"
+            >
+              <svg className="w-5 h-5 text-gold" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M13 7H7v6h6V7z" />
+                <path fillRule="evenodd" d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z" clipRule="evenodd" />
+              </svg>
+              Jouer avec IA (Instable)
+            </button>
+
+            <button
               onClick={() => setStep('games')}
               disabled={loading}
               className="w-full py-4 px-8 bg-dark-lighter text-white font-semibold text-lg rounded-xl

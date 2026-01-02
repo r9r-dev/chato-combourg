@@ -15,9 +15,8 @@ import type {
   GameAction,
   PlayPlayer,
   ShieldColor,
-  PlacedCard,
 } from '../../../types/play';
-import { getValidPlacements, getEffectiveCost } from '../../../types/play';
+import { getValidPlacements } from '../../../types/play';
 import {
   getCard,
   getAvailableCards,

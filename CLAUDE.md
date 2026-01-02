@@ -139,6 +139,31 @@ React + Vite + TypeScript + Tailwind CSS PWA.
 - All API functions use `handleApiError()` for consistent error handling
 - French error messages for user-facing errors
 
+#### Play Mode Services (services/play/)
+Game engine for playing against AI (work in progress).
+
+**Files:**
+- `gameEngine.ts` - Game initialization, action validation, execution
+- `effectExecutor.ts` - Executes card effects when placed
+- `ai/index.ts` - AI factory and exports
+- `ai/easyAI.ts` - Random choices among valid actions
+- `ai/normalAI.ts` - Heuristic-based (synergies, reductions)
+- `ai/hardAI.ts` - MCTS (500 iterations, 1s limit)
+
+**Types** (`types/play.ts`):
+- `PlayGameState` - Complete game state
+- `PlayPlayer` - Player with board, resources, reductions
+- `CentralBoard` - 2x3 cards + messenger + decks
+- `GameAction` - Union of all action types
+- Turn phases: `pre_action | buy | place | effect | post_action | end`
+
+**AI Levels:**
+- Easy: Random valid actions
+- Normal: Evaluates card synergies, position quality
+- Hard: Monte Carlo Tree Search with UCB1
+
+**Planning document:** `docs/PLAY_MODE_PLAN.md`
+
 ### Training (training/)
 
 YOLO11 training pipeline for card detection/identification.
@@ -153,6 +178,8 @@ YOLO11 training pipeline for card detection/identification.
 - `POST /api/analyze` - Upload photo, returns identified cards with positions
 - `POST /api/calculate` - Calculate score from 9 cards + keys + coins
 - `GET /api/cards` - List all 92 reference cards
+- `GET /api/cards/attributes` - Card attributes for Play mode
+- `GET /api/cards/effects` - Card effects for Play mode
 
 ### Model (Offline Support)
 - `GET /api/model/info` - List all ONNX variants with metadata

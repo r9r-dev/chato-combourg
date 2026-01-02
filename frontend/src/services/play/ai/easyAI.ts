@@ -13,11 +13,9 @@ import type {
   AILevel,
   PlayGameState,
   GameAction,
-  TurnPhase,
 } from '../../../types/play';
-import { getValidPlacements, getEffectiveCost } from '../../../types/play';
+import { getValidPlacements } from '../../../types/play';
 import {
-  getCard,
   getAvailableCards,
   canAffordCard,
   getCurrentPlayer,
@@ -102,7 +100,7 @@ export class EasyAI implements AIPlayer {
     };
   }
 
-  private selectEffectAction(state: PlayGameState, playerId: string): GameAction {
+  private selectEffectAction(_state: PlayGameState, playerId: string): GameAction {
     // Pour les effets avec choix, prendre au hasard
     return {
       type: 'choose_effect',
