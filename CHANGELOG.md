@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.0.2 (2026-01-02)
+
+- Mise à jour des libellés de l'interface : "Nouvelle partie" → "Enregistrer une partie" et "Jouer avec IA (Instable)" → "Jouer avec l'IA (version alpha)"
+
 ## v3.0.1 (2026-01-02)
 
 - Correction de l'ordre du refill des lieux
