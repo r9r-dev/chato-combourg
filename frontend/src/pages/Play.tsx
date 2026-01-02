@@ -149,6 +149,7 @@ export function Play() {
 
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayPlayer | null>(null);
+  const [showPurchasedCard, setShowPurchasedCard] = useState(false);
   const playerBoardRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -530,8 +531,28 @@ export function Play() {
         )}
       </div>
 
+      {/* Bandeau flottant carte achetee - visible partiellement, appui long pour voir */}
+      {isPlacePhase && gameState?.purchasedCard && !isCurrentPlayerAI() && (
+        <div
+          className="fixed bottom-0 left-1/2 -translate-x-1/2 z-0 touch-none select-none"
+          onPointerDown={() => setShowPurchasedCard(true)}
+          onPointerUp={() => setShowPurchasedCard(false)}
+          onPointerLeave={() => setShowPurchasedCard(false)}
+          onPointerCancel={() => setShowPurchasedCard(false)}
+        >
+          <img
+            src={`${API_BASE}/cards/thumbs/carte_${gameState.purchasedCard}.webp`}
+            alt="Carte achetee"
+            className={`w-40 rounded-t-xl shadow-lg border-2 border-b-0 border-gold/50 transition-transform duration-150 ${
+              showPurchasedCard ? '-translate-y-12' : 'translate-y-[50%]'
+            }`}
+            draggable={false}
+          />
+        </div>
+      )}
+
       {/* Footer: Actions + Status */}
-      <footer className="border-t border-white/10 bg-dark-lighter">
+      <footer className="relative z-10 border-t border-white/10 bg-dark-lighter">
         {/* Boutons d'action (visible seulement s'il y a des boutons) */}
         {!isCurrentPlayerAI() && (
           (gameState.turnPhase === 'pre_action' && currentPlayer.keys > 0 && !gameState.keyUsedThisTurn) || canEndTurn
