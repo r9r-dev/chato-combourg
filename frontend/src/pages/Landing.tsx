@@ -37,7 +37,7 @@ export function Landing() {
           transform: 'rotate(-15deg) scale(2.5)',
           transformOrigin: 'center',
           opacity: 0.12,
-          filter: 'sepia(100%) saturate(150%) brightness(0.8) hue-rotate(-10deg)',
+          filter: 'sepia(100%) saturate(150%) brightness(0.4) hue-rotate(-10deg)',
         }}
       >
         <img
@@ -71,10 +71,11 @@ export function Landing() {
             <button
               onClick={() => setStep('play')}
               disabled={loading}
-              className="w-full py-4 px-8 bg-dark-lighter text-white font-semibold text-lg rounded-xl
+              className="w-full py-4 px-8 text-white font-semibold text-lg rounded-xl
                          hover:bg-dark-card transition-colors border border-gold/30
                          disabled:opacity-50 disabled:cursor-not-allowed
                          flex items-center justify-center gap-2"
+              style={{ backgroundColor: 'rgba(45, 45, 80, 0.95)' }}
             >
               <svg className="w-5 h-5 text-gold" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M13 7H7v6h6V7z" />
@@ -86,9 +87,10 @@ export function Landing() {
             <button
               onClick={() => setStep('games')}
               disabled={loading}
-              className="w-full py-4 px-8 bg-dark-lighter text-white font-semibold text-lg rounded-xl
+              className="w-full py-4 px-8 text-white font-semibold text-lg rounded-xl
                          hover:bg-dark-card transition-colors border border-white/10
                          disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: 'rgba(45, 45, 80, 0.95)' }}
             >
               Mes parties
             </button>
@@ -96,9 +98,10 @@ export function Landing() {
             <button
               onClick={() => setStep('settings')}
               disabled={loading}
-              className="w-full py-4 px-8 bg-dark-lighter text-white font-semibold text-lg rounded-xl
+              className="w-full py-4 px-8 text-white font-semibold text-lg rounded-xl
                          hover:bg-dark-card transition-colors border border-white/10
                          disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: 'rgba(45, 45, 80, 095)' }}
             >
               Paramètres
             </button>
