@@ -151,6 +151,7 @@ export function Play() {
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayPlayer | null>(null);
   const playerBoardRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const gameState = state.gameState;
   const currentPlayer = getCurrentPlayer();
@@ -179,6 +180,13 @@ export function Play() {
       playerBoardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [isPlacePhase]);
+
+  // Scroll vers le haut quand on entre en phase d'achat (debut de tour)
+  useEffect(() => {
+    if (isBuyPhase && !isCurrentPlayerAI() && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [isBuyPhase, isCurrentPlayerAI]);
 
   // Peut utiliser un cadenas : en pre_action ou post_action, si pas deja utilise ce tour
   const canUseLock = (isBuyPhase || isPostActionPhase) && !gameState?.lockUsedThisTurn && !isCurrentPlayerAI();
@@ -290,7 +298,7 @@ export function Play() {
       </header>
 
       {/* Main content */}
-      <div className="flex-1 overflow-auto">
+      <div ref={scrollContainerRef} className="flex-1 overflow-auto">
         {/* Plateau central */}
         <div className="p-3 border-b border-white/10">
           <div className={`flex items-center justify-between mb-2 pb-1 border-b-2 ${gameState.board.messengerLocation === 'castle' ? 'border-gold' : 'border-transparent'}`}>
