@@ -313,8 +313,8 @@ export class HardAI implements AIPlayer {
           actions.push({ type: 'buy_card_flipped', playerId, cardId });
         }
 
-        // Utilisation de cle (pre_action uniquement)
-        if (state.turnPhase === 'pre_action' && player.keys > 0) {
+        // Utilisation de cle (pre_action uniquement, max 1 par tour)
+        if (state.turnPhase === 'pre_action' && player.keys > 0 && !state.keyUsedThisTurn) {
           // Deplacer messager
           const otherLocation = state.board.messengerLocation === 'castle' ? 'village' : 'castle';
           actions.push({

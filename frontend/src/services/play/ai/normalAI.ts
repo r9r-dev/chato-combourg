@@ -72,6 +72,9 @@ export class NormalAI implements AIPlayer {
   ): GameAction | null {
     const player = getCurrentPlayer(state);
 
+    // Si on a deja utilise une cle ce tour, on ne peut plus
+    if (state.keyUsedThisTurn) return null;
+
     // Si on a des cles et que le messager n'est pas au bon endroit
     if (player.keys > 0) {
       const availableCards = getAvailableCards(state);

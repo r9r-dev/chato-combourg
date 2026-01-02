@@ -23,6 +23,7 @@ import type {
   GameAction,
   AILevel,
   PlayPlayer,
+  ShiftDirection,
 } from '../types/play';
 import {
   createGame,
@@ -71,6 +72,7 @@ interface PlayContextType {
   chooseEffect: (choiceIndex: number) => Promise<void>;
   spendKey: (targetLocation: 'castle' | 'village') => Promise<void>;
   useKeyOnLock: (lockPosition: number) => Promise<void>;
+  shiftBoard: (direction: ShiftDirection) => Promise<void>;
   endTurn: () => Promise<void>;
 
   // Helpers
@@ -305,6 +307,12 @@ export function PlayProvider({ children }: { children: ReactNode }) {
     await executeGameAction({ type: 'use_key_on_lock', playerId, lockPosition });
   }, [state.gameState, executeGameAction]);
 
+  const shiftBoardAction = useCallback(async (direction: ShiftDirection) => {
+    if (!state.gameState) return;
+    const playerId = getCurrentPlayer(state.gameState).id;
+    await executeGameAction({ type: 'shift_board', playerId, shiftDirection: direction });
+  }, [state.gameState, executeGameAction]);
+
   const endTurn = useCallback(async () => {
     if (!state.gameState) return;
     const playerId = getCurrentPlayer(state.gameState).id;
@@ -448,6 +456,7 @@ export function PlayProvider({ children }: { children: ReactNode }) {
         chooseEffect,
         spendKey,
         useKeyOnLock,
+        shiftBoard: shiftBoardAction,
         endTurn,
         // Helpers
         getCurrentPlayer: getCurrentPlayerFn,

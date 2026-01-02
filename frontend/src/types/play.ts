@@ -121,7 +121,10 @@ export type ActionType =
   | 'place_card'           // Placer une carte sur le plateau
   | 'apply_effect'         // Appliquer l'effet d'une carte
   | 'choose_effect'        // Choisir entre 2 effets [OU]
+  | 'shift_board'          // Decaler le plateau du joueur
   | 'end_turn';            // Fin du tour
+
+export type ShiftDirection = 'left' | 'right' | 'up' | 'down';
 
 export interface GameAction {
   type: ActionType;
@@ -133,6 +136,7 @@ export interface GameAction {
   targetLocation?: Location;     // Lieu cible (pour messager/refresh)
   choiceIndex?: number;          // Index du choix (pour effects [OU])
   lockPosition?: number;         // Position de la carte avec cadenas
+  shiftDirection?: ShiftDirection; // Direction du decalage du plateau
 }
 
 // =============================================================================
@@ -166,6 +170,7 @@ export interface PlayGameState {
   // Tour en cours
   turnNumber: number;            // 1-9 (chaque joueur fait 9 tours)
   turnPhase: TurnPhase;
+  keyUsedThisTurn: boolean;      // Une seule cle par tour
 
   // Carte achetee ce tour (en attente de placement)
   purchasedCard: string | null;
@@ -324,4 +329,77 @@ export function getEffectiveCost(
   }
 
   return Math.max(0, cardValue - reduction);
+}
+
+// =============================================================================
+// Helpers pour le decalage du plateau
+// =============================================================================
+
+/** Verifie si le plateau peut etre decale dans une direction */
+export function canShiftBoard(
+  board: (PlacedCard | null)[],
+  direction: ShiftDirection
+): boolean {
+  // Si le plateau est vide, pas de decalage possible
+  const hasCards = board.some(c => c !== null);
+  if (!hasCards) return false;
+
+  switch (direction) {
+    case 'left':
+      // Possible si la colonne gauche (0, 3, 6) est vide
+      return board[0] === null && board[3] === null && board[6] === null;
+    case 'right':
+      // Possible si la colonne droite (2, 5, 8) est vide
+      return board[2] === null && board[5] === null && board[8] === null;
+    case 'up':
+      // Possible si la ligne du haut (0, 1, 2) est vide
+      return board[0] === null && board[1] === null && board[2] === null;
+    case 'down':
+      // Possible si la ligne du bas (6, 7, 8) est vide
+      return board[6] === null && board[7] === null && board[8] === null;
+    default:
+      return false;
+  }
+}
+
+/** Retourne les directions de decalage possibles */
+export function getAvailableShifts(board: (PlacedCard | null)[]): ShiftDirection[] {
+  const directions: ShiftDirection[] = ['left', 'right', 'up', 'down'];
+  return directions.filter(d => canShiftBoard(board, d));
+}
+
+/** Decale le plateau dans une direction */
+export function shiftBoard(
+  board: (PlacedCard | null)[],
+  direction: ShiftDirection
+): (PlacedCard | null)[] {
+  if (!canShiftBoard(board, direction)) return board;
+
+  const newBoard = Array(9).fill(null) as (PlacedCard | null)[];
+
+  for (let i = 0; i < 9; i++) {
+    if (board[i] === null) continue;
+
+    let newPos: number;
+    switch (direction) {
+      case 'left':
+        newPos = i - 1;
+        break;
+      case 'right':
+        newPos = i + 1;
+        break;
+      case 'up':
+        newPos = i - 3;
+        break;
+      case 'down':
+        newPos = i + 3;
+        break;
+    }
+
+    if (newPos >= 0 && newPos < 9) {
+      newBoard[newPos] = { ...board[i]!, position: newPos };
+    }
+  }
+
+  return newBoard;
 }

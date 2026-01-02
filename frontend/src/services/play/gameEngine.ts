@@ -21,7 +21,12 @@ import type {
 } from '../../types/play';
 
 // Importer les helpers depuis les types
-import { getValidPlacements as getValidPlacementsHelper, getEffectiveCost as getEffectiveCostHelper } from '../../types/play';
+import {
+  getValidPlacements as getValidPlacementsHelper,
+  getEffectiveCost as getEffectiveCostHelper,
+  canShiftBoard,
+  shiftBoard as shiftBoardHelper,
+} from '../../types/play';
 
 // =============================================================================
 // Constantes
@@ -140,6 +145,7 @@ export function createGame(config: PlayGameConfig): PlayGameState {
     currentPlayerIndex: firstPlayerIndex,
     turnNumber: 1,
     turnPhase: 'pre_action',
+    keyUsedThisTurn: false,
     purchasedCard: null,
     purchasedCardCost: 0,
     board,
@@ -219,6 +225,9 @@ export function validateAction(
     case 'choose_effect':
       return validateChooseEffect(state, player, action);
 
+    case 'shift_board':
+      return validateShiftBoard(state, player, action);
+
     case 'end_turn':
       return validateEndTurn(state);
 
@@ -255,6 +264,10 @@ function validateSpendKey(
 ): ActionValidation {
   if (state.turnPhase !== 'pre_action') {
     return { isValid: false, reason: 'Vous ne pouvez depenser une cle que avant l\'achat' };
+  }
+
+  if (state.keyUsedThisTurn) {
+    return { isValid: false, reason: 'Vous avez deja utilise une cle ce tour' };
   }
 
   if (player.keys < 1) {
@@ -353,6 +366,27 @@ function validateChooseEffect(
   return { isValid: true };
 }
 
+function validateShiftBoard(
+  state: PlayGameState,
+  player: PlayPlayer,
+  action: GameAction
+): ActionValidation {
+  // Le decalage n'est pas permis pendant le placement obligatoire
+  if (state.turnPhase === 'place') {
+    return { isValid: false, reason: 'Vous devez d\'abord placer votre carte' };
+  }
+
+  if (!action.shiftDirection) {
+    return { isValid: false, reason: 'Direction non specifiee' };
+  }
+
+  if (!canShiftBoard(player.board, action.shiftDirection)) {
+    return { isValid: false, reason: 'Decalage impossible dans cette direction' };
+  }
+
+  return { isValid: true };
+}
+
 function validateEndTurn(state: PlayGameState): ActionValidation {
   if (state.turnPhase !== 'post_action' && state.turnPhase !== 'end') {
     return { isValid: false, reason: 'Vous devez terminer vos actions obligatoires' };
@@ -401,6 +435,10 @@ export function executeAction(
 
     case 'choose_effect':
       newState = executeChooseEffect(newState, action);
+      break;
+
+    case 'shift_board':
+      newState = executeShiftBoard(newState, action);
       break;
 
     case 'end_turn':
@@ -453,7 +491,7 @@ function executeSpendKey(
     board = refreshLocation(board, board.messengerLocation);
   }
 
-  return { ...state, players, board };
+  return { ...state, players, board, keyUsedThisTurn: true };
 }
 
 function executeBuyCard(
@@ -563,6 +601,36 @@ function executeChooseEffect(
   return { ...state, turnPhase: 'post_action' };
 }
 
+function executeShiftBoard(
+  state: PlayGameState,
+  action: GameAction
+): PlayGameState {
+  const playerIndex = state.currentPlayerIndex;
+  const players = [...state.players];
+  const player = { ...players[playerIndex] };
+
+  // Decaler le plateau
+  const newBoard = shiftBoardHelper(player.board, action.shiftDirection!);
+  player.board = newBoard;
+
+  // Mettre a jour les positions dans lockedCards
+  const newLockedCards = new Map<number, boolean>();
+  for (const [oldPos, hasKey] of player.lockedCards) {
+    const card = state.players[playerIndex].board[oldPos];
+    if (card) {
+      const newPos = newBoard.findIndex(c => c !== null && c.cardId === card.cardId);
+      if (newPos >= 0) {
+        newLockedCards.set(newPos, hasKey);
+      }
+    }
+  }
+  player.lockedCards = newLockedCards;
+
+  players[playerIndex] = player;
+
+  return { ...state, players };
+}
+
 function executeEndTurn(state: PlayGameState): PlayGameState {
   // Completer les lieux
   let board = refillLocations(state.board);
@@ -620,6 +688,7 @@ function executeEndTurn(state: PlayGameState): PlayGameState {
     currentPlayerIndex: nextPlayerIndex,
     turnNumber,
     turnPhase: 'pre_action',
+    keyUsedThisTurn: false,
     actionHistory: [], // Reset pour le nouveau tour
   };
 }
