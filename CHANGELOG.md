@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.1.1 (2026-01-02)
+
+- Correction d'avertissement React : ajout de clés uniques pour les éléments de liste
+- Affichage de la carte achetée en bas pendant la phase de placement
+- Masquage de la zone de boutons quand elle est vide
+
 ## v3.1.0 (2026-01-02)
 
 - Ajout du shift helper automatique pour optimiser les points de position
