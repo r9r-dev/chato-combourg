@@ -12,33 +12,11 @@ import { useState, useMemo } from 'react';
 import { usePlay } from '../context/PlayContext';
 import { getValidPlacements, getAvailableShifts } from '../types/play';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { GameLog } from '../components/GameLog';
+import { CoinIcon, KeyIcon } from '../components/Icons';
 import type { PlayPlayer, PlacedCard, ShiftDirection } from '../types/play';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
-
-// =============================================================================
-// Icones
-// =============================================================================
-
-/** Icone piece d'or */
-function CoinIcon({ className = "w-4 h-4" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <circle cx="12" cy="12" r="10" className="text-gold" />
-      <circle cx="12" cy="12" r="7" className="text-yellow-600" fill="currentColor" fillOpacity="0.3" />
-    </svg>
-  );
-}
-
-/** Icone cle */
-function KeyIcon({ className = "w-4 h-4" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="8" cy="8" r="3" />
-      <path d="M10.5 10.5L21 21M18 18l2-2M18 21l2-2" />
-    </svg>
-  );
-}
 
 // =============================================================================
 // Composants internes
@@ -308,6 +286,9 @@ export function Play() {
     getCurrentPlayer,
     canAffordCard,
     isCurrentPlayerAI,
+    toggleGameLog,
+    gameLog,
+    showGameLog,
   } = usePlay();
 
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
@@ -407,8 +388,19 @@ export function Play() {
             {state.aiThinking ? 'IA reflechit...' : ''}
           </span>
         </div>
-        <div className="text-gold text-sm">
-          {currentPlayer.name}
+        <div className="flex items-center gap-2">
+          <span className="text-gold text-sm">{currentPlayer.name}</span>
+          <button
+            onClick={toggleGameLog}
+            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
+              showGameLog ? 'bg-gold/20 text-gold' : 'hover:bg-white/10 text-white/60'
+            }`}
+            title="Historique des actions"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+          </button>
         </div>
       </header>
 
@@ -702,6 +694,13 @@ export function Play() {
         cancelLabel="Continuer"
         onConfirm={() => { reset(); }}
         onCancel={() => setShowQuitConfirm(false)}
+      />
+
+      {/* Game Log */}
+      <GameLog
+        entries={gameLog}
+        isOpen={showGameLog}
+        onClose={toggleGameLog}
       />
     </div>
   );

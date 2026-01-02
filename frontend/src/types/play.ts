@@ -403,3 +403,29 @@ export function shiftBoard(
 
   return newBoard;
 }
+
+// =============================================================================
+// Logs de partie
+// =============================================================================
+
+export type LogActionType =
+  | 'buy'           // Achat de carte
+  | 'place'         // Placement de carte
+  | 'effect'        // Effet de carte
+  | 'key'           // Utilisation de cle
+  | 'shift'         // Decalage plateau
+  | 'other';        // Autre action
+
+export interface GameLogEntry {
+  id: string;                    // UUID unique
+  timestamp: number;             // Date.now()
+  turnNumber: number;
+  playerName: string;
+  playerColor: string;
+  actionType: LogActionType;     // Type d'action pour l'icone
+  cardName?: string;             // Nom de la carte (ex: "Devot") - pour buy
+  description?: string;          // Description (position pour place, effet pour effect)
+  position?: number;             // Position sur le plateau (0-8) - pour buy et place
+  resourcesBefore?: { gold: number; keys: number };
+  resourcesAfter?: { gold: number; keys: number };
+}

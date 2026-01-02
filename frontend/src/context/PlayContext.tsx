@@ -24,6 +24,8 @@ import type {
   AILevel,
   PlayPlayer,
   ShiftDirection,
+  GameLogEntry,
+  LogActionType,
 } from '../types/play';
 import {
   createGame,
@@ -81,9 +83,80 @@ interface PlayContextType {
   canAffordCard: (cardId: string) => { canAfford: boolean; cost: number };
   isCurrentPlayerAI: () => boolean;
   isMyTurn: (playerId: string) => boolean;
+
+  // Logs
+  toggleGameLog: () => void;
+  gameLog: GameLogEntry[];
+  showGameLog: boolean;
 }
 
 const PlayContext = createContext<PlayContextType | null>(null);
+
+// =============================================================================
+// Helpers pour les logs
+// =============================================================================
+
+// Cache des noms de cartes
+let cardNamesCache: Record<string, string> | null = null;
+
+async function loadCardNames(): Promise<Record<string, string>> {
+  if (cardNamesCache) return cardNamesCache;
+
+  try {
+    const response = await fetch('/api/cards');
+    if (response.ok) {
+      const data = await response.json();
+      cardNamesCache = {};
+      for (const card of data.cards) {
+        cardNamesCache[card.id] = card.name;
+      }
+    }
+  } catch {
+    cardNamesCache = {};
+  }
+
+  return cardNamesCache ?? {};
+}
+
+function getCardName(cardId: string): string {
+  return cardNamesCache?.[cardId] ?? `Carte ${cardId}`;
+}
+
+function generateId(): string {
+  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
+function getLogActionType(actionType: string): LogActionType {
+  switch (actionType) {
+    case 'buy_card':
+    case 'buy_card_flipped':
+      return 'buy';
+    case 'place_card':
+      return 'place';
+    case 'use_key_on_lock':
+    case 'spend_key':
+      return 'key';
+    case 'shift_board':
+      return 'shift';
+    default:
+      return 'other';
+  }
+}
+
+function getPositionName(position: number): string {
+  const names: Record<number, string> = {
+    0: 'En haut à gauche',
+    1: 'En haut au centre',
+    2: 'En haut à droite',
+    3: 'Au centre à gauche',
+    4: 'Au centre',
+    5: 'Au centre à droite',
+    6: 'En bas à gauche',
+    7: 'En bas au centre',
+    8: 'En bas à droite',
+  };
+  return names[position] ?? `Position ${position}`;
+}
 
 // =============================================================================
 // Provider
@@ -99,6 +172,7 @@ export function PlayProvider({ children }: { children: ReactNode }) {
     if (!dataLoadedRef.current) {
       dataLoadedRef.current = true;
       loadCardData().catch(console.error);
+      loadCardNames().catch(console.error);
     }
   }, []);
 
@@ -110,6 +184,39 @@ export function PlayProvider({ children }: { children: ReactNode }) {
   const reset = useCallback(() => {
     aiLoopRef.current = false;
     dispatch({ type: 'RESET' });
+  }, []);
+
+  // Logs
+  const toggleGameLog = useCallback(() => {
+    dispatch({ type: 'TOGGLE_LOG' });
+  }, []);
+
+  const addLogEntry = useCallback((
+    player: PlayPlayer,
+    turnNumber: number,
+    actionType: LogActionType,
+    options: {
+      cardId?: string;
+      description?: string;
+      position?: number;
+      resourcesBefore?: { gold: number; keys: number };
+      resourcesAfter?: { gold: number; keys: number };
+    }
+  ) => {
+    const entry: GameLogEntry = {
+      id: generateId(),
+      timestamp: Date.now(),
+      turnNumber,
+      playerName: player.name,
+      playerColor: player.color,
+      actionType,
+      cardName: options.cardId ? getCardName(options.cardId) : undefined,
+      description: options.description,
+      position: options.position,
+      resourcesBefore: options.resourcesBefore,
+      resourcesAfter: options.resourcesAfter,
+    };
+    dispatch({ type: 'ADD_LOG_ENTRY', entry });
   }, []);
 
   // Configuration
@@ -179,7 +286,7 @@ export function PlayProvider({ children }: { children: ReactNode }) {
     cardId: string,
     position: number,
     choiceIndex?: number
-  ): { newState: PlayGameState; requiresChoice: boolean; choices?: unknown[] } => {
+  ): { newState: PlayGameState; requiresChoice: boolean; choices?: unknown[]; description: string } => {
     const result = executeCardEffect(gameState, cardId, position, choiceIndex);
 
     if (result.requiresChoice && result.choices) {
@@ -187,12 +294,14 @@ export function PlayProvider({ children }: { children: ReactNode }) {
         newState: result.newState,
         requiresChoice: true,
         choices: result.choices,
+        description: result.description,
       };
     }
 
     return {
       newState: result.newState,
       requiresChoice: false,
+      description: result.description,
     };
   }, []);
 
@@ -206,7 +315,47 @@ export function PlayProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Capturer les ressources avant l'action
+    const playerBefore = state.gameState.players[state.gameState.currentPlayerIndex];
+    const resourcesBefore = { gold: playerBefore.gold, keys: playerBefore.keys };
+    const turnNumber = state.gameState.turnNumber;
+
     let newState = executeAction(state.gameState, action);
+
+    // Logger l'action (sauf end_turn et choose_effect qui sont speciaux)
+    if (action.type !== 'end_turn' && action.type !== 'choose_effect') {
+      const playerAfter = newState.players[newState.currentPlayerIndex];
+      const resourcesAfter = { gold: playerAfter.gold, keys: playerAfter.keys };
+      const logActionType = getLogActionType(action.type);
+
+      // Determiner la position selon le type d'action
+      const position = action.type === 'use_key_on_lock'
+        ? action.lockPosition
+        : action.position;
+
+      // Determiner le cardId et description selon le type
+      if (logActionType === 'buy') {
+        addLogEntry(playerBefore, turnNumber, logActionType, {
+          cardId: action.cardId,
+          resourcesBefore,
+          resourcesAfter,
+        });
+      } else if (logActionType === 'place') {
+        addLogEntry(playerBefore, turnNumber, logActionType, {
+          description: position !== undefined ? getPositionName(position) : undefined,
+          position,
+          resourcesBefore,
+          resourcesAfter,
+        });
+      } else {
+        // key, shift, other
+        addLogEntry(playerBefore, turnNumber, logActionType, {
+          position,
+          resourcesBefore,
+          resourcesAfter,
+        });
+      }
+    }
 
     // Appliquer les effets si on vient de placer une carte
     if (action.type === 'place_card' && state.gameState.purchasedCard) {
@@ -214,6 +363,7 @@ export function PlayProvider({ children }: { children: ReactNode }) {
       const card = getCard(cardId);
 
       if (card && card.effects.length > 0) {
+        const beforeEffect = newState.players[newState.currentPlayerIndex];
         const effectResult = applyCardEffects(newState, cardId, action.position!);
 
         if (effectResult.requiresChoice && effectResult.choices) {
@@ -227,6 +377,16 @@ export function PlayProvider({ children }: { children: ReactNode }) {
         }
 
         newState = effectResult.newState;
+
+        // Logger l'effet avec la description de l'effet
+        const afterEffect = newState.players[newState.currentPlayerIndex];
+        if (beforeEffect.gold !== afterEffect.gold || beforeEffect.keys !== afterEffect.keys) {
+          addLogEntry(playerBefore, turnNumber, 'effect', {
+            description: effectResult.description,
+            resourcesBefore: { gold: beforeEffect.gold, keys: beforeEffect.keys },
+            resourcesAfter: { gold: afterEffect.gold, keys: afterEffect.keys },
+          });
+        }
       }
 
       // Passer a la phase post_action apres les effets
@@ -242,10 +402,22 @@ export function PlayProvider({ children }: { children: ReactNode }) {
       const player = newState.players[newState.currentPlayerIndex];
       const lastPosition = player.board.findIndex(c => c !== null && c.cardId === cardId);
 
+      const beforeEffect = newState.players[newState.currentPlayerIndex];
+      let effectDescription = '';
+
       if (lastPosition >= 0) {
         const effectResult = applyCardEffects(newState, cardId, lastPosition, choiceIndex);
         newState = effectResult.newState;
+        effectDescription = effectResult.description;
       }
+
+      // Logger le choix d'effet avec la description
+      const afterEffect = newState.players[newState.currentPlayerIndex];
+      addLogEntry(playerBefore, turnNumber, 'effect', {
+        description: effectDescription,
+        resourcesBefore: { gold: beforeEffect.gold, keys: beforeEffect.keys },
+        resourcesAfter: { gold: afterEffect.gold, keys: afterEffect.keys },
+      });
 
       // Passer a la phase post_action apres le choix
       newState = { ...newState, turnPhase: 'post_action' };
@@ -268,7 +440,7 @@ export function PlayProvider({ children }: { children: ReactNode }) {
         setTimeout(() => runAITurn(newState), 500);
       }
     }
-  }, [state.gameState, state.pendingEffectChoice, applyCardEffects]);
+  }, [state.gameState, state.pendingEffectChoice, applyCardEffects, addLogEntry]);
 
   // Actions simplifiees
   const buyCard = useCallback(async (cardId: string) => {
@@ -350,8 +522,47 @@ export function PlayProvider({ children }: { children: ReactNode }) {
           break;
         }
 
+        // Capturer les ressources avant l'action
+        const playerBefore = currentState.players[currentState.currentPlayerIndex];
+        const resourcesBefore = { gold: playerBefore.gold, keys: playerBefore.keys };
+        const turnNumber = currentState.turnNumber;
+
         const purchasedCard = currentState.purchasedCard;
         currentState = executeAction(currentState, action);
+
+        // Logger l'action de l'IA
+        if (action.type !== 'end_turn') {
+          const playerAfter = currentState.players[currentState.currentPlayerIndex];
+          const resourcesAfter = { gold: playerAfter.gold, keys: playerAfter.keys };
+          const logActionType = getLogActionType(action.type);
+
+          // Determiner la position selon le type d'action
+          const position = action.type === 'use_key_on_lock'
+            ? action.lockPosition
+            : action.position;
+
+          // Determiner le log selon le type
+          if (logActionType === 'buy') {
+            addLogEntry(playerBefore, turnNumber, logActionType, {
+              cardId: action.cardId,
+              resourcesBefore,
+              resourcesAfter,
+            });
+          } else if (logActionType === 'place') {
+            addLogEntry(playerBefore, turnNumber, logActionType, {
+              description: position !== undefined ? getPositionName(position) : undefined,
+              position,
+              resourcesBefore,
+              resourcesAfter,
+            });
+          } else {
+            addLogEntry(playerBefore, turnNumber, logActionType, {
+              position,
+              resourcesBefore,
+              resourcesAfter,
+            });
+          }
+        }
 
         // Appliquer les effets
         if (action.type === 'place_card' && purchasedCard) {
@@ -362,8 +573,19 @@ export function PlayProvider({ children }: { children: ReactNode }) {
             // L'IA choisit automatiquement (option 0 ou 1 selon heuristique)
             const choiceIndex = hasChoice && currentPlayer.board.filter(c => c !== null).length >= 6 ? 1 : 0;
 
+            const beforeEffect = currentState.players[currentState.currentPlayerIndex];
             const effectResult = executeCardEffect(currentState, purchasedCard, action.position!, choiceIndex);
             currentState = effectResult.newState;
+
+            // Logger l'effet avec la description
+            const afterEffect = currentState.players[currentState.currentPlayerIndex];
+            if (beforeEffect.gold !== afterEffect.gold || beforeEffect.keys !== afterEffect.keys) {
+              addLogEntry(playerBefore, turnNumber, 'effect', {
+                description: effectResult.description,
+                resourcesBefore: { gold: beforeEffect.gold, keys: beforeEffect.keys },
+                resourcesAfter: { gold: afterEffect.gold, keys: afterEffect.keys },
+              });
+            }
           }
         }
 
@@ -397,7 +619,7 @@ export function PlayProvider({ children }: { children: ReactNode }) {
     }
 
     aiLoopRef.current = false;
-  }, []);
+  }, [addLogEntry]);
 
   // Helpers
   const getCurrentPlayerFn = useCallback((): PlayPlayer | null => {
@@ -464,6 +686,10 @@ export function PlayProvider({ children }: { children: ReactNode }) {
         canAffordCard: canAffordCardFn,
         isCurrentPlayerAI,
         isMyTurn,
+        // Logs
+        toggleGameLog,
+        gameLog: state.gameLog,
+        showGameLog: state.showGameLog,
       }}
     >
       {children}

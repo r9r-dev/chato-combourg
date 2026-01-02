@@ -10,6 +10,7 @@ import type {
   PlayGameConfig,
   AILevel,
   CardEffect,
+  GameLogEntry,
 } from '../types/play';
 
 // =============================================================================
@@ -48,6 +49,10 @@ export interface PlayUIState {
 
   // Chargement
   isLoading: boolean;
+
+  // Logs de partie
+  gameLog: GameLogEntry[];
+  showGameLog: boolean;
 }
 
 // =============================================================================
@@ -82,7 +87,12 @@ export type PlayUIAction =
 
   // Erreurs et chargement
   | { type: 'SET_ERROR'; error: string | null }
-  | { type: 'SET_LOADING'; isLoading: boolean };
+  | { type: 'SET_LOADING'; isLoading: boolean }
+
+  // Logs de partie
+  | { type: 'ADD_LOG_ENTRY'; entry: GameLogEntry }
+  | { type: 'TOGGLE_LOG' }
+  | { type: 'CLEAR_LOG' };
 
 // =============================================================================
 // Etat initial
@@ -97,6 +107,8 @@ export const initialPlayUIState: PlayUIState = {
   pendingEffectChoice: null,
   lastError: null,
   isLoading: false,
+  gameLog: [],
+  showGameLog: false,
 };
 
 // =============================================================================
@@ -257,6 +269,16 @@ export function playReducer(
 
     case 'SET_LOADING':
       return { ...state, isLoading: action.isLoading };
+
+    // Logs de partie
+    case 'ADD_LOG_ENTRY':
+      return { ...state, gameLog: [...state.gameLog, action.entry] };
+
+    case 'TOGGLE_LOG':
+      return { ...state, showGameLog: !state.showGameLog };
+
+    case 'CLEAR_LOG':
+      return { ...state, gameLog: [] };
 
     default:
       return state;
