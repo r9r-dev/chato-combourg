@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.5.9 (2026-01-03)
+
+- Ajout du composant AnimatedResource pour animer les changements de ressources
+- Correction : applyOptimalShift est maintenant appelé correctement pour l'IA après le placement d'une carte
+- Correction : optimisation du décalage du plateau pour l'IA lors du placement
+
 ## v3.5.8 (2026-01-03)
 
 - Affiche les notes de version aussi à la première visite
