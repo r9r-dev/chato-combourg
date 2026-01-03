@@ -186,7 +186,7 @@ export function GameDetailModal({ game, onClose }: GameDetailModalProps) {
             </div>
             {isLegacy && (
               <div className="text-white/40 text-sm mt-1">
-                Cartes: {details.reduce((sum, d) => sum + d.score, 0)} + Cles: {Math.min(viewingPlayer.keys, 3) * 10}
+                Cartes: {details.reduce((sum, d) => sum + d.score, 0)} + Cles: {viewingPlayer.keys}
               </div>
             )}
           </div>
@@ -301,8 +301,8 @@ export function GameDetailModal({ game, onClose }: GameDetailModalProps) {
                       </div>
                     </td>
                     {sortedPlayers.map((player) => {
-                      // Calculate keys bonus (10 per key for first 3)
-                      const keysBonus = Math.min(player.keys, 3) * 10;
+                      // Keys bonus: 1 point per key
+                      const keysBonus = player.keys;
                       return (
                         <td
                           key={player.id}
