@@ -224,10 +224,10 @@ class ChatoEnv(gym.Env):
             obs = self.obs_encoder.encode(self.state, self.state.current_player_index)
             action_mask = self._get_action_mask()
 
-            # Get action from policy (deterministic=True is faster)
+            # Get action from policy (stochastic for training diversity)
             action, _ = self.opponent_policy.predict(
                 obs,
-                deterministic=True,
+                deterministic=False,
                 action_masks=action_mask,
             )
         else:
