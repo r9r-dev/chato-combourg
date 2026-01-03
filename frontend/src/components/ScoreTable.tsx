@@ -77,7 +77,10 @@ export function ScoreTable({ players, onPlayerClick }: ScoreTableProps) {
                 return (
                   <td
                     key={player.id}
-                    className="p-2 text-center font-mono text-white/90"
+                    className={`p-2 text-center font-mono text-white/90 ${
+                      onPlayerClick ? 'cursor-pointer hover:bg-white/5' : ''
+                    }`}
+                    onClick={() => onPlayerClick?.(player)}
                   >
                     {score}
                   </td>
@@ -102,7 +105,10 @@ export function ScoreTable({ players, onPlayerClick }: ScoreTableProps) {
             {sortedPlayers.map((player) => (
               <td
                 key={player.id}
-                className="p-2 text-center font-mono text-gold"
+                className={`p-2 text-center font-mono text-gold ${
+                  onPlayerClick ? 'cursor-pointer hover:bg-white/5' : ''
+                }`}
+                onClick={() => onPlayerClick?.(player)}
               >
                 {player.score?.keys_bonus ?? 0}
               </td>
@@ -123,7 +129,8 @@ export function ScoreTable({ players, onPlayerClick }: ScoreTableProps) {
                   key={player.id}
                   className={`p-2 text-center font-mono font-bold text-xl ${
                     isWinner ? 'text-gold' : 'text-white'
-                  }`}
+                  } ${onPlayerClick ? 'cursor-pointer hover:bg-white/5' : ''}`}
+                  onClick={() => onPlayerClick?.(player)}
                 >
                   {player.score?.total_score ?? 0}
                 </td>
