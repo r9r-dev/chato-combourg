@@ -8,8 +8,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { usePlay } from '../context/PlayContext';
 import { calculateScore, createGame, createPlayer, getPlayers } from '../services/api';
+import { MiniGrid } from '../components/MiniGrid';
 import type { PlayPlayer } from '../types/play';
-import type { CalculateResponse } from '../types';
+import type { CalculateResponse, CardScoreDetail } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
@@ -20,6 +21,7 @@ interface PlayerResult {
   cardsScore: number;
   rank: number;
   cards: string[];
+  details: CardScoreDetail[];
 }
 
 // Noms des joueurs IA par niveau
@@ -93,6 +95,7 @@ export function PlayResults() {
           cardsScore: scoreResult?.cards_score ?? 0,
           rank: 0,
           cards,
+          details: scoreResult?.details ?? [],
         });
       }
 
@@ -320,6 +323,125 @@ export function PlayResults() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Tableau récapitulatif des scores */}
+        <div className="mt-6">
+          <h3 className="text-white/60 text-sm mb-3">Détail des scores</h3>
+          <div className="rounded-xl bg-dark-lighter border border-white/10 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-max border-collapse">
+                {/* Header avec noms des joueurs */}
+                <thead>
+                  <tr>
+                    <th className="p-2 w-10" />
+                    {results.map((result) => {
+                      const isWinner = result.rank === 1;
+                      return (
+                        <th key={result.player.id} className="p-2 text-center min-w-[60px]">
+                          <div className="flex flex-col items-center gap-1">
+                            <div
+                              className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
+                                isWinner ? 'ring-2 ring-gold' : ''
+                              }`}
+                              style={{ backgroundColor: result.player.color }}
+                            >
+                              {result.player.isAI ? (
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M13 7H7v6h6V7z" />
+                                  <path fillRule="evenodd" d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z" clipRule="evenodd" />
+                                </svg>
+                              ) : (
+                                result.player.name.charAt(0).toUpperCase()
+                              )}
+                            </div>
+                            <span
+                              className={`text-xs font-medium truncate max-w-[80px] ${
+                                isWinner ? 'text-gold' : 'text-white/80'
+                              }`}
+                            >
+                              {result.player.name}
+                            </span>
+                          </div>
+                        </th>
+                      );
+                    })}
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {/* 9 lignes de positions de cartes */}
+                  {Array.from({ length: 9 }).map((_, position) => (
+                    <tr
+                      key={position}
+                      className={position % 2 === 0 ? 'bg-white/5' : ''}
+                    >
+                      <td className="p-2 border-r border-white/10">
+                        <MiniGrid position={position} size={20} />
+                      </td>
+                      {results.map((result) => {
+                        const detail = result.details.find((d) => d.position === position);
+                        const score = detail?.score ?? '-';
+                        return (
+                          <td
+                            key={result.player.id}
+                            className="p-2 text-center font-mono text-white/90"
+                          >
+                            {score}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+
+                  {/* Ligne bonus clés */}
+                  <tr className="border-t border-gold/30 bg-gold/10">
+                    <td className="p-2 border-r border-white/10">
+                      <div className="flex items-center justify-center">
+                        <svg
+                          className="w-5 h-5 text-gold"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" />
+                        </svg>
+                      </div>
+                    </td>
+                    {results.map((result) => (
+                      <td
+                        key={result.player.id}
+                        className="p-2 text-center font-mono text-gold"
+                      >
+                        {result.keysBonus}
+                      </td>
+                    ))}
+                  </tr>
+
+                  {/* Ligne total */}
+                  <tr className="border-t-2 border-gold bg-gold/20">
+                    <td className="p-2 border-r border-white/10">
+                      <div className="flex items-center justify-center text-gold font-bold text-lg">
+                        &Sigma;
+                      </div>
+                    </td>
+                    {results.map((result) => {
+                      const isWinner = result.rank === 1;
+                      return (
+                        <td
+                          key={result.player.id}
+                          className={`p-2 text-center font-mono font-bold text-xl ${
+                            isWinner ? 'text-gold' : 'text-white'
+                          }`}
+                        >
+                          {result.score}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
         {/* Plateaux des joueurs */}
