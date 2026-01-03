@@ -527,7 +527,10 @@ export function PlayProvider({ children }: { children: ReactNode }) {
         newState = { ...newState, players };
       }
 
-      newState = { ...newState, board: refilledBoard, turnPhase: 'post_action' };
+      // Conserver la phase: si on etait en pre_action (effet de cadenas), rester en pre_action
+      const originalPhase = state.gameState.turnPhase;
+      const nextPhase = originalPhase === 'pre_action' ? 'pre_action' : 'post_action';
+      newState = { ...newState, board: refilledBoard, turnPhase: nextPhase as 'pre_action' | 'post_action' };
 
       dispatch({ type: 'EFFECT_CHOICE_MADE', choiceIndex });
     }
@@ -675,8 +678,10 @@ export function PlayProvider({ children }: { children: ReactNode }) {
       newState = { ...newState, players };
     }
 
-    // Passer a la phase post_action
-    const finalState = { ...newState, turnPhase: 'post_action' as const };
+    // Conserver la phase: si on etait en pre_action, rester en pre_action pour pouvoir acheter
+    const originalPhase = state.gameState.turnPhase;
+    const nextPhase = originalPhase === 'pre_action' ? 'pre_action' : 'post_action';
+    const finalState = { ...newState, turnPhase: nextPhase as 'pre_action' | 'post_action' };
 
     dispatch({ type: 'DISCARD_CHOICE_MADE' });
     dispatch({ type: 'SET_GAME_STATE', gameState: finalState });
@@ -724,8 +729,11 @@ export function PlayProvider({ children }: { children: ReactNode }) {
       newState = { ...newState, players };
     }
 
-    // Passer a la phase post_action (le cadenas a ete utilise)
-    const finalState = { ...newState, turnPhase: 'post_action' as const };
+    // Conserver la phase: si on etait en pre_action, rester en pre_action pour pouvoir acheter
+    // Si on etait en post_action, rester en post_action
+    const originalPhase = state.gameState.turnPhase;
+    const nextPhase = originalPhase === 'pre_action' ? 'pre_action' : 'post_action';
+    const finalState = { ...newState, turnPhase: nextPhase as 'pre_action' | 'post_action' };
 
     dispatch({ type: 'REPLACE_LOCATION_CHOICE_MADE' });
     dispatch({ type: 'SET_GAME_STATE', gameState: finalState });
@@ -821,8 +829,10 @@ export function PlayProvider({ children }: { children: ReactNode }) {
       newState = { ...newState, players };
     }
 
-    // Passer a la phase post_action (le cadenas a ete utilise)
-    const finalState = { ...newState, turnPhase: 'post_action' as const };
+    // Conserver la phase: si on etait en pre_action, rester en pre_action pour pouvoir acheter
+    const originalPhase = state.gameState.turnPhase;
+    const nextPhase = originalPhase === 'pre_action' ? 'pre_action' : 'post_action';
+    const finalState = { ...newState, turnPhase: nextPhase as 'pre_action' | 'post_action' };
 
     dispatch({ type: 'ADJACENT_CARD_CHOICE_MADE' });
     dispatch({ type: 'SET_GAME_STATE', gameState: finalState });
@@ -866,9 +876,11 @@ export function PlayProvider({ children }: { children: ReactNode }) {
       newState = { ...newState, players };
     }
 
-    // Remplir les lieux et passer a la phase post_action
+    // Remplir les lieux et conserver la phase: si on etait en pre_action, rester en pre_action
     const refilledBoard = refillLocations(newState.board);
-    const finalState = { ...newState, board: refilledBoard, turnPhase: 'post_action' as const };
+    const originalPhase = state.gameState.turnPhase;
+    const nextPhase = originalPhase === 'pre_action' ? 'pre_action' : 'post_action';
+    const finalState = { ...newState, board: refilledBoard, turnPhase: nextPhase as 'pre_action' | 'post_action' };
 
     dispatch({ type: 'PURSE_SELECTION_CHOICE_MADE' });
     dispatch({ type: 'SET_GAME_STATE', gameState: finalState });

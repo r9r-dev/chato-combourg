@@ -594,9 +594,19 @@ function executePlaceCard(
 
   players[playerIndex] = player;
 
+  // Deplacer le messager si la carte a l'icone messager
+  let centralBoard = state.board;
+  if (card?.has_messenger) {
+    centralBoard = {
+      ...centralBoard,
+      messengerLocation: centralBoard.messengerLocation === 'castle' ? 'village' : 'castle',
+    };
+  }
+
   return {
     ...state,
     players,
+    board: centralBoard,
     purchasedCard: null,
     turnPhase: 'effect',
   };
@@ -613,28 +623,8 @@ function executeChooseEffect(
 
 function executeEndTurn(state: PlayGameState): PlayGameState {
   // Le refill des lieux est fait apres le placement de carte (dans PlayContext)
-  let board = state.board;
-
-  // Deplacer le messager si la carte a l'icone messager
-  const player = state.players[state.currentPlayerIndex];
-  const lastPlacedPosition = player.board.findIndex(
-    (c, i) => c !== null && state.actionHistory.some(
-      a => a.type === 'place_card' && a.position === i
-    )
-  );
-
-  if (lastPlacedPosition >= 0) {
-    const placedCard = player.board[lastPlacedPosition];
-    if (placedCard) {
-      const card = getCard(placedCard.cardId);
-      if (card?.has_messenger) {
-        board = {
-          ...board,
-          messengerLocation: board.messengerLocation === 'castle' ? 'village' : 'castle',
-        };
-      }
-    }
-  }
+  // Le deplacement du messager est fait dans executePlaceCard
+  const board = state.board;
 
   // Passer au joueur suivant
   const nextPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
