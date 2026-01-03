@@ -153,28 +153,32 @@ export function Play() {
   const isPlacePhase = gameState?.turnPhase === 'place';
   const isPostActionPhase = gameState?.turnPhase === 'post_action';
   const isEffectPhase = state.step === 'effect_choice';
-
-  // Scroll vers le plateau du joueur quand on entre en phase de placement
-  useEffect(() => {
-    if (isPlacePhase && playerBoardRef.current) {
-      playerBoardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  }, [isPlacePhase]);
-
-  // Scroll vers le haut quand on entre en phase d'achat (debut de tour)
-  useEffect(() => {
-    if (isBuyPhase && !isCurrentPlayerAI() && scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }, [isBuyPhase, isCurrentPlayerAI]);
-
-  // Peut utiliser un cadenas : en pre_action ou post_action, si pas deja utilise ce tour
-  const canUseLock = (isBuyPhase || isPostActionPhase) && !gameState?.lockUsedThisTurn && !isCurrentPlayerAI();
   const isDiscardPhase = state.step === 'discard_choice';
   const isReplaceLocationPhase = state.step === 'replace_location_choice';
   const isAdjacentCardPhase = state.step === 'adjacent_card_choice';
   const isPurseSelectionPhase = state.step === 'purse_selection_choice';
   const canEndTurn = gameState?.turnPhase === 'post_action' || gameState?.turnPhase === 'end';
+
+  // Peut utiliser un cadenas : en pre_action ou post_action, si pas deja utilise ce tour
+  const canUseLock = (isBuyPhase || isPostActionPhase) && !gameState?.lockUsedThisTurn && !isCurrentPlayerAI();
+
+  // Scroll vers le plateau du joueur quand on a une action sur le plateau
+  // (placement, selection carte adjacente, selection bourses)
+  useEffect(() => {
+    const needsBoardScroll = isPlacePhase || isAdjacentCardPhase || isPurseSelectionPhase;
+    if (needsBoardScroll && playerBoardRef.current) {
+      playerBoardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [isPlacePhase, isAdjacentCardPhase, isPurseSelectionPhase]);
+
+  // Scroll vers le haut quand on a une action sur le shop
+  // (achat, defausse, choix de lieu) - aussi pour l'IA pour que le joueur puisse suivre
+  useEffect(() => {
+    const needsShopScroll = isBuyPhase || isDiscardPhase || isReplaceLocationPhase;
+    if (needsShopScroll && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [isBuyPhase, isDiscardPhase, isReplaceLocationPhase]);
 
   // Selection des bourses - positions selectionnees
   const [selectedPursePositions, setSelectedPursePositions] = useState<number[]>([]);
