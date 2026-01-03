@@ -54,7 +54,7 @@ export function WhatsNew() {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70" onClick={handleClose} />
       <div className="relative w-full max-w-sm bg-dark-lighter rounded-2xl p-6 max-h-[80vh] overflow-hidden flex flex-col">
-        <h2 className="text-gold text-xl font-bold mb-2">Nouveautes</h2>
+        <h2 className="text-gold text-xl font-bold mb-2">Notes de version</h2>
         <p className="text-white/60 text-sm mb-4">{version}</p>
 
         <div className="flex-1 overflow-auto mb-4">

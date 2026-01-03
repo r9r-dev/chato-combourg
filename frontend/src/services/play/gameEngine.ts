@@ -82,6 +82,7 @@ function mergeCardData(
     };
 
     const effect = (effects as Record<string, unknown>)[id] as {
+      has_messenger: boolean;
       effects: unknown[];
       lock_effect: unknown | null;
     } | undefined;
@@ -91,7 +92,7 @@ function mergeCardData(
       value: attr.value,
       shields: attr.shields as PlayCard['shields'],
       category: attr.category as CardCategory | null,
-      has_messenger: attr.has_messenger,
+      has_messenger: effect?.has_messenger ?? false,
       has_price_reduction: attr.has_price_reduction,
       has_lock: attr.has_lock,
       has_coin_purse: attr.has_coin_purse,
