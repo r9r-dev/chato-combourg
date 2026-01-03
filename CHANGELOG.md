@@ -1,5 +1,10 @@
 # Changelog
 
+## v3.7.2 (2026-01-03)
+
+### Corrections
+- Correction du calcul des scores des cartes bourse en mode Play : les pièces restantes en main sont maintenant ajoutées pour remplir les bourses
+
 ## v3.7.1 (2026-01-03)
 
 ### Corrections
