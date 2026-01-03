@@ -112,6 +112,7 @@ def create_game_with_players(
     played_at: datetime | None = None,
     notes: str | None = None,
     use_coins_tiebreaker: bool = True,
+    source: str = "scan",
 ) -> tuple[Game, list[GamePlayer], dict[int, Player]]:
     """
     Crée une partie avec les données des joueurs.
@@ -123,6 +124,7 @@ def create_game_with_players(
         played_at: Date de la partie (défaut: maintenant)
         notes: Notes optionnelles sur la partie
         use_coins_tiebreaker: Utiliser les pièces pour départager les égalités
+        source: Source de la partie ('scan', 'legacy', 'application')
 
     Returns:
         tuple: (Game créée, liste des GamePlayer, dict player_id -> Player)
@@ -150,6 +152,7 @@ def create_game_with_players(
         user_id=user.id,
         played_at=played_at or datetime.utcnow(),
         notes=notes,
+        source=source,
     )
     db.add(game)
     db.flush()  # Obtenir game.id
@@ -204,6 +207,7 @@ def build_game_response(
         "id": game.id,
         "played_at": game.played_at,
         "notes": game.notes,
+        "source": game.source or "scan",
         "players": [
             {
                 "id": gp.id,

@@ -123,6 +123,7 @@ export function createGame(config: PlayGameConfig): PlayGameState {
     color: p.color,
     isAI: p.isAI,
     aiLevel: p.aiLevel,
+    playerId: p.playerId,
     gold: INITIAL_GOLD,
     keys: INITIAL_KEYS,
     reductionCastle: 0,

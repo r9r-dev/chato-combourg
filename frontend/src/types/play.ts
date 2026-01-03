@@ -67,6 +67,7 @@ export interface PlayPlayer {
   color: string;
   isAI: boolean;
   aiLevel?: AILevel;
+  playerId?: number;             // ID du joueur en base (pour les humains uniquement)
 
   // Ressources
   gold: number;
@@ -197,6 +198,7 @@ export interface PlayGameConfig {
     color: string;
     isAI: boolean;
     aiLevel?: AILevel;
+    playerId?: number;           // ID du joueur en base (pour les humains uniquement)
   }[];
   randomSeed?: number;           // Pour parties reproductibles
 }

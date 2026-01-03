@@ -156,6 +156,7 @@ function generateMockGamesData() {
       id: i,
       played_at: playedAt.toISOString(),
       notes: i % 3 === 0 ? 'Partie du dimanche' : null,
+      source: 'scan',
       player_count: numPlayers,
       winner_name: winner.player_name,
       winner_score: winner.score,
@@ -172,6 +173,7 @@ function generateMockGamesData() {
       id: i,
       played_at: playedAt.toISOString(),
       notes: i % 3 === 0 ? 'Partie du dimanche' : null,
+      source: 'scan',
       players: playerScores,
     };
   }

@@ -144,10 +144,14 @@ export interface GamePlayerSummary {
   rank: number | null;
 }
 
+// Game source type
+export type GameSource = 'scan' | 'legacy' | 'application';
+
 export interface GameListItem {
   id: number;
   played_at: string;
   notes: string | null;
+  source: GameSource;
   player_count: number;
   winner_name: string | null;
   winner_score: number | null;
@@ -174,6 +178,7 @@ export interface GameDetail {
   id: number;
   played_at: string;
   notes: string | null;
+  source: GameSource;
   players: GamePlayerData[];
 }
 
@@ -188,6 +193,7 @@ export interface GamePlayerCreate {
 export interface GameCreate {
   players: GamePlayerCreate[];
   notes?: string;
+  source?: GameSource;
 }
 
 // Legacy game types (for importing old games)

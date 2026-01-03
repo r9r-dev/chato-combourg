@@ -53,12 +53,21 @@ class GameCreate(BaseModel):
     players: list[GamePlayerCreate]  # 2-5 players
     notes: str | None = None
     played_at: datetime | None = None
+    source: str = "scan"  # 'scan', 'legacy', 'application'
 
     @field_validator("players")
     @classmethod
     def validate_players(cls, v):
         if len(v) < 2 or len(v) > 5:
             raise ValueError("A game must have between 2 and 5 players")
+        return v
+
+    @field_validator("source")
+    @classmethod
+    def validate_source(cls, v):
+        allowed = {"scan", "legacy", "application"}
+        if v not in allowed:
+            raise ValueError(f"source must be one of: {', '.join(allowed)}")
         return v
 
 
@@ -89,6 +98,7 @@ class GameResponse(BaseModel):
     id: int
     played_at: datetime
     notes: str | None
+    source: str = "scan"  # 'scan', 'legacy', 'application'
     players: list[GamePlayerResponse]
 
 
@@ -109,6 +119,7 @@ class GameListItem(BaseModel):
     id: int
     played_at: datetime
     notes: str | None
+    source: str = "scan"  # 'scan', 'legacy', 'application'
     player_count: int
     winner_name: str | None
     winner_score: int | None
@@ -222,6 +233,7 @@ def list_games(
                 id=game.id,
                 played_at=game.played_at,
                 notes=game.notes,
+                source=game.source or "scan",
                 player_count=len(game.game_players),
                 winner_name=winner.player.name if winner else None,
                 winner_score=winner.score if winner else None,
@@ -258,6 +270,7 @@ def create_game(
         played_at=data.played_at,
         notes=data.notes,
         use_coins_tiebreaker=True,
+        source=data.source,
     )
 
     return GameResponse(**build_game_response(game, game_players, player_lookup))
@@ -424,6 +437,7 @@ def create_legacy_game(
         played_at=data.played_at,
         notes=data.notes,
         use_coins_tiebreaker=False,  # Pas de tiebreaker pour les parties legacy
+        source="legacy",
     )
 
     return GameResponse(**build_game_response(game, game_players, player_lookup))
