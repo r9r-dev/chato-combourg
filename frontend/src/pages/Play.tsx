@@ -651,8 +651,8 @@ export function Play() {
       <footer className="relative z-10 border-t border-white/10 bg-dark-lighter">
         {/* Boutons d'action */}
         <div className="p-3 flex gap-2">
-          {/* Boutons cle (pre_action) */}
-          {!isCurrentPlayerAI() && gameState.turnPhase === 'pre_action' && currentPlayer.keys > 0 && !gameState.keyUsedThisTurn && (
+          {/* Boutons cle (pre_action) - caches pendant les phases de choix */}
+          {!isCurrentPlayerAI() && gameState.turnPhase === 'pre_action' && currentPlayer.keys > 0 && !gameState.keyUsedThisTurn && !isEffectPhase && !isReplaceLocationPhase && !isDiscardPhase && !isAdjacentCardPhase && !isPurseSelectionPhase && (
             <>
               <button
                 onClick={() => handleSpendKey(gameState.board.messengerLocation === 'castle' ? 'village' : 'castle')}
