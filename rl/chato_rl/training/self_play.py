@@ -282,6 +282,18 @@ class SelfPlayTrainer:
             )
             # Set to eval mode for faster inference
             self.current_opponent.policy.set_training_mode(False)
+
+            # Compile policy for faster inference (PyTorch 2.0+)
+            try:
+                import torch
+                if hasattr(torch, 'compile') and self.config.device != 'mps':
+                    # Note: torch.compile doesn't work well with MPS yet
+                    self.current_opponent.policy = torch.compile(
+                        self.current_opponent.policy,
+                        mode='reduce-overhead',
+                    )
+            except Exception:
+                pass  # Skip if compilation fails
         else:
             # Update existing opponent with sampled policy weights
             self.opponent_pool.load_opponent_policy(opponent_data, self.current_opponent)

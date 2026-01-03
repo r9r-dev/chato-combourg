@@ -13,6 +13,7 @@ from typing import Any, SupportsFloat
 
 import gymnasium as gym
 import numpy as np
+import torch
 from gymnasium import spaces
 
 from ..game import ActionType, CardDatabase, GameAction, GameState, TurnPhase
@@ -224,12 +225,8 @@ class ChatoEnv(gym.Env):
             obs = self.obs_encoder.encode(self.state, self.state.current_player_index)
             action_mask = self._get_action_mask()
 
-            # Get action from policy (stochastic for training diversity)
-            action, _ = self.opponent_policy.predict(
-                obs,
-                deterministic=False,
-                action_masks=action_mask,
-            )
+            # Fast inference path - bypass some sb3 overhead
+            action = self._fast_opponent_predict(obs, action_mask)
         else:
             # Random valid action
             action = self._sample_random_action()
@@ -287,6 +284,43 @@ class ChatoEnv(gym.Env):
                 self.state = self.engine.execute_action(self.state, end_action)
             except ValueError:
                 pass
+
+    def _fast_opponent_predict(self, obs: dict, action_mask: np.ndarray) -> int:
+        """Fast opponent prediction bypassing some sb3 overhead.
+
+        Directly calls the policy network and samples from the masked distribution.
+        """
+        policy = self.opponent_policy.policy
+
+        # Convert obs to tensors
+        device = policy.device
+        obs_tensor = {}
+        for key, value in obs.items():
+            if isinstance(value, np.ndarray):
+                obs_tensor[key] = torch.as_tensor(value, device=device).unsqueeze(0)
+
+        # Get features and latent
+        with torch.no_grad():
+            features = policy.extract_features(obs_tensor)
+            if policy.share_features_extractor:
+                latent_pi, _ = policy.mlp_extractor(features)
+            else:
+                pi_features = policy.pi_features_extractor(obs_tensor)
+                latent_pi, _ = policy.mlp_extractor(pi_features)
+
+            # Get action logits
+            logits = policy.action_net(latent_pi)
+
+            # Apply mask
+            mask_tensor = torch.as_tensor(action_mask, dtype=torch.bool, device=device)
+            logits = logits.squeeze(0)
+            logits[~mask_tensor] = float('-inf')
+
+            # Sample action (stochastic)
+            probs = torch.softmax(logits, dim=-1)
+            action = torch.multinomial(probs, 1).item()
+
+        return action
 
     def _sample_random_action(self) -> int:
         """Sample a random valid action."""
