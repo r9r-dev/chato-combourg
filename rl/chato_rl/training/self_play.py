@@ -161,12 +161,12 @@ class SelfPlayTrainer:
         config.checkpoint_dir.mkdir(parents=True, exist_ok=True)
         config.log_dir.mkdir(parents=True, exist_ok=True)
 
+        # Current opponent policy (must be set before _create_env)
+        self.current_opponent: MaskablePPO | None = None
+
         # Initialize environment and model
         self.env = self._create_env()
         self.model = self._create_model()
-
-        # Current opponent policy (for env to use)
-        self.current_opponent: MaskablePPO | None = None
 
     def _create_env(self) -> DummyVecEnv:
         """Create vectorized environment.
