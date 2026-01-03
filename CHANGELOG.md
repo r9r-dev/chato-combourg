@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.5.7 (2026-01-03)
+
+- Amélioration de l'auto-scroll en mode Play
+
 ## v3.5.6 (2026-01-03)
 
 - Correction du menu contextuel sur carte achetée en mode Play
