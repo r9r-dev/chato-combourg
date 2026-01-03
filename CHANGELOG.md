@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.5.5 (2026-01-03)
+
+- Correction du messager qui ne se déplace pas après le placement d'une carte
+
 ## v3.5.4 (2026-01-03)
 
 - Ajout page Notes de version pour consulter l'historique des releases
