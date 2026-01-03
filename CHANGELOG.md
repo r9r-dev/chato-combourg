@@ -1,5 +1,13 @@
 # Changelog
 
+## v3.7.1 (2026-01-03)
+
+### Corrections
+- Correction de l'affichage des clés dans le tableau récapitulatif (affichait 30 au lieu du nombre réel)
+
+### Améliorations
+- Ajout du tableau récapitulatif des scores dans les résultats du mode Play
+
 ## v3.7.0 (2026-01-03)
 
 ### Améliorations UX
