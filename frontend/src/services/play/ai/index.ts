@@ -21,7 +21,7 @@ import type {
   PurseSelectionChoice,
   Location,
 } from '../../../types/play';
-import { getValidPlacements, getExternalZones, type ExternalZone } from '../../../types/play';
+import { getValidPlacements } from '../../../types/play';
 import {
   getCard,
   getAvailableCards,
@@ -127,69 +127,6 @@ function fallbackDiscardCard(availableCards: string[]): string {
  */
 function fallbackAdjacentCard(choice: AdjacentCardChoice): number {
   return choice.adjacentPositions[0];
-}
-
-/**
- * Choisit la meilleure zone externe pour optimiser le positionnement du plateau.
- * Prefere les shifts qui "recentrent" le plateau (eloignent les cartes des bords occupes).
- *
- * @param externalZones Zones externes disponibles
- * @param board Plateau actuel du joueur
- * @returns La meilleure zone externe, ou null si aucune n'est benefique
- */
-function chooseBestExternalZone(
-  externalZones: ExternalZone[],
-  board: (import('../../../types/play').PlacedCard | null)[]
-): ExternalZone | null {
-  if (externalZones.length === 0) return null;
-
-  // Calculer les lignes/colonnes occupees
-  const occupiedRows = new Set<number>();
-  const occupiedCols = new Set<number>();
-  for (let i = 0; i < 9; i++) {
-    if (board[i] !== null) {
-      occupiedRows.add(Math.floor(i / 3));
-      occupiedCols.add(i % 3);
-    }
-  }
-
-  // Priorite aux shifts qui eloignent du bord le plus contraint
-  // Ex: si toutes les cartes sont en ligne 0, shifter vers le bas
-  let bestZone: ExternalZone | null = null;
-  let bestScore = -1;
-
-  for (const zone of externalZones) {
-    let score = 0;
-
-    // Bonus si le shift libere un bord contraint
-    if (zone.shiftDirection === 'down' && occupiedRows.has(0) && !occupiedRows.has(2)) {
-      score += 3; // Cartes en haut, rien en bas -> shifter vers le bas est bon
-    }
-    if (zone.shiftDirection === 'up' && occupiedRows.has(2) && !occupiedRows.has(0)) {
-      score += 3; // Cartes en bas, rien en haut -> shifter vers le haut est bon
-    }
-    if (zone.shiftDirection === 'right' && occupiedCols.has(0) && !occupiedCols.has(2)) {
-      score += 3; // Cartes a gauche, rien a droite -> shifter vers la droite est bon
-    }
-    if (zone.shiftDirection === 'left' && occupiedCols.has(2) && !occupiedCols.has(0)) {
-      score += 3; // Cartes a droite, rien a gauche -> shifter vers la gauche est bon
-    }
-
-    // Bonus si le placement apres shift est au centre
-    if (zone.position === 4) {
-      score += 2;
-    } else if ([1, 3, 5, 7].includes(zone.position)) {
-      score += 1; // Positions de bord central
-    }
-
-    if (score > bestScore) {
-      bestScore = score;
-      bestZone = zone;
-    }
-  }
-
-  // Ne retourner une zone que si elle a un score positif (benefice reel)
-  return bestScore > 0 ? bestZone : null;
 }
 
 /**
@@ -309,29 +246,11 @@ export class SafeAIRunner {
 
   /**
    * Obtenir l'action de placement de l'IA (avec fallback)
-   * Considere aussi les zones externes pour optimiser le positionnement du plateau
    */
   getPlaceAction(state: PlayGameState): AIActionResult {
     const player = getCurrentPlayer(state);
     const validPositions = getValidPlacements(player.board);
-    const externalZones = getExternalZones(player.board);
     const cardId = state.purchasedCard;
-
-    // Verifier si un shift serait benefique pour recentrer le plateau
-    const bestExternalZone = chooseBestExternalZone(externalZones, player.board);
-
-    // Si un shift est benefique, l'utiliser directement
-    if (bestExternalZone) {
-      return {
-        action: {
-          type: 'place_card',
-          playerId: player.id,
-          position: bestExternalZone.position,
-          shiftDirection: bestExternalZone.shiftDirection,
-        },
-        source: 'ai',
-      };
-    }
 
     if (!cardId || validPositions.length === 0) {
       return {
