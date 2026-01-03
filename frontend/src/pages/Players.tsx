@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { useAuth } from '../context/AuthContext';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 import type { Player } from '../types';
 
 export function Players() {
@@ -52,11 +53,7 @@ export function Players() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-dvh">
-        <div className="text-white/60">Chargement...</div>
-      </div>
-    );
+    return <LoadingSpinner fullScreen text="Chargement des joueurs..." />;
   }
 
   return (

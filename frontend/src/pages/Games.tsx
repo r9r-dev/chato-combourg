@@ -11,6 +11,7 @@ import { TabBar } from '../components/TabBar';
 import { GameDetailModal } from '../components/GameDetailModal';
 import { PlayerStatsList } from '../components/PlayerStatsList';
 import { CardStatistics } from '../components/CardStatistics';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 import type {
   GameListItem,
   GameDetail,
@@ -215,7 +216,7 @@ export function Games() {
     if (gamesLoading) {
       return (
         <div className="flex items-center justify-center h-full">
-          <div className="text-white/60">Chargement...</div>
+          <LoadingSpinner size="lg" text="Chargement des parties..." />
         </div>
       );
     }

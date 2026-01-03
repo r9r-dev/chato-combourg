@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useGame } from '../context/GameContext';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 
 export function Changelog() {
   const { setStep } = useGame();
@@ -96,7 +97,7 @@ export function Changelog() {
       <div className="flex-1 overflow-auto p-4">
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <div className="text-white/60">Chargement...</div>
+            <LoadingSpinner size="lg" text="Chargement..." />
           </div>
         ) : (
           <div className="prose prose-invert max-w-none">

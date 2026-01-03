@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useGame } from '../context/GameContext';
 import { useAuth } from '../context/AuthContext';
 import { getSettings } from '../services/api';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
@@ -27,6 +28,22 @@ export function Landing() {
     };
     loadSettings();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col h-dvh p-6 overflow-hidden relative">
+        {/* Castle logo centered during loading */}
+        <div className="flex-1 flex flex-col items-center justify-center">
+          <img
+            src="/combourg.webp"
+            alt="Château de Combourg"
+            className="w-40 h-40 mx-auto mb-6 object-contain"
+          />
+          <LoadingSpinner size="lg" text="Connexion au serveur..." />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-dvh p-6 overflow-hidden relative">
