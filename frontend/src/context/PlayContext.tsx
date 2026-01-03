@@ -1124,6 +1124,20 @@ export function PlayProvider({ children }: { children: ReactNode }) {
 
           // Remplir les lieux apres le placement et les effets
           const refilledBoard = refillLocations(currentState.board);
+
+          // Appliquer le shift helper pour optimiser les points de position (comme pour le joueur humain)
+          const currentPlayer = currentState.players[currentState.currentPlayerIndex];
+          const shiftResult = applyOptimalShift(currentPlayer.board, currentPlayer.lockedCards);
+          if (shiftResult.shifted) {
+            const players = [...currentState.players];
+            players[currentState.currentPlayerIndex] = {
+              ...currentPlayer,
+              board: shiftResult.board,
+              lockedCards: shiftResult.lockedCards,
+            };
+            currentState = { ...currentState, players };
+          }
+
           currentState = { ...currentState, board: refilledBoard, turnPhase: 'post_action' };
         }
 
