@@ -25,9 +25,21 @@ class CardDatabase:
     def _load_cards(self) -> None:
         """Load card data from JSON files."""
         # Find the backend cards directory
-        current_dir = Path(__file__).parent
+        # Use resolve() to handle symlinks in editable installs
+        current_dir = Path(__file__).resolve().parent
+        # rl/chato_rl/game -> chato-combourg (3 parents from rl/)
         project_root = current_dir.parent.parent.parent.parent
         cards_dir = project_root / "backend" / "cards"
+
+        # Fallback: search upward for backend/cards
+        if not cards_dir.exists():
+            search_dir = current_dir
+            for _ in range(10):  # Max 10 levels up
+                candidate = search_dir / "backend" / "cards"
+                if candidate.exists():
+                    cards_dir = candidate
+                    break
+                search_dir = search_dir.parent
 
         attributes_path = cards_dir / "card_attributes.json"
         effects_path = cards_dir / "card_effects.json"

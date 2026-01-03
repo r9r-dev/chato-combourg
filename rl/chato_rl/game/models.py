@@ -15,6 +15,10 @@ class ShieldColor(str, Enum):
     GREEN = "green"
     YELLOW = "yellow"
     PURPLE = "purple"
+    PINK = "pink"
+    ORANGE = "orange"
+    BLACK = "black"
+    WHITE = "white"
 
 
 class CardCategory(str, Enum):
