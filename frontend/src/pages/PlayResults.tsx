@@ -62,10 +62,12 @@ export function PlayResults() {
           cards.push(placed?.cardId ?? '');
         }
 
-        // Compter les pieces sur les bourses
-        const totalCoins = player.board.reduce((sum, card) => {
+        // Compter les pieces sur les bourses + les pieces restantes en main
+        // A la fin de la partie, le joueur peut remplir ses bourses avec ses pieces restantes
+        const coinsOnCards = player.board.reduce((sum, card) => {
           return sum + (card?.coinsOnCard ?? 0);
         }, 0);
+        const totalCoins = coinsOnCards + player.gold;
 
         // Calculer le score via l'API si le plateau est complet
         const hasAllCards = cards.every(c => c !== '');
@@ -174,10 +176,11 @@ export function PlayResults() {
             playerId = result.player.playerId;
           }
 
-          // Compter les pieces sur les bourses
-          const totalCoins = result.player.board.reduce((sum, card) => {
+          // Compter les pieces sur les bourses + les pieces restantes en main
+          const coinsOnCards = result.player.board.reduce((sum, card) => {
             return sum + (card?.coinsOnCard ?? 0);
           }, 0);
+          const totalCoins = coinsOnCards + result.player.gold;
 
           playersData.push({
             player_id: playerId,
