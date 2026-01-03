@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getCardImageUrl, getCards } from '../services/api';
 import { useLongPress } from '../hooks/useLongPress';
 import { CardPreview } from './CardPreview';
+import { LoadingSpinner } from './LoadingSpinner';
 import type { Statistics, CardStatistic, PlayerCardStatistic } from '../types';
 
 interface CardStatisticsProps {
@@ -281,7 +282,7 @@ export function CardStatistics({ statistics, loading }: CardStatisticsProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-white/60">Chargement...</div>
+        <LoadingSpinner size="lg" text="Chargement des statistiques..." />
       </div>
     );
   }

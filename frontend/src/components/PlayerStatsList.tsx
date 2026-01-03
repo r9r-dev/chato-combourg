@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { LoadingSpinner } from './LoadingSpinner';
 import type { PlayerWithFullStats } from '../types';
 
 interface PlayerStatsListProps {
@@ -56,7 +57,7 @@ export function PlayerStatsList({ players, loading }: PlayerStatsListProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-white/60">Chargement...</div>
+        <LoadingSpinner size="lg" text="Chargement des joueurs..." />
       </div>
     );
   }

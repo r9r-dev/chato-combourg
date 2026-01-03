@@ -13,6 +13,8 @@ import {
   type ModelInfo,
 } from '../services/api';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { LoadingButton } from '../components/LoadingButton';
 import type { PlayerWithStats, PlayerOrderMode, OfflineMode, DetectionModel, AISpeed } from '../types';
 import { modelStorage } from '../services/modelStorage';
 
@@ -297,11 +299,7 @@ export function Settings() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-dvh">
-        <div className="text-white/60">Chargement...</div>
-      </div>
-    );
+    return <LoadingSpinner fullScreen text="Chargement..." />;
   }
 
   // Sort players for display
@@ -617,20 +615,22 @@ export function Settings() {
               Ajouter une partie manuellement
             </button>
             <div className="flex gap-2">
-              <button
+              <LoadingButton
                 onClick={() => handleExport('json')}
-                disabled={exporting}
-                className="flex-1 p-3 bg-dark-lighter rounded-xl text-white/70 hover:bg-dark-card disabled:opacity-50"
+                loading={exporting}
+                loadingText="Export..."
+                className="flex-1"
               >
                 Exporter JSON
-              </button>
-              <button
+              </LoadingButton>
+              <LoadingButton
                 onClick={() => handleExport('csv')}
-                disabled={exporting}
-                className="flex-1 p-3 bg-dark-lighter rounded-xl text-white/70 hover:bg-dark-card disabled:opacity-50"
+                loading={exporting}
+                loadingText="Export..."
+                className="flex-1"
               >
                 Exporter CSV
-              </button>
+              </LoadingButton>
             </div>
           </div>
         </section>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getCardImageUrl, getCards } from '../services/api';
+import { LoadingSpinner } from './LoadingSpinner';
 import type { CardMatch, Card, CardScoreDetail } from '../types';
 
 interface CardSelectorProps {
@@ -159,7 +160,9 @@ export function CardSelector({
               {/* Search results - scrollable */}
               <div className="flex-1 overflow-y-auto p-4">
                 {isLoading ? (
-                  <div className="text-center text-white/50 py-8">Chargement...</div>
+                  <div className="flex items-center justify-center py-12">
+                    <LoadingSpinner size="lg" text="Chargement des cartes..." />
+                  </div>
                 ) : (
                   <div className="grid grid-cols-4 gap-2">
                     {filteredCards.map((card) => (
