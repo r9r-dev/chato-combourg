@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.6.1 (2026-01-03)
+
+- Possibilité de lancer des parties avec uniquement des IA
+
 ## v3.6.0 (2026-01-03)
 
 - Sauvegarde automatique des parties jouées avec l'IA
