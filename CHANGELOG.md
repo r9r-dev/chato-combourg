@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.5.8 (2026-01-03)
+
+- Affiche les notes de version aussi à la première visite
+
 ## v3.5.7 (2026-01-03)
 
 - Amélioration de l'auto-scroll en mode Play
