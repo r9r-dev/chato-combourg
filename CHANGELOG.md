@@ -1,5 +1,10 @@
 # Changelog
 
+## v3.5.3 (2026-01-03)
+
+- Correction : masquage des boutons messager pendant les choix d'effet cadenas
+- Correction : comportement du messager et du cadenas en mode play
+
 ## v3.5.2 (2026-01-03)
 
 - Correction d'une boucle infinie de l'IA après placement de carte
