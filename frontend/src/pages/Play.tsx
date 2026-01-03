@@ -639,6 +639,7 @@ export function Play() {
               showPurchasedCard ? '-translate-y-12' : 'translate-y-[50%]'
             }`}
             draggable={false}
+            onContextMenu={(e) => e.preventDefault()}
             onPointerDown={() => setShowPurchasedCard(true)}
             onPointerUp={() => setShowPurchasedCard(false)}
             onPointerLeave={() => setShowPurchasedCard(false)}
