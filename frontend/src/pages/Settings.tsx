@@ -13,7 +13,7 @@ import {
   type ModelInfo,
 } from '../services/api';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import type { PlayerWithStats, PlayerOrderMode, OfflineMode, DetectionModel } from '../types';
+import type { PlayerWithStats, PlayerOrderMode, OfflineMode, DetectionModel, AISpeed } from '../types';
 import { modelStorage } from '../services/modelStorage';
 
 const PLAYER_COLORS = [
@@ -37,6 +37,12 @@ const OFFLINE_OPTIONS: { value: OfflineMode; label: string; description: string 
 const MODEL_OPTIONS: { value: DetectionModel; label: string; description: string }[] = [
   { value: 'openvino', label: 'OpenVINO', description: 'Serveur (~7s)' },
   { value: 'pytorch', label: 'PyTorch', description: 'Mac M4 (~1s, si disponible)' },
+];
+
+const AI_SPEED_OPTIONS: { value: AISpeed; label: string; description: string }[] = [
+  { value: 'fast', label: 'Rapide', description: 'Sans délai' },
+  { value: 'normal', label: 'Normale', description: '2 secondes par action' },
+  { value: 'slow', label: 'Lente', description: '3 secondes par action' },
 ];
 
 export function Settings() {
@@ -77,6 +83,9 @@ export function Settings() {
   // Detection settings state
   const [offlineMode, setOfflineMode] = useState<OfflineMode>('never');
   const [detectionModel, setDetectionModel] = useState<DetectionModel>('openvino');
+
+  // Game settings state
+  const [aiSpeed, setAiSpeed] = useState<AISpeed>('fast');
   const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null);
   const [localModelInfo, setLocalModelInfo] = useState<{ version: string; variant: string; storedAt: string } | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<string>('fp16');
@@ -101,6 +110,9 @@ export function Settings() {
         }
         if (settings.detection_model) {
           setDetectionModel(settings.detection_model as DetectionModel);
+        }
+        if (settings.ai_speed) {
+          setAiSpeed(settings.ai_speed as AISpeed);
         }
         if (settings.model_variant) {
           setSelectedVariant(settings.model_variant);
@@ -232,6 +244,16 @@ export function Settings() {
       await updateSettings({ detection_model: model });
     } catch (err) {
       console.error('Failed to save detection model:', err);
+    }
+  };
+
+  // Handle AI speed change
+  const handleAiSpeedChange = async (speed: AISpeed) => {
+    setAiSpeed(speed);
+    try {
+      await updateSettings({ ai_speed: speed });
+    } catch (err) {
+      console.error('Failed to save AI speed:', err);
     }
   };
 
@@ -376,7 +398,7 @@ export function Settings() {
           <h2 className="text-gold font-semibold mb-3">Jeu</h2>
 
           {/* Ordre des joueurs */}
-          <div>
+          <div className="mb-4">
             <div className="mb-2 text-white/60 text-sm">Ordre des joueurs</div>
             <div className="grid grid-cols-2 gap-2">
               {ORDER_OPTIONS.map(opt => (
@@ -392,6 +414,30 @@ export function Settings() {
                   {opt.label}
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Vitesse de l'IA */}
+          <div>
+            <div className="mb-2 text-white/60 text-sm">Vitesse de l'IA</div>
+            <div className="grid grid-cols-3 gap-2">
+              {AI_SPEED_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => handleAiSpeedChange(opt.value)}
+                  className={`p-3 rounded-xl text-sm font-medium transition-all ${
+                    aiSpeed === opt.value
+                      ? 'bg-gold text-dark'
+                      : 'bg-dark-lighter text-white/70 hover:bg-dark-card'
+                  }`}
+                  title={opt.description}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-2 text-white/40 text-xs">
+              {AI_SPEED_OPTIONS.find(o => o.value === aiSpeed)?.description}
             </div>
           </div>
         </section>

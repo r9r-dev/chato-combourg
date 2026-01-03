@@ -181,6 +181,13 @@ Game engine for playing against AI (work in progress).
 - Normal: Evaluates card synergies, position quality
 - Hard: Monte Carlo Tree Search with UCB1
 
+**AI Speed Setting** (`ai_speed`):
+- `fast` - No delay between actions (default)
+- `normal` - 2 seconds per action
+- `slow` - 3 seconds per action
+
+Configurable in Settings > Jeu > Vitesse de l'IA. Stored in user settings and loaded by `PlayContext.tsx` at mount.
+
 **Planning document:** `docs/PLAY_MODE_PLAN.md`
 
 ### Training (training/)

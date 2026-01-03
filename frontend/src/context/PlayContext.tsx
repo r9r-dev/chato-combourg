@@ -43,6 +43,8 @@ import {
   getCard,
   refillLocations,
 } from '../services/play/gameEngine';
+import { getSettings } from '../services/api';
+import type { AISpeed } from '../types';
 import { createAI } from '../services/play/ai';
 import { executeCardEffect, executeDiscardEffect, executeLockEffect, executeReplaceLocationEffect, executeAdjacentCardEffect, executeFillPursesAtPositions } from '../services/play/effectExecutor';
 import { applyOptimalShift } from '../services/play/shiftHelper';
@@ -119,6 +121,13 @@ interface PlayContextType {
 
 const PlayContext = createContext<PlayContextType | null>(null);
 
+// Délais entre les actions de l'IA (en ms)
+const AI_SPEED_DELAYS: Record<AISpeed, number> = {
+  fast: 0,
+  normal: 2000,
+  slow: 3000,
+};
+
 // =============================================================================
 // Helpers pour les logs
 // =============================================================================
@@ -191,13 +200,22 @@ export function PlayProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(playReducer, initialPlayUIState);
   const aiLoopRef = useRef<boolean>(false);
   const dataLoadedRef = useRef<boolean>(false);
+  const aiSpeedRef = useRef<AISpeed>('fast');
 
-  // Charger les donnees des cartes au montage
+  // Charger les donnees des cartes et les settings au montage
   useEffect(() => {
     if (!dataLoadedRef.current) {
       dataLoadedRef.current = true;
       loadCardData().catch(console.error);
       loadCardNames().catch(console.error);
+      // Charger la vitesse de l'IA depuis les settings
+      getSettings()
+        .then(settings => {
+          if (settings.ai_speed) {
+            aiSpeedRef.current = settings.ai_speed as AISpeed;
+          }
+        })
+        .catch(console.error);
     }
   }, []);
 
@@ -913,8 +931,11 @@ export function PlayProvider({ children }: { children: ReactNode }) {
           break;
         }
 
-        // Petit delai pour que l'utilisateur voie les actions
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // Delai entre les actions selon le parametre de vitesse
+        const delay = AI_SPEED_DELAYS[aiSpeedRef.current];
+        if (delay > 0) {
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
 
         // Capturer les ressources avant l'action
         const playerBefore = currentState.players[currentState.currentPlayerIndex];

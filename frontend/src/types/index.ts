@@ -207,12 +207,14 @@ export interface LegacyGameCreate {
 export type PlayerOrderMode = 'alphabetical' | 'manual' | 'most_played' | 'last_played';
 export type OfflineMode = 'never' | 'fallback' | 'always';
 export type DetectionModel = 'openvino' | 'pytorch';
+export type AISpeed = 'fast' | 'normal' | 'slow';
 
 export interface UserSettings {
   player_order: PlayerOrderMode;
   manual_player_order?: number[]; // Player IDs in custom order
   offline_mode?: OfflineMode;
   detection_model?: DetectionModel;
+  ai_speed?: AISpeed;
 }
 
 // Player with stats (for settings)
