@@ -222,10 +222,14 @@ class ChatoEnv(gym.Env):
         if self.opponent_policy is not None:
             # Get opponent observation
             obs = self.obs_encoder.encode(self.state, self.state.current_player_index)
-            obs["action_mask"] = self._get_action_mask()
+            action_mask = self._get_action_mask()
 
-            # Get action from policy
-            action, _ = self.opponent_policy.predict(obs, deterministic=False)
+            # Get action from policy (deterministic=True is faster)
+            action, _ = self.opponent_policy.predict(
+                obs,
+                deterministic=True,
+                action_masks=action_mask,
+            )
         else:
             # Random valid action
             action = self._sample_random_action()

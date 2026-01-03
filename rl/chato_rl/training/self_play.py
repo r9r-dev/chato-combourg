@@ -275,11 +275,13 @@ class SelfPlayTrainer:
 
         # Create or update opponent model
         if self.current_opponent is None:
-            # First time: load from checkpoint
+            # First time: load from checkpoint on same device as main model
             self.current_opponent = MaskablePPO.load(
                 str(checkpoint_path),
-                device="cpu",  # Keep opponent on CPU to save GPU memory
+                device=self.config.device,  # Same device as training (faster inference)
             )
+            # Set to eval mode for faster inference
+            self.current_opponent.policy.set_training_mode(False)
         else:
             # Update existing opponent with sampled policy weights
             self.opponent_pool.load_opponent_policy(opponent_data, self.current_opponent)
