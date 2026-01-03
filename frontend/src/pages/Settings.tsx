@@ -639,12 +639,21 @@ export function Settings() {
         <section className="p-4">
           <h2 className="text-gold font-semibold mb-3">À propos</h2>
           <div className="space-y-2">
-            <button
-              onClick={() => setStep('license')}
-              className="w-full p-3 bg-dark-lighter rounded-xl text-left hover:bg-dark-card"
-            >
+            <div className="w-full p-3 bg-dark-lighter rounded-xl">
               <div className="text-white/40 text-xs">Version</div>
               <div className="text-white">{__APP_VERSION__}</div>
+            </div>
+            <button
+              onClick={() => setStep('license')}
+              className="w-full p-3 bg-dark-lighter rounded-xl text-white/70 hover:bg-dark-card text-left"
+            >
+              Licence
+            </button>
+            <button
+              onClick={() => setStep('changelog')}
+              className="w-full p-3 bg-dark-lighter rounded-xl text-white/70 hover:bg-dark-card text-left"
+            >
+              Notes de version
             </button>
             <button
               onClick={forceUpdate}

@@ -117,6 +117,7 @@ React + Vite + TypeScript + Tailwind CSS PWA.
 - `Camera.tsx` - Camera with 3x3 grid overlay, 3-second countdown between scans, displays detection count, keeps best detection in memory for manual validation, handles device orientation via screen.orientation API
 - `Summary.tsx` - Results with rankings, click to view player's board
 - `Games.tsx` - Game history list
+- `Changelog.tsx` - Release notes display (fetches CHANGELOG.md)
 
 #### Contexts
 - `AuthContext.tsx` - User authentication and player management
@@ -133,6 +134,7 @@ React + Vite + TypeScript + Tailwind CSS PWA.
 - `ConfirmDialog.tsx` - Confirmation modal
 - `GridOverlay.tsx` - Camera grid overlay
 - `ErrorBoundary.tsx` - React error boundary for graceful error handling
+- `WhatsNew.tsx` - Modal showing latest changes on first launch after update
 
 #### API Service (services/api.ts)
 - `ApiError` class with status, code, and detail parsed from response

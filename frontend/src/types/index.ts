@@ -99,7 +99,7 @@ export interface GameCard {
 }
 
 export interface GameState {
-  step: 'landing' | 'players' | 'game-date' | 'keys' | 'coins' | 'camera' | 'review' | 'summary' | 'games' | 'settings' | 'license' | 'developer' | 'legacy-scores' | 'play';
+  step: 'landing' | 'players' | 'game-date' | 'keys' | 'coins' | 'camera' | 'review' | 'summary' | 'games' | 'settings' | 'license' | 'changelog' | 'developer' | 'legacy-scores' | 'play';
   cards: GameCard[];
   keys: number;
   coins: number;

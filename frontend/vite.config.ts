@@ -1,8 +1,24 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { copyFileSync, existsSync } from 'fs'
+import { resolve } from 'path'
 import pkg from './package.json'
+
+// Plugin to copy CHANGELOG.md to public folder
+function copyChangelog(): Plugin {
+  return {
+    name: 'copy-changelog',
+    buildStart() {
+      const src = resolve(__dirname, '../CHANGELOG.md')
+      const dest = resolve(__dirname, 'public/CHANGELOG.md')
+      if (existsSync(src)) {
+        copyFileSync(src, dest)
+      }
+    },
+  }
+}
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -12,6 +28,7 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    copyChangelog(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],

@@ -13,10 +13,12 @@ import { Summary } from './pages/Summary';
 import { Games } from './pages/Games';
 import { Settings } from './pages/Settings';
 import { License } from './pages/License';
+import { Changelog } from './pages/Changelog';
 import { Developer } from './pages/Developer';
 import { LegacyScores } from './pages/LegacyScores';
 import { PlayMode } from './pages/PlayMode';
 import { InstallPrompt } from './components/InstallPrompt';
+import { WhatsNew } from './components/WhatsNew';
 import { preloadCardImages } from './services/api';
 
 function AppContent() {
@@ -50,6 +52,8 @@ function AppContent() {
       return <Settings />;
     case 'license':
       return <License />;
+    case 'changelog':
+      return <Changelog />;
     case 'developer':
       return <Developer />;
     case 'legacy-scores':
@@ -68,6 +72,7 @@ function App() {
         <GameProvider>
           <AppContent />
           <InstallPrompt />
+          <WhatsNew />
         </GameProvider>
       </AuthProvider>
     </ErrorBoundary>
