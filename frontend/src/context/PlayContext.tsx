@@ -1091,7 +1091,7 @@ export function PlayProvider({ children }: { children: ReactNode }) {
 
           // Remplir les lieux apres le placement et les effets
           const refilledBoard = refillLocations(currentState.board);
-          currentState = { ...currentState, board: refilledBoard };
+          currentState = { ...currentState, board: refilledBoard, turnPhase: 'post_action' };
         }
 
         // Appliquer l'effet du cadenas
