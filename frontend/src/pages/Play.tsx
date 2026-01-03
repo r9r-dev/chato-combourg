@@ -14,7 +14,7 @@ import { getValidPlacements, getExternalZones } from '../types/play';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { GameLog } from '../components/GameLog';
 import { CoinIcon, KeyIcon, ShieldIcon } from '../components/Icons';
-import { CentralCard, PlayerCell, MiniPlayerBoard, PlayerBoardModal } from '../components/play';
+import { CentralCard, PlayerCell, MiniPlayerBoard, PlayerBoardModal, AnimatedResource } from '../components/play';
 import type { PlayPlayer, ShiftDirection, CardEffect, PlayGameState, ShieldColor, Location } from '../types/play';
 import { countShieldsOnBoard, getNeighborPlayers } from '../utils/boardHelpers';
 import { getCard } from '../services/play/gameEngine';
@@ -368,14 +368,16 @@ export function Play() {
         </button>
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1 text-gold font-medium">
-              <CoinIcon className="w-5 h-5" />
-              {currentPlayer.gold}
-            </span>
-            <span className="flex items-center gap-1 text-blue-400 font-medium">
-              <KeyIcon className="w-5 h-5" />
-              {currentPlayer.keys}
-            </span>
+            <AnimatedResource
+              value={currentPlayer.gold}
+              icon={<CoinIcon className="w-5 h-5" />}
+              className="text-gold"
+            />
+            <AnimatedResource
+              value={currentPlayer.keys}
+              icon={<KeyIcon className="w-5 h-5" />}
+              className="text-blue-400"
+            />
           </div>
         </div>
         <div className="flex items-center gap-2 z-10">
