@@ -1,5 +1,15 @@
 # Changelog
 
+## v3.6.0 (2026-01-03)
+
+- Sauvegarde automatique des parties jouées avec l'IA
+- Nouveau champ `source` pour distinguer les types de parties :
+  - `scan` - Reconnaissance photo (défaut)
+  - `legacy` - Import manuel
+  - `application` - Mode Play (vs IA)
+- Calcul des vrais scores via l'API pour les parties IA
+- Création automatique des joueurs IA si inexistants
+
 ## v3.5.9 (2026-01-03)
 
 - Ajout du composant AnimatedResource pour animer les changements de ressources
