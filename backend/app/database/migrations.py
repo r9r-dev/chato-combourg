@@ -125,3 +125,20 @@ def migration_002_add_is_legacy(engine: Engine) -> None:
             logger.info("Added is_legacy column to game_players")
         else:
             logger.info("Column is_legacy already exists, skipping")
+
+
+@migration(3, "Add source column to games")
+def migration_003_add_source(engine: Engine) -> None:
+    """Add source column to distinguish game origin: scan, legacy, application."""
+    with engine.connect() as conn:
+        result = conn.execute(text("PRAGMA table_info(games)"))
+        columns = {row[1] for row in result.fetchall()}
+
+        if "source" not in columns:
+            conn.execute(text(
+                "ALTER TABLE games ADD COLUMN source TEXT DEFAULT 'scan'"
+            ))
+            conn.commit()
+            logger.info("Added source column to games")
+        else:
+            logger.info("Column source already exists, skipping")

@@ -41,9 +41,14 @@ python train.py
 - Models in `app/database/models.py`:
   - `User` - Authenticated users (from Pangolin SSO)
   - `Player` - Player profiles (reusable across games)
-  - `Game` - Game sessions with date and notes
+  - `Game` - Game sessions with date, notes, and source
   - `GamePlayer` - Player's board in a game (cards, score, rank)
   - `Setting` - User settings (key-value pairs)
+
+**Game Sources** (`Game.source`):
+- `scan` - Photo scan (default, card recognition)
+- `legacy` - Manual import (scores without card identification)
+- `application` - Play mode (vs AI)
 
 #### Authentication (Pangolin Proxy)
 - Headers read by `app/auth.py`:
@@ -142,7 +147,12 @@ React + Vite + TypeScript + Tailwind CSS PWA.
 - French error messages for user-facing errors
 
 #### Play Mode Services (services/play/)
-Game engine for playing against AI (work in progress).
+Game engine for playing against AI.
+
+**Game Saving:**
+- Games are automatically saved when finished (source: `application`)
+- Real scores calculated via `/api/calculate` endpoint
+- AI players are created automatically if not existing (named "IA Facile", "IA Normale", etc.)
 
 **Files:**
 - `gameEngine.ts` - Game initialization, action validation, execution

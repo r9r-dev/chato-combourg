@@ -75,6 +75,8 @@ class Game(Base):
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     played_at = Column(DateTime, default=datetime.utcnow)
     notes = Column(Text, nullable=True)
+    # Source de la partie: 'scan' (photo), 'legacy' (import manuel), 'application' (jeu IA)
+    source = Column(String, default="scan")
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships

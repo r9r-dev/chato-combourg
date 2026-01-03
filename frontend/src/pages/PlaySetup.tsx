@@ -125,6 +125,7 @@ export function PlaySetup() {
           name: p.name,
           color: p.color,
           isAI: false,
+          playerId: p.id,  // Stocker l'ID du joueur pour la sauvegarde
         })),
         // IA ajoutees
         ...aiPlayers.map(ai => ({

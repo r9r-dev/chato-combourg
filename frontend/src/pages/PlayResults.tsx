@@ -1,65 +1,230 @@
 /**
  * PlayResults - Resultats de la partie
  *
- * Affiche le classement final avec les scores calcules.
+ * Affiche le classement final avec les scores calcules via l'API.
+ * Sauvegarde automatiquement la partie en base de donnees.
  */
 
-import { useMemo } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePlay } from '../context/PlayContext';
+import { calculateScore, createGame, createPlayer, getPlayers } from '../services/api';
 import type { PlayPlayer } from '../types/play';
+import type { CalculateResponse } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
 interface PlayerResult {
   player: PlayPlayer;
   score: number;
+  keysBonus: number;
+  cardsScore: number;
   rank: number;
+  cards: string[];
 }
+
+// Noms des joueurs IA par niveau
+const AI_PLAYER_NAMES: Record<string, string> = {
+  easy: 'IA Facile',
+  normal: 'IA Normale',
+  hard: 'IA Difficile',
+  neural: 'IA Extreme',
+};
 
 export function PlayResults() {
   const { state, reset } = usePlay();
   const gameState = state.gameState;
 
-  // Calculer les scores (simplifie - compte les cartes et ressources)
-  const results = useMemo((): PlayerResult[] => {
-    if (!gameState) return [];
+  const [results, setResults] = useState<PlayerResult[]>([]);
+  const [isCalculating, setIsCalculating] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
+  const hasCalculatedRef = useRef(false);
+  const hasSavedRef = useRef(false);
 
-    const playerScores = gameState.players.map((player) => {
-      // Score simplifie pour demo
-      // TODO: Utiliser l'API /api/calculate pour les vrais scores
-      const cardCount = player.board.filter(c => c !== null).length;
-      const score = cardCount * 5 + player.gold + player.keys * 3;
+  // Calculer les vrais scores via l'API
+  useEffect(() => {
+    if (!gameState || hasCalculatedRef.current) return;
+    hasCalculatedRef.current = true;
 
-      return {
-        player,
-        score,
-        rank: 0,
-      };
-    });
+    async function calculateScores() {
+      setIsCalculating(true);
 
-    // Trier par score decroissant
-    playerScores.sort((a, b) => b.score - a.score);
+      const playerResults: PlayerResult[] = [];
 
-    // Attribuer les rangs
-    playerScores.forEach((result, index) => {
-      if (index === 0) {
-        result.rank = 1;
-      } else if (result.score === playerScores[index - 1].score) {
-        result.rank = playerScores[index - 1].rank;
-      } else {
-        result.rank = index + 1;
+      for (const player of gameState!.players) {
+        // Extraire les cartes du plateau (positions 0-8)
+        const cards: string[] = [];
+        for (let i = 0; i < 9; i++) {
+          const placed = player.board[i];
+          cards.push(placed?.cardId ?? '');
+        }
+
+        // Compter les pieces sur les bourses
+        const totalCoins = player.board.reduce((sum, card) => {
+          return sum + (card?.coinsOnCard ?? 0);
+        }, 0);
+
+        // Calculer le score via l'API si le plateau est complet
+        const hasAllCards = cards.every(c => c !== '');
+        let scoreResult: CalculateResponse | null = null;
+
+        if (hasAllCards) {
+          try {
+            scoreResult = await calculateScore({
+              cards,
+              keys: player.keys,
+              total_coins: totalCoins,
+            });
+          } catch (error) {
+            console.error(`Failed to calculate score for ${player.name}:`, error);
+          }
+        }
+
+        // Utiliser le score calcule ou un score simplifie
+        const score = scoreResult?.total_score ?? (
+          player.board.filter(c => c !== null).length * 5 + player.gold + player.keys * 3
+        );
+
+        playerResults.push({
+          player,
+          score,
+          keysBonus: scoreResult?.keys_bonus ?? player.keys,
+          cardsScore: scoreResult?.cards_score ?? 0,
+          rank: 0,
+          cards,
+        });
       }
-    });
 
-    return playerScores;
+      // Trier par score decroissant
+      playerResults.sort((a, b) => b.score - a.score);
+
+      // Attribuer les rangs
+      playerResults.forEach((result, index) => {
+        if (index === 0) {
+          result.rank = 1;
+        } else if (result.score === playerResults[index - 1].score) {
+          result.rank = playerResults[index - 1].rank;
+        } else {
+          result.rank = index + 1;
+        }
+      });
+
+      setResults(playerResults);
+      setIsCalculating(false);
+    }
+
+    calculateScores();
   }, [gameState]);
+
+  // Sauvegarder la partie une fois les scores calcules
+  useEffect(() => {
+    if (isCalculating || results.length === 0 || hasSavedRef.current) return;
+    hasSavedRef.current = true;
+
+    async function savePlayGame() {
+      setIsSaving(true);
+      setSaveError(null);
+
+      try {
+        // Recuperer les joueurs existants pour voir si les joueurs IA existent deja
+        const existingPlayers = await getPlayers();
+        const playerIdMap = new Map<string, number>();
+
+        // Creer un mapping des joueurs IA existants
+        for (const player of existingPlayers) {
+          if (Object.values(AI_PLAYER_NAMES).includes(player.name)) {
+            playerIdMap.set(player.name, player.id);
+          }
+        }
+
+        // Preparer les donnees des joueurs pour la sauvegarde
+        const playersData: {
+          player_id: number;
+          keys: number;
+          coins: number;
+          cards: string[];
+          score: number;
+        }[] = [];
+
+        for (const result of results) {
+          let playerId: number;
+
+          if (result.player.isAI) {
+            // Joueur IA - creer ou reutiliser
+            const aiName = AI_PLAYER_NAMES[result.player.aiLevel ?? 'normal'] ?? 'IA';
+
+            if (playerIdMap.has(aiName)) {
+              playerId = playerIdMap.get(aiName)!;
+            } else {
+              // Creer le joueur IA
+              const newPlayer = await createPlayer(aiName);
+              playerId = newPlayer.id;
+              playerIdMap.set(aiName, playerId);
+            }
+          } else {
+            // Joueur humain - utiliser son ID existant
+            if (!result.player.playerId) {
+              console.error(`Human player ${result.player.name} has no playerId`);
+              continue;
+            }
+            playerId = result.player.playerId;
+          }
+
+          // Compter les pieces sur les bourses
+          const totalCoins = result.player.board.reduce((sum, card) => {
+            return sum + (card?.coinsOnCard ?? 0);
+          }, 0);
+
+          playersData.push({
+            player_id: playerId,
+            keys: result.player.keys,
+            coins: totalCoins,
+            cards: result.cards.filter(c => c !== ''),
+            score: result.score,
+          });
+        }
+
+        // Verifier qu'on a au moins 2 joueurs
+        if (playersData.length < 2) {
+          setSaveError('Impossible de sauvegarder: pas assez de joueurs');
+          setIsSaving(false);
+          return;
+        }
+
+        // Sauvegarder la partie
+        await createGame({
+          players: playersData,
+          source: 'application',
+        });
+
+        setIsSaved(true);
+      } catch (error) {
+        console.error('Failed to save game:', error);
+        setSaveError(error instanceof Error ? error.message : 'Erreur lors de la sauvegarde');
+      } finally {
+        setIsSaving(false);
+      }
+    }
+
+    savePlayGame();
+  }, [isCalculating, results]);
 
   const winner = results[0];
 
-  if (!gameState || results.length === 0) {
+  if (!gameState || isCalculating) {
+    return (
+      <div className="flex flex-col items-center justify-center h-dvh gap-4">
+        <div className="animate-spin w-8 h-8 border-4 border-gold border-t-transparent rounded-full" />
+        <div className="text-white/60">Calcul des scores...</div>
+      </div>
+    );
+  }
+
+  if (results.length === 0) {
     return (
       <div className="flex items-center justify-center h-dvh">
-        <div className="text-white/60">Chargement...</div>
+        <div className="text-white/60">Aucun résultat</div>
       </div>
     );
   }
@@ -69,6 +234,15 @@ export function PlayResults() {
       {/* Header */}
       <header className="p-4 border-b border-white/10 text-center">
         <h1 className="text-2xl font-bold text-gold">Partie terminée !</h1>
+        {isSaving && (
+          <p className="text-white/40 text-sm mt-1">Sauvegarde en cours...</p>
+        )}
+        {isSaved && (
+          <p className="text-green-400 text-sm mt-1">Partie sauvegardée ✓</p>
+        )}
+        {saveError && (
+          <p className="text-red-400 text-sm mt-1">{saveError}</p>
+        )}
       </header>
 
       {/* Winner */}
