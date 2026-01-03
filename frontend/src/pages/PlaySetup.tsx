@@ -65,8 +65,7 @@ export function PlaySetup() {
 
   const totalPlayers = selectedPlayers.length + aiPlayers.length;
   const canAddMore = totalPlayers < 5;
-  const hasHuman = selectedPlayers.length > 0;
-  const canStart = totalPlayers >= 2 && hasHuman;
+  const canStart = totalPlayers >= 2;
 
   const getNextAIColor = (): string => {
     const usedColors = aiPlayers.map(ai => ai.color);
@@ -372,14 +371,6 @@ export function PlaySetup() {
           </>
         )}
 
-        {/* Warning if no human */}
-        {!hasHuman && aiPlayers.length > 0 && (
-          <div className="mt-4 p-3 rounded-xl bg-orange-900/30 border border-orange-500/30">
-            <p className="text-orange-300 text-sm text-center">
-              Sélectionnez au moins un joueur humain
-            </p>
-          </div>
-        )}
       </div>
 
       {/* Footer */}
