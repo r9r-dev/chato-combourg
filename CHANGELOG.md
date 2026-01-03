@@ -1,5 +1,16 @@
 # Changelog
 
+## v3.7.0 (2026-01-03)
+
+### Améliorations UX
+- Ajout d'indicateurs de chargement cohérents sur toutes les pages
+- Nouveau composant LoadingSpinner avec animation gold/dark
+- Nouveau composant LoadingButton pour les boutons d'action
+- Spinner animé sur la page d'accueil pendant la connexion au serveur
+- Spinners sur les pages Joueurs, Parties, Paramètres, Changelog
+- Indicateur de chargement dans le sélecteur de cartes
+- Boutons d'export avec état de chargement visuel
+
 ## v3.6.1 (2026-01-03)
 
 - Possibilité de lancer des parties avec uniquement des IA
