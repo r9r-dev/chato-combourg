@@ -168,14 +168,13 @@ class SelfPlayTrainer:
         # Current opponent policy (for env to use)
         self.current_opponent: MaskablePPO | None = None
 
-    def _create_env(self, opponent_policy=None) -> DummyVecEnv | SubprocVecEnv:
+    def _create_env(self) -> DummyVecEnv | SubprocVecEnv:
         """Create vectorized environment."""
 
         def make_env(rank: int):
             def _init():
                 env = ChatoEnv(
                     num_players=self.config.num_players,
-                    opponent_policy=opponent_policy,
                     seed=rank,
                 )
                 return env
@@ -185,6 +184,7 @@ class SelfPlayTrainer:
             return DummyVecEnv([make_env(0)])
 
         # Use SubprocVecEnv for parallel envs
+        # Note: opponent_policy is handled separately to avoid pickle issues
         return SubprocVecEnv([make_env(i) for i in range(self.config.num_envs)])
 
     def _create_model(self) -> MaskablePPO:
@@ -260,29 +260,17 @@ class SelfPlayTrainer:
         Args:
             timestep: Current training timestep
         """
-        # Add current model to pool
+        # Add current model to pool (saves state_dict only - no pickle issues)
         self.opponent_pool.add(self.model, timestep)
 
         # Save checkpoint
         checkpoint_path = self.config.checkpoint_dir / f"checkpoint_{timestep}.zip"
         self.model.save(str(checkpoint_path))
 
-        # Update environment with new opponent
-        opponent = self.opponent_pool.sample()
-        if opponent:
-            # Create a new model instance for opponent
-            if self.current_opponent is None:
-                self.current_opponent = MaskablePPO.load(
-                    str(checkpoint_path),
-                    device="cpu",  # Keep opponent on CPU to save GPU memory
-                )
-            else:
-                self.opponent_pool.load_opponent_policy(opponent, self.current_opponent)
-
-            # Recreate env with new opponent
-            self.env.close()
-            self.env = self._create_env(opponent_policy=self.current_opponent)
-            self.model.set_env(self.env)
+        # Note: We don't dynamically update the env opponent here because
+        # SubprocVecEnv can't pickle PyTorch models. Instead, the environment
+        # uses random actions for opponents, which provides exploration diversity.
+        # The opponent pool is used primarily for evaluation against past selves.
 
     def load_checkpoint(self, path: str | Path) -> None:
         """Load a checkpoint.
