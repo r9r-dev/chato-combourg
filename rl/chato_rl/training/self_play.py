@@ -16,7 +16,7 @@ from typing import Any
 import numpy as np
 from sb3_contrib import MaskablePPO
 from stable_baselines3.common.callbacks import BaseCallback
-from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
+from stable_baselines3.common.vec_env import DummyVecEnv
 
 from ..env import ChatoEnv
 from ..models.policy import ChatoPolicy, create_policy_kwargs
@@ -168,24 +168,25 @@ class SelfPlayTrainer:
         # Current opponent policy (for env to use)
         self.current_opponent: MaskablePPO | None = None
 
-    def _create_env(self) -> DummyVecEnv | SubprocVecEnv:
-        """Create vectorized environment."""
+    def _create_env(self) -> DummyVecEnv:
+        """Create vectorized environment.
+
+        Uses DummyVecEnv (not SubprocVecEnv) to allow dynamic opponent updates
+        without pickle issues.
+        """
 
         def make_env(rank: int):
             def _init():
                 env = ChatoEnv(
                     num_players=self.config.num_players,
+                    opponent_policy=self.current_opponent,
                     seed=rank,
                 )
                 return env
             return _init
 
-        if self.config.num_envs == 1:
-            return DummyVecEnv([make_env(0)])
-
-        # Use SubprocVecEnv for parallel envs
-        # Note: opponent_policy is handled separately to avoid pickle issues
-        return SubprocVecEnv([make_env(i) for i in range(self.config.num_envs)])
+        # Always use DummyVecEnv to support self-play with dynamic opponents
+        return DummyVecEnv([make_env(i) for i in range(self.config.num_envs)])
 
     def _create_model(self) -> MaskablePPO:
         """Create the MaskablePPO model."""
@@ -255,22 +256,37 @@ class SelfPlayTrainer:
         return self.model
 
     def update_opponent(self, timestep: int) -> None:
-        """Add current model to opponent pool.
+        """Add current model to opponent pool and update environments.
 
         Args:
             timestep: Current training timestep
         """
-        # Add current model to pool (saves state_dict only - no pickle issues)
+        # Add current model to pool
         self.opponent_pool.add(self.model, timestep)
 
         # Save checkpoint
         checkpoint_path = self.config.checkpoint_dir / f"checkpoint_{timestep}.zip"
         self.model.save(str(checkpoint_path))
 
-        # Note: We don't dynamically update the env opponent here because
-        # SubprocVecEnv can't pickle PyTorch models. Instead, the environment
-        # uses random actions for opponents, which provides exploration diversity.
-        # The opponent pool is used primarily for evaluation against past selves.
+        # Sample opponent from pool
+        opponent_data = self.opponent_pool.sample()
+        if opponent_data is None:
+            return
+
+        # Create or update opponent model
+        if self.current_opponent is None:
+            # First time: load from checkpoint
+            self.current_opponent = MaskablePPO.load(
+                str(checkpoint_path),
+                device="cpu",  # Keep opponent on CPU to save GPU memory
+            )
+        else:
+            # Update existing opponent with sampled policy weights
+            self.opponent_pool.load_opponent_policy(opponent_data, self.current_opponent)
+
+        # Update opponent policy in all environments
+        for env in self.env.envs:
+            env.opponent_policy = self.current_opponent
 
     def load_checkpoint(self, path: str | Path) -> None:
         """Load a checkpoint.
