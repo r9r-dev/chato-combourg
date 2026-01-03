@@ -1,5 +1,15 @@
 # Changelog
 
+## v3.5.2 (2026-01-03)
+
+- Correction d'une boucle infinie de l'IA après placement de carte
+- Correction de l'initialisation du adversaire courant avant création de l'environnement
+- Optimisation de l'inférence de l'opponent avec fast predict path et torch.compile
+- Optimisation du self-play : opponent sur GPU avec inférence déterministe
+- Infrastructure RL avec self-play pour l'IA Extrême
+- Utilisation de DummyVecEnv pour mise à jour dynamique du pool d'adversaires
+- Correction d'erreurs pickle lors de la mise à jour du pool d'adversaires
+
 ## v3.5.1 (2026-01-03)
 
 - UI: Affichage des niveaux IA en colonne au lieu d'une grille 2x2
