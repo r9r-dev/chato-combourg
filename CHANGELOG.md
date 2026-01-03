@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.5.4 (2026-01-03)
+
+- Ajout page Notes de version pour consulter l'historique des releases
+- Ajout popup Nouveautes affichée au premier lancement après une mise à jour
+- Ajout paramètre vitesse de l'IA en mode Play (rapide, normal, lent)
+
 ## v3.5.3 (2026-01-03)
 
 - Correction : masquage des boutons messager pendant les choix d'effet cadenas
