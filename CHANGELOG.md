@@ -1,5 +1,10 @@
 # Changelog
 
+## v3.5.6 (2026-01-03)
+
+- Correction du menu contextuel sur carte achetée en mode Play
+- Correction du clic sur colonne joueur dans ScoreTable
+
 ## v3.5.5 (2026-01-03)
 
 - Correction du messager qui ne se déplace pas après le placement d'une carte
