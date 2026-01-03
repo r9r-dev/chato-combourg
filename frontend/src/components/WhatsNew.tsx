@@ -12,17 +12,12 @@ export function WhatsNew() {
       const currentVersion = __APP_VERSION__;
       const lastSeenVersion = localStorage.getItem(LAST_SEEN_VERSION_KEY);
 
-      // Si c'est la premiere visite ou meme version, ne rien afficher
-      if (!lastSeenVersion) {
-        localStorage.setItem(LAST_SEEN_VERSION_KEY, currentVersion);
-        return;
-      }
-
+      // Si deja vu cette version, ne rien afficher
       if (lastSeenVersion === currentVersion) {
         return;
       }
 
-      // Nouvelle version detectee, charger le changelog
+      // Nouvelle version ou premiere visite, charger le changelog
       try {
         const response = await fetch('/CHANGELOG.md');
         if (!response.ok) return;
