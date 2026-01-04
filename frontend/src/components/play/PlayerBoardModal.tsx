@@ -2,7 +2,7 @@
  * PlayerBoardModal - Modal pour afficher le plateau d'un joueur en grand
  */
 
-import { CoinIcon, KeyIcon } from '../Icons';
+import { CoinIcon, KeyIcon, CoinStack } from '../Icons';
 import type { PlayPlayer } from '../../types/play';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -58,15 +58,22 @@ export function PlayerBoardModal({ player, isNeighbor, onClose }: PlayerBoardMod
           {player.board.map((card, i) => (
             <div
               key={i}
-              className={`aspect-[5/7] rounded-lg ${card ? '' : 'bg-dark/50 border border-white/10'}`}
+              className={`aspect-[5/7] rounded-lg relative ${card ? '' : 'bg-dark/50 border border-white/10'}`}
             >
               {card && (
-                <img
-                  src={`${API_BASE}/cards/thumbs/carte_${card.cardId}.webp`}
-                  alt=""
-                  className="w-full h-full object-cover rounded-lg"
-                  loading="lazy"
-                />
+                <>
+                  <img
+                    src={`${API_BASE}/cards/thumbs/carte_${card.cardId}.webp`}
+                    alt=""
+                    className="w-full h-full object-cover rounded-lg"
+                    loading="lazy"
+                  />
+                  {card.coinsOnCard > 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none rounded-lg" style={{ paddingBottom: '25%' }}>
+                      <CoinStack count={card.coinsOnCard} seed={i} className="scale-75" />
+                    </div>
+                  )}
+                </>
               )}
             </div>
           ))}
