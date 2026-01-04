@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.7.3 (2026-01-04)
+
+### Améliorations
+- Mise en cache des images de cartes pour de meilleures performances
+- Correction du pattern de cache du service worker (correspondait pas aux URLs réelles)
+- Ajout de headers Cache-Control (30 jours, immutable) côté backend
+
 ## v3.7.2 (2026-01-03)
 
 ### Corrections
