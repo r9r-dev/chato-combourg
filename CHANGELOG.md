@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.9.0 (2026-01-04)
+
+### Améliorations
+- Nouvelles notifications de ressources : animations plus grandes et visibles qui remontent du bas de l'écran (or et clés gagnés/perdus)
+- Les notifications ne s'affichent plus au changement de joueur
+
 ## v3.8.3 (2026-01-04)
 
 ### Corrections

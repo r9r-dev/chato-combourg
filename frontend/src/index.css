@@ -122,3 +122,26 @@ body {
 .animate-resource-change {
   animation: resource-change 1.5s ease-out forwards;
 }
+
+@keyframes notification-slide-up {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  15% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  85% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-30px);
+    opacity: 0;
+  }
+}
+
+.animate-notification {
+  animation: notification-slide-up 2s ease-out forwards;
+}
