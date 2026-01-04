@@ -1,9 +1,14 @@
 # Changelog
 
+## v3.8.3 (2026-01-04)
+
+### Corrections
+- Affichage des pièces restantes sur les cartes bourse dans les résultats du mode Play
+
 ## v3.8.2 (2026-01-04)
 
 ### Corrections
-- Affichage des pièces restantes sur les cartes bourse dans le mode Scan (Summary)
+- Affichage des pièces restantes sur les cartes bourse dans le mode Scan
 
 ## v3.8.1 (2026-01-04)
 
