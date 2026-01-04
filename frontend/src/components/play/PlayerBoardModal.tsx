@@ -67,6 +67,8 @@ export function PlayerBoardModal({ player, isNeighbor, onClose }: PlayerBoardMod
                     alt=""
                     className="w-full h-full object-cover rounded-lg"
                     loading="lazy"
+                    draggable={false}
+                    onContextMenu={(e) => e.preventDefault()}
                   />
                   {card.coinsOnCard > 0 && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none rounded-lg" style={{ paddingBottom: '25%' }}>

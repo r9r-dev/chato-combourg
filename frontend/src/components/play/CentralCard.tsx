@@ -66,6 +66,8 @@ export function CentralCard({
           alt={`Carte ${cardId}`}
           className="w-full h-full object-cover"
           loading="lazy"
+          draggable={false}
+          onContextMenu={(e) => e.preventDefault()}
         />
       </button>
 
