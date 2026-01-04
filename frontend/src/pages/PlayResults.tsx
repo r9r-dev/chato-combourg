@@ -463,25 +463,31 @@ export function PlayResults() {
                   <span className="text-white text-sm">{result.player.name}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-1">
-                  {result.player.board.map((card, i) => (
-                    <div key={i} className="aspect-[5/7] rounded overflow-hidden bg-dark/50 relative">
-                      {card && (
-                        <>
-                          <img
-                            src={`${API_BASE}/cards/thumbs/carte_${card.cardId}.webp`}
-                            alt=""
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                          />
-                          {card.coinsOnCard > 0 && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none rounded" style={{ paddingBottom: '20%' }}>
-                              <CoinStack count={card.coinsOnCard} seed={i} className="scale-50" />
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  ))}
+                  {result.player.board.map((card, i) => {
+                    // Utiliser les pièces retournées par l'API (inclut les pièces restantes distribuées)
+                    const detail = result.details.find((d) => d.position === i);
+                    const coinsOnCard = detail?.coins ?? card?.coinsOnCard ?? 0;
+
+                    return (
+                      <div key={i} className="aspect-[5/7] rounded overflow-hidden bg-dark/50 relative">
+                        {card && (
+                          <>
+                            <img
+                              src={`${API_BASE}/cards/thumbs/carte_${card.cardId}.webp`}
+                              alt=""
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                            {coinsOnCard > 0 && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none rounded" style={{ paddingBottom: '20%' }}>
+                                <CoinStack count={coinsOnCard} seed={i} className="scale-50" />
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))}
