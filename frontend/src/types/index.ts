@@ -53,6 +53,7 @@ export interface CardScoreDetail {
   card_id: string;
   score: number;
   explanation: string;
+  coins?: number; // Coins placed on this card (for cards with purses)
 }
 
 export interface CalculateRequest {

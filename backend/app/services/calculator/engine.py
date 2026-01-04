@@ -39,6 +39,7 @@ def calculate_score(request: CalculateRequest) -> CalculateResponse:
                 card_id=card_id,
                 score=score,
                 explanation=explanation,
+                coins=grid.get_coins_on_card(card_id),
             )
         )
         cards_score += score

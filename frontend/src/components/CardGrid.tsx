@@ -1,4 +1,5 @@
 import { getCardImageUrl } from '../services/api';
+import { CoinStack } from './Icons';
 import type { GameCard, CardScoreDetail } from '../types';
 
 interface CardGridProps {
@@ -48,6 +49,16 @@ export function CardGrid({ cards, scoreDetails, onCardClick }: CardGridProps) {
               ) : (
                 <div className="w-full h-full bg-dark-card flex items-center justify-center">
                   <span className="text-white/30 text-2xl">?</span>
+                </div>
+              )}
+
+              {/* Coins on card */}
+              {score && (score.coins ?? 0) > 0 && (
+                <div
+                  className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none"
+                  style={{ paddingBottom: '25%' }}
+                >
+                  <CoinStack count={score.coins ?? 0} seed={card.position} className="scale-75" />
                 </div>
               )}
 
