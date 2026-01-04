@@ -66,6 +66,7 @@ export function PlayerBoardModal({ player, isNeighbor, onClose }: PlayerBoardMod
                     src={`${API_BASE}/cards/thumbs/carte_${card.cardId}.webp`}
                     alt=""
                     className="w-full h-full object-cover rounded-lg"
+                    style={{ WebkitTouchCallout: 'none' }}
                     loading="lazy"
                     draggable={false}
                     onContextMenu={(e) => e.preventDefault()}

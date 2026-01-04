@@ -644,6 +644,7 @@ export function Play() {
             className={`w-40 rounded-t-xl shadow-lg border-2 border-b-0 border-gold/50 transition-transform duration-150 pointer-events-auto ${
               showPurchasedCard ? '-translate-y-12' : 'translate-y-[50%]'
             }`}
+            style={{ WebkitTouchCallout: 'none' }}
             draggable={false}
             onContextMenu={(e) => e.preventDefault()}
             onPointerDown={() => setShowPurchasedCard(true)}

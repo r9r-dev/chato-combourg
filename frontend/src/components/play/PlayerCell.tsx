@@ -62,6 +62,7 @@ export function PlayerCell({
           src={`${API_BASE}/cards/thumbs/carte_${card.cardId}.webp`}
           alt={`Carte ${card.cardId}`}
           className="w-full h-full object-cover"
+          style={{ WebkitTouchCallout: 'none' }}
           loading="lazy"
           draggable={false}
           onContextMenu={(e) => e.preventDefault()}
