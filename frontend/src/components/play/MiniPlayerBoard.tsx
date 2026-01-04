@@ -49,7 +49,10 @@ export function MiniPlayerBoard({ player, isCurrentTurn, isNeighbor, onSelect }:
                   src={`${API_BASE}/cards/thumbs/carte_${card.cardId}.webp`}
                   alt=""
                   className="w-full h-full object-cover rounded"
+                  style={{ WebkitTouchCallout: 'none' }}
                   loading="lazy"
+                  draggable={false}
+                  onContextMenu={(e) => e.preventDefault()}
                 />
                 {card.coinsOnCard > 0 && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none rounded" style={{ paddingBottom: '20%' }}>

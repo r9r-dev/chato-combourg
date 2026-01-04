@@ -65,7 +65,10 @@ export function CentralCard({
           src={`${API_BASE}/cards/thumbs/carte_${cardId}.webp`}
           alt={`Carte ${cardId}`}
           className="w-full h-full object-cover"
+          style={{ WebkitTouchCallout: 'none' }}
           loading="lazy"
+          draggable={false}
+          onContextMenu={(e) => e.preventDefault()}
         />
       </button>
 
