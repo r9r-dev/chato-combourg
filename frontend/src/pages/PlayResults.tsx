@@ -26,10 +26,10 @@ interface PlayerResult {
 
 // Noms des joueurs IA par niveau
 const AI_PLAYER_NAMES: Record<string, string> = {
-  easy: 'IA Facile',
-  normal: 'IA Normale',
-  hard: 'IA Difficile',
-  neural: 'IA Extreme',
+  easy: 'Tom',
+  normal: 'Bruce',
+  hard: 'Celeste',
+  neural: 'Elsa',
 };
 
 export function PlayResults() {
@@ -136,9 +136,10 @@ export function PlayResults() {
         const existingPlayers = await getPlayers();
         const playerIdMap = new Map<string, number>();
 
-        // Creer un mapping des joueurs IA existants
+        // Creer un mapping des joueurs IA existants (par nom)
         for (const player of existingPlayers) {
-          if (Object.values(AI_PLAYER_NAMES).includes(player.name)) {
+          // Utiliser is_ai flag ou fallback sur le nom pour compatibilite
+          if (player.is_ai || Object.values(AI_PLAYER_NAMES).includes(player.name)) {
             playerIdMap.set(player.name, player.id);
           }
         }
@@ -162,8 +163,8 @@ export function PlayResults() {
             if (playerIdMap.has(aiName)) {
               playerId = playerIdMap.get(aiName)!;
             } else {
-              // Creer le joueur IA
-              const newPlayer = await createPlayer(aiName);
+              // Creer le joueur IA avec is_ai = true
+              const newPlayer = await createPlayer(aiName, true);
               playerId = newPlayer.id;
               playerIdMap.set(aiName, playerId);
             }

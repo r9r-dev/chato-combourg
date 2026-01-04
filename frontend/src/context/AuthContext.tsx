@@ -79,9 +79,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     load();
   }, []);
 
-  // Compute sorted players based on order preference
+  // Compute sorted players based on order preference (excluding AI players)
   const sortedPlayers = useMemo(() => {
-    const playersCopy = [...playersWithStats];
+    // Filter out AI players - they should not appear in player selection
+    const humanPlayers = playersWithStats.filter(p => !p.is_ai);
+    const playersCopy = [...humanPlayers];
 
     switch (playerOrder) {
       case 'alphabetical':

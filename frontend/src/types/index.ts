@@ -124,6 +124,7 @@ export interface Player {
   id: number;
   name: string;
   color: string;
+  is_ai?: boolean;
 }
 
 export interface SelectedPlayer extends Player {
@@ -225,6 +226,7 @@ export interface UserSettings {
 
 // Player with stats (for settings)
 export interface PlayerWithStats extends Player {
+  is_ai?: boolean;
   games_count: number;
   last_played_at: string | null;
 }

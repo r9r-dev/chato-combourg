@@ -419,7 +419,7 @@ function getEffectSimplicityBonus(card: PlayCard): number {
 
 export class EasyAI implements AIPlayer {
   level: AILevel = 'easy';
-  name = 'IA Facile';
+  name = 'Tom';
 
   // ===========================================================================
   // Actions obligatoires

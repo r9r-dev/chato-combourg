@@ -44,7 +44,7 @@ import {
 
 export class NormalAI implements AIPlayer {
   level: AILevel = 'normal';
-  name = 'IA Normale';
+  name = 'Bruce';
 
   // Cache de l'analyse strategique (mis a jour a chaque tour)
   private cachedAnalysis: StrategyAnalysis | null = null;
