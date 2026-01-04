@@ -29,6 +29,7 @@ class CardScoreDetail(BaseModel):
     card_id: str = Field(..., description="Card ID")
     score: int = Field(..., description="Points scored by this card")
     explanation: str = Field(..., description="Explanation in French")
+    coins: int = Field(default=0, ge=0, description="Coins placed on this card")
 
 
 class CalculateResponse(BaseModel):
