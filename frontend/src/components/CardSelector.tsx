@@ -126,6 +126,9 @@ export function CardSelector({
                         src={getCardImageUrl(alt.id)}
                         alt={`Carte ${alt.id}`}
                         className="w-full h-full object-cover"
+                        style={{ WebkitTouchCallout: 'none' }}
+                        draggable={false}
+                        onContextMenu={(e) => e.preventDefault()}
                       />
                     </button>
                   ))}
@@ -179,6 +182,9 @@ export function CardSelector({
                           src={getCardImageUrl(card.id)}
                           alt={card.name}
                           className="w-full h-full object-cover"
+                          style={{ WebkitTouchCallout: 'none' }}
+                          draggable={false}
+                          onContextMenu={(e) => e.preventDefault()}
                         />
                       </button>
                     ))}

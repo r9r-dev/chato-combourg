@@ -22,6 +22,9 @@ export function CardPreview({ cardId, cardName, visible }: CardPreviewProps) {
             src={getCardImageUrl(cardId)}
             alt={cardName || `Carte ${cardId}`}
             className="w-full aspect-[630/880] object-cover"
+            style={{ WebkitTouchCallout: 'none' }}
+            draggable={false}
+            onContextMenu={(e) => e.preventDefault()}
           />
         </div>
         {cardName && (
