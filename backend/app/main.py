@@ -170,6 +170,16 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def add_cache_headers(request: Request, call_next):
+    """Add cache headers for static card images."""
+    response = await call_next(request)
+    # Cache card images for 30 days (they never change)
+    if request.url.path.startswith("/cards/"):
+        response.headers["Cache-Control"] = "public, max-age=2592000, immutable"
+    return response
+
+
 # =============================================================================
 # Exception handlers
 # =============================================================================

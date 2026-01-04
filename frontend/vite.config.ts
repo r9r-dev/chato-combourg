@@ -63,7 +63,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
           {
-            urlPattern: /^https?:\/\/.*\/api\/cards\/.*\/image$/,
+            urlPattern: /\/cards\/thumbs\/carte_\d{3}\.webp$/,
             handler: 'CacheFirst',
             options: {
               cacheName: 'card-images',
