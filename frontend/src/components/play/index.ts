@@ -7,3 +7,4 @@ export { PlayerCell } from './PlayerCell';
 export { MiniPlayerBoard } from './MiniPlayerBoard';
 export { PlayerBoardModal } from './PlayerBoardModal';
 export { AnimatedResource } from './AnimatedResource';
+export { ResourceNotification } from './ResourceNotification';

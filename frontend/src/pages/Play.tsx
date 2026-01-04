@@ -14,7 +14,7 @@ import { getValidPlacements, getExternalZones } from '../types/play';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { GameLog } from '../components/GameLog';
 import { CoinIcon, KeyIcon, ShieldIcon } from '../components/Icons';
-import { CentralCard, PlayerCell, MiniPlayerBoard, PlayerBoardModal, AnimatedResource } from '../components/play';
+import { CentralCard, PlayerCell, MiniPlayerBoard, PlayerBoardModal, AnimatedResource, ResourceNotification } from '../components/play';
 import type { PlayPlayer, ShiftDirection, CardEffect, PlayGameState, ShieldColor, Location } from '../types/play';
 import { countShieldsOnBoard, getNeighborPlayers } from '../utils/boardHelpers';
 import { getCard } from '../services/play/gameEngine';
@@ -793,6 +793,15 @@ export function Play() {
         entries={gameLog}
         isOpen={showGameLog}
         onClose={toggleGameLog}
+      />
+
+      {/* Resource Notifications */}
+      <ResourceNotification
+        gold={currentPlayer.gold}
+        keys={currentPlayer.keys}
+        playerId={currentPlayer.id}
+        goldIcon={<CoinIcon className="w-full h-full" />}
+        keysIcon={<KeyIcon className="w-full h-full" />}
       />
     </div>
   );
