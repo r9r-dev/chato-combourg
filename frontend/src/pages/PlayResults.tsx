@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 import { usePlay } from '../context/PlayContext';
 import { calculateScore, createGame, createPlayer, getPlayers } from '../services/api';
 import { MiniGrid } from '../components/MiniGrid';
+import { CoinStack } from '../components/Icons';
 import type { PlayPlayer } from '../types/play';
 import type { CalculateResponse, CardScoreDetail } from '../types';
 
@@ -463,14 +464,21 @@ export function PlayResults() {
                 </div>
                 <div className="grid grid-cols-3 gap-1">
                   {result.player.board.map((card, i) => (
-                    <div key={i} className="aspect-[5/7] rounded overflow-hidden bg-dark/50">
+                    <div key={i} className="aspect-[5/7] rounded overflow-hidden bg-dark/50 relative">
                       {card && (
-                        <img
-                          src={`${API_BASE}/cards/thumbs/carte_${card.cardId}.webp`}
-                          alt=""
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
+                        <>
+                          <img
+                            src={`${API_BASE}/cards/thumbs/carte_${card.cardId}.webp`}
+                            alt=""
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                          {card.coinsOnCard > 0 && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none rounded" style={{ paddingBottom: '20%' }}>
+                              <CoinStack count={card.coinsOnCard} seed={i} className="scale-50" />
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                   ))}

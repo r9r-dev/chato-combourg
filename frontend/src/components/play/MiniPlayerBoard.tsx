@@ -2,7 +2,7 @@
  * MiniPlayerBoard - Mini-grille d'un autre joueur
  */
 
-import { CoinIcon, KeyIcon } from '../Icons';
+import { CoinIcon, KeyIcon, CoinStack } from '../Icons';
 import type { PlayPlayer } from '../../types/play';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -41,15 +41,22 @@ export function MiniPlayerBoard({ player, isCurrentTurn, isNeighbor, onSelect }:
         {player.board.map((card, i) => (
           <div
             key={i}
-            className={`aspect-[5/7] rounded ${card ? '' : 'bg-dark/50'}`}
+            className={`aspect-[5/7] rounded relative ${card ? '' : 'bg-dark/50'}`}
           >
             {card && (
-              <img
-                src={`${API_BASE}/cards/thumbs/carte_${card.cardId}.webp`}
-                alt=""
-                className="w-full h-full object-cover rounded"
-                loading="lazy"
-              />
+              <>
+                <img
+                  src={`${API_BASE}/cards/thumbs/carte_${card.cardId}.webp`}
+                  alt=""
+                  className="w-full h-full object-cover rounded"
+                  loading="lazy"
+                />
+                {card.coinsOnCard > 0 && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none rounded" style={{ paddingBottom: '20%' }}>
+                    <CoinStack count={card.coinsOnCard} seed={i} className="scale-[0.4]" />
+                  </div>
+                )}
+              </>
             )}
           </div>
         ))}

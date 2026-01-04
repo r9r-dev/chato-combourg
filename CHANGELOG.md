@@ -1,5 +1,10 @@
 # Changelog
 
+## v3.8.0 (2026-01-04)
+
+### Améliorations
+- Affichage des pièces sur les cartes bourse partout : plateaux des autres joueurs, modal de détail, et récapitulatif final
+
 ## v3.7.4 (2026-01-04)
 
 ### Améliorations
