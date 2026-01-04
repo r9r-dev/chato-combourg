@@ -1,5 +1,10 @@
 # Changelog
 
+## v3.8.1 (2026-01-04)
+
+### Corrections
+- Correction du menu contextuel iOS sur appui long sur les images de cartes en mode Play et Scan
+
 ## v3.8.0 (2026-01-04)
 
 ### Améliorations
