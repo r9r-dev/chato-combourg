@@ -1,5 +1,15 @@
 # Changelog
 
+## v3.7.4 (2026-01-04)
+
+### Améliorations
+- Les joueurs IA n'apparaissent plus dans la sélection des joueurs
+- Nouveaux noms pour les IA : Tom (Facile), Bruce (Normale), Celeste (Difficile), Elsa (Extrême)
+
+### Technique
+- Ajout du champ `is_ai` sur le modèle Player pour distinguer les joueurs IA
+- Migration automatique de la base de données
+
 ## v3.7.3 (2026-01-04)
 
 ### Améliorations
