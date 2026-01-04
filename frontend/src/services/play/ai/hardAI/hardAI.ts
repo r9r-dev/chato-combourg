@@ -36,7 +36,7 @@ import { getCardCount } from './simulation';
 
 export class HardAI implements AIPlayer {
   level: AILevel = 'hard';
-  name = 'IA Difficile';
+  name = 'Celeste';
 
   // IA Normale pour les decisions secondaires
   private normalAI = new NormalAI();

@@ -36,6 +36,14 @@ const AI_COLORS = [
   '#374151', // Gris tres fonce
 ];
 
+// Noms des joueurs IA par niveau
+const AI_PLAYER_NAMES: Record<AILevel, string> = {
+  easy: 'Tom',
+  normal: 'Bruce',
+  hard: 'Celeste',
+  neural: 'Elsa',
+};
+
 const AI_LEVELS: { value: AILevel; label: string; description: string }[] = [
   { value: 'easy', label: 'Facile', description: '"Oh, elle est jolie cette carte !"' },
   { value: 'normal', label: 'Normale', description: '"Je connais bien les règles."' },
@@ -99,10 +107,9 @@ export function PlaySetup() {
 
   const handleAddAI = (level: AILevel) => {
     if (!canAddMore) return;
-    const levelLabel = AI_LEVELS.find(l => l.value === level)?.label ?? 'IA';
     const newAI: AIPlayer = {
       id: `ai-${Date.now()}`,
-      name: `IA ${levelLabel}`,
+      name: AI_PLAYER_NAMES[level],
       color: getNextAIColor(),
       level,
     };

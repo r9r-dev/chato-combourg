@@ -142,3 +142,20 @@ def migration_003_add_source(engine: Engine) -> None:
             logger.info("Added source column to games")
         else:
             logger.info("Column source already exists, skipping")
+
+
+@migration(4, "Add is_ai column to players")
+def migration_004_add_is_ai(engine: Engine) -> None:
+    """Add is_ai column to distinguish AI players from human players."""
+    with engine.connect() as conn:
+        result = conn.execute(text("PRAGMA table_info(players)"))
+        columns = {row[1] for row in result.fetchall()}
+
+        if "is_ai" not in columns:
+            conn.execute(text(
+                "ALTER TABLE players ADD COLUMN is_ai INTEGER DEFAULT 0"
+            ))
+            conn.commit()
+            logger.info("Added is_ai column to players")
+        else:
+            logger.info("Column is_ai already exists, skipping")

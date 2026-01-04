@@ -26,6 +26,7 @@ class PlayerCreate(BaseModel):
     """Request to create a new player."""
 
     name: str
+    is_ai: bool = False
 
 
 class PlayerUpdate(BaseModel):
@@ -43,6 +44,7 @@ class PlayerResponse(BaseModel):
     id: int
     name: str
     color: str
+    is_ai: bool = False
 
 
 class PlayerWithStatsResponse(BaseModel):
@@ -53,6 +55,7 @@ class PlayerWithStatsResponse(BaseModel):
     id: int
     name: str
     color: str
+    is_ai: bool = False
     games_count: int
     wins_count: int
     win_percentage: float
@@ -110,6 +113,7 @@ def list_players(
                 id=player.id,
                 name=player.name,
                 color=player.color,
+                is_ai=player.is_ai or False,
                 games_count=games_count,
                 wins_count=wins_count,
                 win_percentage=round(win_percentage, 1),
@@ -134,11 +138,12 @@ def create_player(
         user_id=user.id,
         name=data.name,
         color=Player.get_next_color(existing_count),
+        is_ai=data.is_ai,
     )
     db.add(player)
     db.commit()
     db.refresh(player)
-    logger.info(f"Nouveau joueur: {player.name}")
+    logger.info(f"Nouveau joueur: {player.name} (IA: {player.is_ai})")
     return player
 
 

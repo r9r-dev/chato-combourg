@@ -54,6 +54,7 @@ class Player(Base):
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     name = Column(String, nullable=False)
     color = Column(String, nullable=False)  # Hex color
+    is_ai = Column(Boolean, default=False)  # True for AI players
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships

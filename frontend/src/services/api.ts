@@ -162,11 +162,11 @@ export async function getPlayers(): Promise<Player[]> {
   return response.json();
 }
 
-export async function createPlayer(name: string): Promise<Player> {
+export async function createPlayer(name: string, is_ai: boolean = false): Promise<Player> {
   const response = await fetch(`${API_BASE}/players`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, is_ai }),
   });
   if (!response.ok) {
     await handleApiError(response, 'Erreur lors de la création du joueur');
