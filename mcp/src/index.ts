@@ -43,9 +43,15 @@ interface CardEffects {
   lock_effect: Effect | null;
 }
 
+interface ScoringRule {
+  type: string;
+  [key: string]: unknown;
+}
+
 interface Card extends CardBase, CardAttributes {
   effects: Effect[];
   lock_effect: Effect | null;
+  scoring_rule: ScoringRule;
 }
 
 // Load and merge card data
@@ -61,19 +67,24 @@ function loadCardData(): Map<string, Card> {
   const effectsJson: Record<string, CardEffects> = JSON.parse(
     readFileSync(join(cardsPath, "card_effects.json"), "utf-8")
   );
+  const scoringJson: Record<string, ScoringRule> = JSON.parse(
+    readFileSync(join(cardsPath, "card_scoring.json"), "utf-8")
+  );
 
   const cards = new Map<string, Card>();
 
   for (const card of cardsJson) {
     const attributes = attributesJson[card.id];
     const effects = effectsJson[card.id];
+    const scoring = scoringJson[card.id];
 
-    if (attributes && effects) {
+    if (attributes && effects && scoring) {
       cards.set(card.id, {
         ...card,
         ...attributes,
         effects: effects.effects,
         lock_effect: effects.lock_effect,
+        scoring_rule: scoring,
       });
     }
   }
@@ -104,7 +115,7 @@ server.registerTool(
   {
     title: "Get Card",
     description:
-      "Get all data for a card by its ID (001-092). Returns name, attributes, effects, and lock effect.",
+      "Get all data for a card by its ID (001-092). Returns name, attributes, effects (on placement), lock effect, and scoring rule (end of game).",
     inputSchema: {
       id: z
         .string()
