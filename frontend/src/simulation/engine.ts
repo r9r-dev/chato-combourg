@@ -15,7 +15,7 @@ import type {
   CardEffect,
   ShieldColor,
 } from '../types/play';
-import { getValidPlacements, getEffectiveCost } from '../types/play';
+import { getValidPlacements, getEffectiveCost, shiftBoard, canShiftBoard } from '../types/play';
 import type {
   SimConfig,
   SerializedGameState,
@@ -584,7 +584,16 @@ export function executeAction(
     lockedCards: new Map(p.lockedCards),
   }));
   const player = players[playerIndex];
-  let board = { ...state.board };
+  // Deep clone board to avoid mutations affecting other branches (MCTS)
+  let board = {
+    ...state.board,
+    castleCards: [...state.board.castleCards],
+    villageCards: [...state.board.villageCards],
+    castleDeck: [...state.board.castleDeck],
+    villageDeck: [...state.board.villageDeck],
+    castleDiscard: [...state.board.castleDiscard],
+    villageDiscard: [...state.board.villageDiscard],
+  };
 
   switch (action.type) {
     case 'buy_card': {
@@ -637,6 +646,26 @@ export function executeAction(
       const cardId = state.purchasedCard!;
       const card = cards.get(cardId);
       const position = action.position!;
+
+      // Si un shift est demande, l'appliquer d'abord
+      if (action.shiftDirection && canShiftBoard(player.board, action.shiftDirection)) {
+        const shiftedBoard = shiftBoard(player.board, action.shiftDirection);
+
+        // Mettre a jour les positions dans lockedCards
+        const newLockedCards = new Map<number, boolean>();
+        for (const [oldPos, hasKey] of player.lockedCards) {
+          const oldCard = player.board[oldPos];
+          if (oldCard) {
+            const newPos = shiftedBoard.findIndex(c => c !== null && c.cardId === oldCard.cardId);
+            if (newPos >= 0) {
+              newLockedCards.set(newPos, hasKey);
+            }
+          }
+        }
+
+        player.board = shiftedBoard;
+        player.lockedCards = newLockedCards;
+      }
 
       const placedCard: PlacedCard = {
         cardId,
@@ -701,6 +730,36 @@ export function executeAction(
         players,
         board,
         keyUsedThisTurn: true,
+      };
+    }
+
+    case 'use_key_on_lock': {
+      const lockPosition = action.lockPosition;
+      if (lockPosition === undefined) {
+        return state;
+      }
+
+      const placed = player.board[lockPosition];
+      if (!placed || !player.lockedCards.get(lockPosition)) {
+        // Position invalide ou pas de cadenas
+        return state;
+      }
+
+      // Marquer le cadenas comme utilisé
+      player.lockedCards.set(lockPosition, false);
+      player.keys -= 1;
+
+      // Exécuter l'effet du cadenas
+      const card = cards.get(placed.cardId);
+      if (card?.lock_effect) {
+        executeSimEffect(card.lock_effect, player, { ...state, players, board }, cards);
+      }
+
+      return {
+        ...state,
+        players,
+        board,
+        lockUsedThisTurn: true,
       };
     }
 

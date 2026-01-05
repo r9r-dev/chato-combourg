@@ -4,7 +4,7 @@
 
 import type { GameAction, PlayCard } from '../../../../types/play';
 import type { AIContext, ActionNode, ActionTree, ActionConsequences } from '../types';
-import { getValidPlacements, getEffectiveCost } from '../../../../types/play';
+import { getValidPlacements, getExternalZones, getEffectiveCost } from '../../../../types/play';
 import { buildContext } from '../context/builder';
 import { cloneState } from '../simulator/clone';
 import { executeSimulatedAction } from '../simulator/executor';
@@ -181,6 +181,7 @@ export function generateActions(
     case 'place':
       // Placer la carte achetee
       if (context.purchasedCard) {
+        // Positions internes (adjacentes aux cartes existantes)
         const validPositions = getValidPlacements(player.board);
         for (const position of validPositions) {
           actions.push({
@@ -188,6 +189,18 @@ export function generateActions(
             playerId: player.id,
             cardId: context.purchasedCard,
             position,
+          });
+        }
+
+        // Zones externes (placement avec shift automatique)
+        const externalZones = getExternalZones(player.board);
+        for (const zone of externalZones) {
+          actions.push({
+            type: 'place_card',
+            playerId: player.id,
+            cardId: context.purchasedCard,
+            position: zone.position,
+            shiftDirection: zone.shiftDirection,
           });
         }
       }

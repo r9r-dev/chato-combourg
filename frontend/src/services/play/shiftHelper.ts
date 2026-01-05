@@ -33,18 +33,18 @@ interface PositionBonus {
 }
 
 const POSITION_BONUS_CARDS: Record<string, PositionBonus> = {
-  '003': { check: isTopRow, score: 8 },
-  '007': { check: isBottomRow, score: 5 },
-  '021': { check: isLeftCol, score: 8 },
-  '030': { check: isLeftCol, score: 6 },
-  '031': { check: isRightCol, score: 8 },
-  '047': { check: isTopRow, score: 5 },
-  '049': { check: isRightCol, score: 5 },
-  '052': { check: isMiddleCol, score: 6 },
-  '063': { check: isBottomRow, score: 7 },
-  '071': { check: isMiddleRow, score: 5 },
-  '085': { check: isBorder, score: 3 },
-  '087': { check: isCorner, score: 4 },
+  '003': { check: isTopRow, score: 8 },      // Duchesse
+  '007': { check: isBottomRow, score: 5 },   // Maître de guilde
+  '021': { check: isLeftCol, score: 8 },     // Astronome
+  '030': { check: isLeftCol, score: 6 },     // Orfèvre
+  '031': { check: isRightCol, score: 8 },    // Capitaine
+  '047': { check: isTopRow, score: 5 },      // Mère supérieure
+  '049': { check: isRightCol, score: 5 },    // Bûcheron
+  '052': { check: isMiddleCol, score: 6 },   // Espion
+  '063': { check: isBottomRow, score: 7 },   // Agricultrice
+  '071': { check: isMiddleRow, score: 5 },   // Épicière
+  '085': { check: isBorder, score: 3 },      // Boulangère
+  '087': { check: isCorner, score: 4 },      // Pêcheur
 };
 
 // =============================================================================

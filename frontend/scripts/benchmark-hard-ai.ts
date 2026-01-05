@@ -9,14 +9,24 @@
  *   npx tsx scripts/benchmark-hard-ai.ts
  *   npx tsx scripts/benchmark-hard-ai.ts --games 500
  *   npx tsx scripts/benchmark-hard-ai.ts --output results.json
+ *   npx tsx scripts/benchmark-hard-ai.ts --capture-below 40 --games 1000
+ *
+ * Options:
+ *   -n, --games N         Nombre de parties par config (defaut: 1000)
+ *   -o, --output FILE     Sauvegarder les stats dans un fichier JSON
+ *   -v, --verbose         Mode verbeux
+ *   -c, --capture-below N Capturer les logs des parties avec score < N
+ *                         Les logs sont sauvegardes dans low-score-captures/
  */
 
 import type { SimConfig, SimPlayerConfig, SimGameResult } from '../src/simulation/types';
-import { runMultipleGames, computeStats } from '../src/simulation/runner';
+import { runMultipleGames, runGame } from '../src/simulation/runner';
+import type { DecisionLogEntry } from '../src/services/play/ai/debug/decisionLogger';
 import chalk from 'chalk';
 import Table from 'cli-table3';
 import boxen from 'boxen';
-import { writeFileSync } from 'fs';
+import { writeFileSync, mkdirSync, existsSync } from 'fs';
+import { join } from 'path';
 
 // =============================================================================
 // Configuration
@@ -26,6 +36,7 @@ interface BenchmarkConfig {
   gamesPerConfig: number;
   outputFile?: string;
   verbose: boolean;
+  captureBelow?: number; // Seuil pour capturer les logs des parties problématiques
 }
 
 function parseArgs(): BenchmarkConfig {
@@ -33,6 +44,7 @@ function parseArgs(): BenchmarkConfig {
   let gamesPerConfig = 1000;
   let outputFile: string | undefined;
   let verbose = false;
+  let captureBelow: number | undefined;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--games' || args[i] === '-n') {
@@ -41,10 +53,12 @@ function parseArgs(): BenchmarkConfig {
       outputFile = args[++i];
     } else if (args[i] === '--verbose' || args[i] === '-v') {
       verbose = true;
+    } else if (args[i] === '--capture-below' || args[i] === '-c') {
+      captureBelow = parseInt(args[++i], 10);
     }
   }
 
-  return { gamesPerConfig, outputFile, verbose };
+  return { gamesPerConfig, outputFile, verbose, captureBelow };
 }
 
 // =============================================================================
@@ -200,6 +214,86 @@ function analyzeResults(configName: string, results: SimGameResult[]): DetailedS
 }
 
 // =============================================================================
+// Capture des parties problématiques
+// =============================================================================
+
+interface CapturedGame {
+  gameId: string;
+  configName: string;
+  playerCount: number;
+  scores: { name: string; score: number }[];
+  minScore: number;
+  seed?: number;
+  decisionLogs: DecisionLogEntry[];
+}
+
+const CAPTURES_DIR = 'low-score-captures';
+
+function ensureCapturesDir(): void {
+  if (!existsSync(CAPTURES_DIR)) {
+    mkdirSync(CAPTURES_DIR, { recursive: true });
+  }
+}
+
+function saveCapturedGame(capture: CapturedGame): string {
+  ensureCapturesDir();
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const filename = `game-${capture.minScore}pts-${capture.playerCount}P-${timestamp}.json`;
+  const filepath = join(CAPTURES_DIR, filename);
+
+  writeFileSync(filepath, JSON.stringify(capture, null, 2));
+  return filepath;
+}
+
+/**
+ * Execute plusieurs parties avec capture des logs pour les scores bas
+ */
+async function runGamesWithCapture(
+  testConfig: { name: string; players: SimPlayerConfig[] },
+  count: number,
+  captureBelow: number,
+  backendUrl: string,
+  onProgress?: (current: number, total: number) => void
+): Promise<{ results: SimGameResult[]; capturedCount: number }> {
+  const results: SimGameResult[] = [];
+  let capturedCount = 0;
+
+  for (let i = 0; i < count; i++) {
+    // Toujours activer verbose pour avoir les logs en mémoire
+    const simConfig: SimConfig = {
+      players: testConfig.players,
+      verbose: true, // Nécessaire pour capturer les décisions
+      seed: i + 1, // Seed reproductible
+    };
+
+    const { result, decisionLogs } = await runGame(simConfig, backendUrl);
+    results.push(result);
+
+    // Vérifier si un joueur a un score sous le seuil
+    const minScore = Math.min(...result.players.map(p => p.score));
+    if (minScore < captureBelow && decisionLogs && decisionLogs.length > 0) {
+      const capture: CapturedGame = {
+        gameId: result.gameId,
+        configName: testConfig.name,
+        playerCount: testConfig.players.length,
+        scores: result.players.map(p => ({ name: p.name, score: p.score })),
+        minScore,
+        seed: simConfig.seed,
+        decisionLogs,
+      };
+      saveCapturedGame(capture);
+      capturedCount++;
+    }
+
+    if (onProgress) {
+      onProgress(i + 1, count);
+    }
+  }
+
+  return { results, capturedCount };
+}
+
+// =============================================================================
 // Affichage
 // =============================================================================
 
@@ -305,6 +399,7 @@ async function main() {
   const configs = createConfigs();
   const allStats: DetailedStats[] = [];
   const allResults: Record<string, SimGameResult[]> = {};
+  let totalCaptured = 0;
 
   console.log('\n' + boxen(
     chalk.bold.yellow('BENCHMARK IA HARD'),
@@ -313,29 +408,61 @@ async function main() {
 
   console.log(chalk.dim(`\nConfiguration: ${config.gamesPerConfig} parties par config`));
   console.log(chalk.dim(`Configurations: 2P, 3P, 4P, 5P (toutes Hard vs Hard)`));
-  console.log(chalk.dim(`Total: ${config.gamesPerConfig * 4} parties\n`));
+  console.log(chalk.dim(`Total: ${config.gamesPerConfig * 4} parties`));
+
+  if (config.captureBelow) {
+    console.log(chalk.yellow(`\nMode capture: logs sauvegardés pour scores < ${config.captureBelow} pts`));
+    console.log(chalk.yellow(`Dossier: ${CAPTURES_DIR}/`));
+  }
+
+  console.log('');
 
   const startTime = Date.now();
 
   for (const testConfig of configs) {
-    const simConfig: SimConfig = {
-      players: testConfig.players,
-      verbose: config.verbose,
-    };
-
     process.stdout.write(chalk.cyan(`${testConfig.name}: `));
 
-    const results = await runMultipleGames(
-      simConfig,
-      config.gamesPerConfig,
-      'http://localhost:8080',
-      (current, total) => {
-        const pct = Math.round((current / total) * 100);
-        process.stdout.write(`\r${chalk.cyan(testConfig.name)}: ${makeBar(current, total, 30)} ${pct}%`);
-      }
-    );
+    let results: SimGameResult[];
 
-    process.stdout.write(`\r${chalk.green('✓')} ${testConfig.name}: ${results.length} parties         \n`);
+    if (config.captureBelow) {
+      // Mode capture: exécuter partie par partie avec logs
+      const { results: gameResults, capturedCount } = await runGamesWithCapture(
+        testConfig,
+        config.gamesPerConfig,
+        config.captureBelow,
+        'http://localhost:8080',
+        (current, total) => {
+          const pct = Math.round((current / total) * 100);
+          process.stdout.write(`\r${chalk.cyan(testConfig.name)}: ${makeBar(current, total, 30)} ${pct}%`);
+        }
+      );
+      results = gameResults;
+      totalCaptured += capturedCount;
+
+      process.stdout.write(`\r${chalk.green('✓')} ${testConfig.name}: ${results.length} parties`);
+      if (capturedCount > 0) {
+        process.stdout.write(chalk.yellow(` (${capturedCount} capturées)`));
+      }
+      process.stdout.write('         \n');
+    } else {
+      // Mode normal: batch rapide
+      const simConfig: SimConfig = {
+        players: testConfig.players,
+        verbose: config.verbose,
+      };
+
+      results = await runMultipleGames(
+        simConfig,
+        config.gamesPerConfig,
+        'http://localhost:8080',
+        (current, total) => {
+          const pct = Math.round((current / total) * 100);
+          process.stdout.write(`\r${chalk.cyan(testConfig.name)}: ${makeBar(current, total, 30)} ${pct}%`);
+        }
+      );
+
+      process.stdout.write(`\r${chalk.green('✓')} ${testConfig.name}: ${results.length} parties         \n`);
+    }
 
     allResults[testConfig.name] = results;
     const stats = analyzeResults(testConfig.name, results);
@@ -344,6 +471,10 @@ async function main() {
 
   const totalTime = Date.now() - startTime;
   console.log(chalk.dim(`\nTemps total: ${(totalTime / 1000).toFixed(1)}s`));
+
+  if (config.captureBelow && totalCaptured > 0) {
+    console.log(chalk.yellow(`\nParties capturées: ${totalCaptured} fichiers dans ${CAPTURES_DIR}/`));
+  }
 
   // Afficher les stats detaillees
   for (const stats of allStats) {
@@ -359,6 +490,7 @@ async function main() {
       timestamp: new Date().toISOString(),
       config: {
         gamesPerConfig: config.gamesPerConfig,
+        captureBelow: config.captureBelow,
       },
       stats: allStats.map(s => ({
         ...s,
@@ -368,6 +500,7 @@ async function main() {
         globalAvg: allStats.flatMap(s => s.totalScores).reduce((a, b) => a + b, 0) / allStats.flatMap(s => s.totalScores).length,
         totalGames: config.gamesPerConfig * 4,
         totalTime: totalTime,
+        capturedGames: totalCaptured,
       },
     };
 

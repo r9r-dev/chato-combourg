@@ -25,3 +25,7 @@ dist-ssr
 
 # Generated files
 public/CHANGELOG.md
+
+# AI debug/benchmark outputs
+low-score-captures/
+ai-decisions-*.json

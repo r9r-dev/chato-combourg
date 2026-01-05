@@ -5,13 +5,10 @@
  * avec les details de ressources avant/apres et les actions necessaires.
  */
 
-import type { PlayPlayer, PlayCard, PlayGameState, Location } from '../../../../types/play';
-import { getValidPlacements, getEffectiveCost } from '../../../../types/play';
+import type { PlayPlayer, PlayCard, PlayGameState } from '../../../../types/play';
 import {
   evaluateBuyOptions,
   evaluatePlaceOptions,
-  type BuyOption,
-  type PlaceOption,
 } from '../evaluator/deltaCalculator';
 import { calculatePlayerScore } from '../evaluator/scoreCalculator';
 
@@ -26,6 +23,7 @@ export interface EvaluatedPossibility {
   cardName: string;
   flipped: boolean;
   position: number;
+  shiftDirection?: string; // Direction du shift si placement externe
 
   // Ressources avant
   goldBefore: number;
@@ -177,7 +175,7 @@ function getPositionName(position: number): string {
 export function evaluateAllPossibilities(
   context: DecisionLogContext
 ): EvaluatedPossibility[] {
-  const { player, state, availableCards, cards, turnNumber } = context;
+  const { player, state, availableCards, cards, turnNumber: _turnNumber } = context;
   const possibilities: EvaluatedPossibility[] = [];
 
   // Score et ressources actuels
@@ -247,9 +245,19 @@ export function evaluateAllPossibilities(
         actions.push(`2. Messager se deplace vers ${newLocation}`);
       }
 
-      // 3. Placement
+      // 3. Placement (avec shift si zone externe)
       const placementStep = actions.length + 1;
-      actions.push(`${placementStep}. Placer en position ${getPositionName(placeOption.position)}`);
+      if (placeOption.shiftDirection) {
+        const shiftNames: Record<string, string> = {
+          left: 'gauche',
+          right: 'droite',
+          up: 'haut',
+          down: 'bas',
+        };
+        actions.push(`${placementStep}. Shift ${shiftNames[placeOption.shiftDirection]} + placer en position ${getPositionName(placeOption.position)}`);
+      } else {
+        actions.push(`${placementStep}. Placer en position ${getPositionName(placeOption.position)}`);
+      }
 
       // 4. Effets de la carte
       if (!buyOption.flipped && card.effects && card.effects.length > 0) {
@@ -280,6 +288,7 @@ export function evaluateAllPossibilities(
         cardName: getCardName(buyOption.cardId),
         flipped: buyOption.flipped,
         position: placeOption.position,
+        shiftDirection: placeOption.shiftDirection,
 
         goldBefore,
         keysBefore,

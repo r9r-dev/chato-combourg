@@ -10,3 +10,5 @@
 export * from './types';
 export * from './engine';
 export * from './runner';
+export * from './selfPlayRunner';
+export * from './evaluationRunner';
