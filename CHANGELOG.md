@@ -1,5 +1,10 @@
 # Changelog
 
+## v3.10.2 (2026-01-05)
+
+### Corrections
+- Fix erreurs TypeScript empêchant le build Docker
+
 ## v3.10.1 (2026-01-05)
 
 ### Améliorations IA
