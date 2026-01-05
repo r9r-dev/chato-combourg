@@ -419,3 +419,90 @@ export function AIExtremeIcon({ className = 'w-6 h-6' }: IconProps) {
     </svg>
   );
 }
+
+// =============================================================================
+// Icones du menu Play
+// =============================================================================
+
+/** Icone menu hamburger */
+export function MenuIcon({ className = 'w-6 h-6' }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <path d="M3 6h18M3 12h18M3 18h18" />
+    </svg>
+  );
+}
+
+/** Icone loupe (recherche) */
+export function SearchIcon({ className = 'w-5 h-5' }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M21 21l-4.35-4.35" />
+    </svg>
+  );
+}
+
+/** Icone defausse (pile de cartes avec fleche) */
+export function DiscardIcon({ className = 'w-5 h-5' }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      {/* Cartes empilees */}
+      <rect x="3" y="5" width="12" height="16" rx="1" />
+      <rect x="6" y="3" width="12" height="16" rx="1" fill="currentColor" fillOpacity="0.1" />
+      {/* Fleche vers le bas */}
+      <path d="M18 10v8m0 0l-3-3m3 3l3-3" strokeWidth="2.5" />
+    </svg>
+  );
+}
+
+/** Icone repartition des blasons (boucliers groupes) */
+export function ShieldDistIcon({ className = 'w-5 h-5' }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      {/* Bouclier central */}
+      <path d="M12 2L6 5v4c0 4 2.4 7.7 6 8.6 3.6-.9 6-4.6 6-8.6V5l-6-3z" fill="#3b82f6" />
+      <path d="M12 3.5L7.5 6v3.5c0 3.2 1.9 6.2 4.5 7V3.5z" fill="white" fillOpacity="0.2" />
+      {/* Mini bouclier gauche */}
+      <path d="M4 14l-2.5 1.5v2c0 2 1.2 3.8 2.5 4.3 1.3-.5 2.5-2.3 2.5-4.3v-2L4 14z" fill="#ec4899" opacity="0.8" />
+      {/* Mini bouclier droit */}
+      <path d="M20 14l-2.5 1.5v2c0 2 1.2 3.8 2.5 4.3 1.3-.5 2.5-2.3 2.5-4.3v-2L20 14z" fill="#22c55e" opacity="0.8" />
+    </svg>
+  );
+}
+
+/** Icone aide (point d'interrogation) */
+export function HelpIcon({ className = 'w-5 h-5' }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9 9a3 3 0 115.12 2.12c-.58.59-1.62 1.38-1.62 2.38" />
+      <circle cx="12" cy="17" r="0.5" fill="currentColor" />
+    </svg>
+  );
+}
+
+/** Icone regles (livre/parchemin) */
+export function RulesIcon({ className = 'w-5 h-5' }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
+      <path d="M4 4.5A2.5 2.5 0 016.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15z" />
+      {/* Lignes de texte */}
+      <path d="M8 7h8M8 11h6M8 15h4" strokeWidth="1.5" opacity="0.6" />
+    </svg>
+  );
+}
+
+/** Icone quitter (porte avec fleche) */
+export function QuitIcon({ className = 'w-5 h-5' }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      {/* Porte */}
+      <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+      {/* Fleche */}
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  );
+}

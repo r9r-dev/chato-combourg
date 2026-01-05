@@ -13,8 +13,13 @@ import { usePlay } from '../context/PlayContext';
 import { getValidPlacements, getExternalZones } from '../types/play';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { GameLog } from '../components/GameLog';
-import { CoinIcon, KeyIcon, ShieldIcon } from '../components/Icons';
+import { CoinIcon, KeyIcon, ShieldIcon, MenuIcon } from '../components/Icons';
 import { CentralCard, PlayerCell, MiniPlayerBoard, PlayerBoardModal, TokenNotification } from '../components/play';
+import { PlayMenu, type PlayMenuAction } from '../components/PlayMenu';
+import { CardBrowser } from '../components/CardBrowser';
+import { ShieldDistribution } from '../components/ShieldDistribution';
+import { GameHelp } from '../components/GameHelp';
+import { GameRules } from '../components/GameRules';
 import type { PlayPlayer, ShiftDirection, CardEffect, PlayGameState, ShieldColor, Location } from '../types/play';
 import { countShieldsOnBoard, getNeighborPlayers } from '../utils/boardHelpers';
 import { getCard } from '../services/play/gameEngine';
@@ -138,6 +143,34 @@ export function Play() {
   const [showPurchasedCard, setShowPurchasedCard] = useState(false);
   const playerBoardRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Menu hamburger et panneaux
+  const [showMenu, setShowMenu] = useState(false);
+  const [activePanel, setActivePanel] = useState<'search' | 'discard' | 'shields' | 'help' | 'rules' | null>(null);
+
+  // Handler pour les actions du menu
+  const handleMenuAction = (action: PlayMenuAction) => {
+    switch (action) {
+      case 'search':
+        setActivePanel('search');
+        break;
+      case 'discard':
+        setActivePanel('discard');
+        break;
+      case 'shields':
+        setActivePanel('shields');
+        break;
+      case 'help':
+        setActivePanel('help');
+        break;
+      case 'rules':
+        setActivePanel('rules');
+        break;
+      case 'quit':
+        setShowQuitConfirm(true);
+        break;
+    }
+  };
 
   const gameState = state.gameState;
   const currentPlayer = getCurrentPlayer();
@@ -363,8 +396,12 @@ export function Play() {
     <div className="flex flex-col h-dvh bg-dark">
       {/* Header */}
       <header className="relative flex items-center justify-between p-3 border-b border-white/10">
-        <button onClick={() => setShowQuitConfirm(true)} className="text-white/60 hover:text-white text-sm z-10">
-          Quitter
+        <button
+          onClick={() => setShowMenu(true)}
+          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors z-10"
+          title="Menu"
+        >
+          <MenuIcon className="w-5 h-5" />
         </button>
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="flex items-center gap-4">
@@ -799,6 +836,48 @@ export function Play() {
         keys={currentPlayer.keys}
         playerId={currentPlayer.id}
       />
+
+      {/* Menu hamburger */}
+      <PlayMenu
+        isOpen={showMenu}
+        onClose={() => setShowMenu(false)}
+        onAction={handleMenuAction}
+      />
+
+      {/* Panneau recherche */}
+      {activePanel === 'search' && (
+        <CardBrowser
+          mode="search"
+          onClose={() => setActivePanel(null)}
+        />
+      )}
+
+      {/* Panneau defausse */}
+      {activePanel === 'discard' && (
+        <CardBrowser
+          mode="discard"
+          discardedCards={{
+            castle: gameState.board.castleDiscard,
+            village: gameState.board.villageDiscard,
+          }}
+          onClose={() => setActivePanel(null)}
+        />
+      )}
+
+      {/* Panneau repartition des blasons */}
+      {activePanel === 'shields' && (
+        <ShieldDistribution onClose={() => setActivePanel(null)} />
+      )}
+
+      {/* Panneau aide de jeu */}
+      {activePanel === 'help' && (
+        <GameHelp onClose={() => setActivePanel(null)} />
+      )}
+
+      {/* Panneau regles du jeu */}
+      {activePanel === 'rules' && (
+        <GameRules onClose={() => setActivePanel(null)} />
+      )}
     </div>
   );
 }
