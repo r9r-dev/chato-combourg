@@ -109,6 +109,14 @@ export function getCard(cardId: string): PlayCard | undefined {
   return cardAttributesCache?.[cardId];
 }
 
+/**
+ * Initialise le cache des cartes depuis l'exterieur
+ * Utile pour les tests et simulations en Node.js
+ */
+export function setCardCache(cards: Record<string, PlayCard>): void {
+  cardAttributesCache = cards;
+}
+
 // =============================================================================
 // Initialisation de la partie
 // =============================================================================

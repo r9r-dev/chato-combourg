@@ -496,13 +496,20 @@ export function PlayResults() {
       </div>
 
       {/* Footer */}
-      <footer className="p-4 border-t border-white/10">
+      <footer className="p-4 border-t border-white/10 flex gap-3">
         <button
           onClick={reset}
-          className="w-full py-4 px-8 bg-gold text-dark font-semibold text-lg rounded-xl
+          className="flex-1 py-4 px-8 bg-gold text-dark font-semibold text-lg rounded-xl
                      hover:bg-gold-light active:bg-gold-dark transition-colors"
         >
           Nouvelle partie
+        </button>
+        <button
+          onClick={reset}
+          className="py-4 px-6 bg-white/10 text-white/80 font-semibold text-lg rounded-xl
+                     hover:bg-white/20 active:bg-white/5 transition-colors"
+        >
+          Quitter
         </button>
       </footer>
     </div>

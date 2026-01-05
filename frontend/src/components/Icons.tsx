@@ -494,6 +494,16 @@ export function RulesIcon({ className = 'w-5 h-5' }: IconProps) {
   );
 }
 
+/** Icone recommencer (fleche circulaire) */
+export function RestartIcon({ className = 'w-5 h-5' }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 4v6h6" />
+      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+    </svg>
+  );
+}
+
 /** Icone quitter (porte avec fleche) */
 export function QuitIcon({ className = 'w-5 h-5' }: IconProps) {
   return (

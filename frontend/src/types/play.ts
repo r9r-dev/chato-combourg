@@ -331,6 +331,43 @@ export interface AIPlayer {
    * Verifie si l'IA peut tourner (pour ML qui peut necessiter le serveur)
    */
   isAvailable(): Promise<boolean>;
+
+  // ===========================================================================
+  // Methodes wrapper pour PlayContext (noms alternatifs)
+  // ===========================================================================
+
+  /** Reset le compteur d'iterations */
+  resetIterations(): void;
+
+  /** Verifie si on a depasse la limite d'iterations */
+  checkIterations(): boolean;
+
+  /** Wrapper pour selectKeyAction */
+  getKeyAction(state: PlayGameState): AIKeyAction | null;
+
+  /** Wrapper pour selectLockAction */
+  getLockAction(state: PlayGameState): number | null;
+
+  /** Wrapper pour selectBuyAction (retourne GameAction) */
+  getBuyAction(state: PlayGameState): { action: GameAction };
+
+  /** Wrapper pour selectPlaceAction (retourne GameAction) */
+  getPlaceAction(state: PlayGameState): { action: GameAction };
+
+  /** Wrapper pour selectEffectOption */
+  getEffectOption(state: PlayGameState, options: AIEffectOption[]): number;
+
+  /** Wrapper pour selectDiscardCard */
+  getDiscardChoice(state: PlayGameState, choice: DiscardChoice): string;
+
+  /** Wrapper pour selectPurses */
+  getPurseChoice(state: PlayGameState, choice: PurseSelectionChoice): number[];
+
+  /** Wrapper pour selectLocation */
+  getLocationChoice(state: PlayGameState, choice: ReplaceLocationChoice): Location;
+
+  /** Wrapper pour selectAdjacentCard */
+  getAdjacentCardChoice(state: PlayGameState, choice: AdjacentCardChoice): number;
 }
 
 // =============================================================================

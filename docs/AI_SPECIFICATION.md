@@ -27,6 +27,8 @@ Chargees une fois au demarrage, ne changent pas pendant la partie.
 
 #### Cartes du Jeu (92 cartes)
 
+**Attributs de base** :
+
 | Donnee | Description |
 |--------|-------------|
 | `id` | Identifiant unique ("001" a "092") |
@@ -34,14 +36,33 @@ Chargees une fois au demarrage, ne changent pas pendant la partie.
 | `value` | Cout en or (0-8) |
 | `category` | "castle" \| "village" \| null |
 | `shields` | Liste de boucliers `{count, color}` |
+
+**Caracteristiques speciales** :
+
+| Donnee | Description |
+|--------|-------------|
 | `has_messenger` | Deplace le messager a l'achat |
 | `has_price_reduction` | Donne une reduction permanente |
 | `has_lock` | Possede un cadenas |
 | `has_coin_purse` | Possede une bourse |
 | `max_coins` | Capacite max de la bourse |
-| `effects` | Effets declenches a la pose |
-| `lock_effect` | Effet declenche a l'ouverture du cadenas |
-| `scoring_rule` | Regle de calcul des points |
+
+**IMPORTANT : Effets vs Scoring**
+
+Chaque carte a **deux aspects distincts** :
+
+| Aspect | Quand | Exemple (Templier 017) |
+|--------|-------|------------------------|
+| **Effet** | A la pose | +1 or par bouclier rose adjacent |
+| **Scoring** | Au calcul final | +1 point par cle possedee |
+
+- `effects` : Effets immediats declenches quand la carte est posee
+- `lock_effect` : Effet declenche a l'ouverture du cadenas
+- `scoring_rule` : Regle de calcul des points en fin de partie
+
+**Exemple concret** :
+- Carte 020 (Banquiere) : Effet = remplir des bourses / Scoring = +1 pt par piece sur les cartes
+- Carte 066 (Serrurier) : Effet = +1 cle par bouclier orange / Scoring = +1 pt par cle
 
 #### Repartition des Cartes
 
@@ -104,8 +125,22 @@ interface ActionHistorique {
 
 | Donnee | Description |
 |--------|-------------|
-| `village.pioche` | Cartes restantes a piocher |
-| `chateau.pioche` | Cartes restantes a piocher |
+| `village.deck` | Cartes restantes a piocher |
+| `castle.deck` | Cartes restantes a piocher |
+
+**Calcul des probabilites** :
+
+L'IA peut calculer la probabilite d'obtenir une carte specifique lors d'un refresh :
+
+```
+P(carte X au refresh) = 1 si X dans deck et |deck| <= 3
+P(carte X au refresh) = 3 / |deck| si X dans deck et |deck| > 3
+```
+
+**Exemple** : Si `village.deck` contient 8 cartes dont la carte 042 :
+- Probabilite que 042 apparaisse apres refresh = 3/8 = 37.5%
+
+Cette information permet a l'IA de decider si un refresh vaut le cout d'une cle.
 
 #### Defausses
 
@@ -142,26 +177,114 @@ Informations disponibles pour **tous les joueurs** (adversaires + soi-meme).
 
 La grille n'est **pas** une matrice 3x3 fixe. C'est une **grille en construction** qui se forme progressivement.
 
+**Principe fondamental** : La premiere carte n'a pas de position definie. Ce qui compte, c'est la **configuration relative** des cartes entre elles. Une grille avec la carte A en [0,0] et la carte B en [0,1] est **equivalente** a une grille avec A en [1,1] et B en [1,2].
+
 | Donnee | Description |
 |--------|-------------|
-| `cartesPlacees` | Liste des cartes avec leurs positions relatives |
-| `nombreCartes` | 0 a 9 |
-| `grilleComplete` | Boolean (true si 9 cartes) |
+| `board` | Tableau de 9 positions (null si vide) |
+| `placedCount` | Nombre de cartes placees (0-9) |
+| `isComplete` | Boolean (true si 9 cartes) |
 
-#### Scenarios de Placement
+#### Systeme de Scenarios
 
-L'IA ne gere pas le decalage. Elle recoit la liste des **scenarios possibles** pour placer la prochaine carte.
+L'IA ne gere pas les positions absolues. Elle recoit la liste des **scenarios possibles** qui representent toutes les configurations finales distinctes.
 
-| Nombre de cartes | Scenarios possibles |
-|------------------|---------------------|
-| 0 | 9 (n'importe ou) |
-| 1 | 4 (haut, bas, gauche, droite) |
-| 2 (ligne) | 6 |
-| 2 (diagonale) | impossible |
-| ... | ... |
-| 8 | 1 (la seule case restante) |
+**Exemple avec 2 cartes** :
 
-Chaque scenario decrit la configuration finale de la grille apres placement.
+Si le joueur a une carte A deja placee et veut placer une carte B :
+- La carte B peut etre placee a **4 positions relatives** : haut, bas, gauche, droite de A
+
+**Ce que recoit l'IA** :
+
+Pour chaque placement possible, l'IA recoit un **scenario** qui decrit :
+- La position finale dans la grille 3x3 normalisee (0-8)
+- La configuration complete du plateau apres placement
+- Le score resultant
+
+```typescript
+interface PlacementScenario {
+  id: number
+  position: number           // Position finale (0-8)
+  boardAfter: PlacedCard[]   // Configuration apres placement
+  scoreAfter: number         // Score avec cette configuration
+  adjacentCards: string[]    // IDs des cartes adjacentes
+}
+```
+
+#### Decalage du Plateau (Shift)
+
+Quand la grille est partiellement remplie et qu'on veut placer une carte "en dehors", le plateau se decale automatiquement.
+
+**Exemple** : Plateau actuel (cartes en positions 0, 1, 2 - ligne du haut) :
+```
+[A][B][C]
+[ ][ ][ ]
+[ ][ ][ ]
+```
+
+Pour placer une carte D "au-dessus" de B, le plateau se decale vers le bas :
+```
+[ ][D][ ]     <- D prend la position 1
+[A][B][C]     <- ABC decalees de 0,1,2 vers 3,4,5
+[ ][ ][ ]
+```
+
+L'IA n'a pas a gerer le decalage - elle recoit simplement tous les scenarios valides avec leur configuration finale.
+
+Dans l'exemple :
+```
+[A][B][C]
+[ ][ ][ ]
+[ ][ ][ ]
+```
+
+Scénarios :
+```
+[D][ ][ ]
+[A][B][C]
+[ ][ ][ ]
+```
+```
+[ ][D][ ]
+[A][B][C]
+[ ][ ][ ]
+```
+```
+[ ][ ][D]
+[A][B][C]
+[ ][ ][ ]
+```
+```
+[A][B][C]
+[D][ ][ ]
+[ ][ ][ ]
+```
+```
+[A][B][C]
+[ ][D][ ]
+[ ][ ][ ]
+```
+```
+[A][B][C]
+[ ][ ][D]
+[ ][ ][ ]
+```
+```
+[ ][ ][ ]
+[A][B][C]
+[D][ ][ ]
+```
+```
+[ ][ ][ ]
+[A][B][C]
+[ ][D][ ]
+```
+```
+[ ][ ][ ]
+[A][B][C]
+[ ][ ][D]
+```
+
 
 #### Bourses et Cadenas
 
@@ -182,13 +305,121 @@ Le `scoreSiAchete` permet le **deny** : empecher un adversaire de prendre une ca
 
 ---
 
-### 1.5 Raccourcis
+### 1.5 Raccourcis et Helpers
+
+Ces donnees sont calculees pour faciliter la prise de decision.
 
 | Donnee | Description |
 |--------|-------------|
-| `moi` | ID du joueur IA courant |
-| `adversaires` | Liste des IDs des autres joueurs |
-| `cartesAchetables` | Cartes du magasin que l'IA peut acheter (assez d'or) |
+| `me` | Reference vers le joueur IA courant |
+| `opponents` | Liste des autres joueurs |
+| `messengerCards` | Cartes du lieu ou se trouve le messager (3 cartes) |
+| `otherLocationCards` | Cartes de l'autre lieu (3 cartes, cout +1 cle) |
+| `affordableCards` | Cartes que l'IA peut acheter (assez d'or apres reductions) |
+| `deckProbabilities` | Probabilites de chaque carte au prochain refresh |
+
+---
+
+### 1.6 Interface AIContext
+
+Definition complete du contexte fourni a l'IA :
+
+```typescript
+interface AIContext {
+  // ===========================================
+  // Etat du jeu
+  // ===========================================
+  turnNumber: number                // 1-9
+  turnPhase: TurnPhase              // pre_action | buy | place | effect | post_action | end
+  keyUsedThisTurn: boolean          // Une seule cle par tour
+  lockUsedThisTurn: boolean         // Un seul cadenas par tour
+  purchasedCard: string | null      // Carte achetee ce tour (en phase place/effect)
+  isSimulation: boolean             // true si contexte de simulation
+
+  // ===========================================
+  // Joueurs
+  // ===========================================
+  me: PlayPlayer                    // Le joueur IA courant
+  players: PlayPlayer[]             // Tous les joueurs (dans l'ordre de jeu)
+  opponents: PlayPlayer[]           // Adversaires (players sans me)
+
+  // ===========================================
+  // Plateau central
+  // ===========================================
+  board: CentralBoard               // Cartes visibles, pioches, defausses, messager
+
+  // ===========================================
+  // Helpers pre-calcules
+  // ===========================================
+  messengerCards: string[]          // Cartes du lieu du messager (3 IDs)
+  otherLocationCards: string[]      // Cartes de l'autre lieu (3 IDs)
+  affordableCards: string[]         // Cartes que me peut acheter (assez d'or)
+  cards: Map<string, PlayCard>      // Reference: attributs + effets de toutes les cartes
+
+  // ===========================================
+  // Probabilites pour le refresh
+  // ===========================================
+  deckProbabilities: {
+    castle: Map<string, number>     // cardId -> probabilite (0-1)
+    village: Map<string, number>
+  }
+}
+```
+
+### 1.7 Fonctions Helper
+
+Fonctions utilitaires pour analyser l'etat du jeu sans dupliquer les donnees :
+
+#### Helpers sur un joueur
+
+```typescript
+// Nombre de cartes placees sur le plateau
+function getPlacedCount(player: PlayPlayer): number
+
+// Total des pieces sur toutes les bourses
+function getTotalCoins(player: PlayPlayer): number
+
+// Positions des cadenas non ouverts
+function getClosedLocks(player: PlayPlayer): number[]
+
+// Positions des bourses non pleines
+function getOpenPurses(player: PlayPlayer): number[]
+
+// Score estime du joueur (appel API ou calcul local)
+function estimateScore(player: PlayPlayer, keys: number): Promise<number>
+```
+
+#### Helpers sur le plateau d'un joueur
+
+```typescript
+// Cartes adjacentes a une position (orthogonales uniquement)
+function getAdjacentCards(board: (PlacedCard | null)[], position: number): PlacedCard[]
+
+// Compte les boucliers d'une couleur sur les cartes adjacentes
+function countAdjacentShields(
+  board: (PlacedCard | null)[],
+  position: number,
+  color: ShieldColor,
+  cards: Map<string, PlayCard>
+): number
+
+// Verifie si une position est dans une ligne/colonne complete
+function isInCompleteLine(board: (PlacedCard | null)[], position: number): boolean
+function isInCompleteColumn(board: (PlacedCard | null)[], position: number): boolean
+```
+
+#### Helpers sur les cartes
+
+```typescript
+// Cout effectif d'une carte pour un joueur (avec reductions)
+function getEffectiveCost(card: PlayCard, player: PlayPlayer): number
+
+// Verifie si une carte a un effet specifique
+function hasEffect(card: PlayCard, effectType: string): boolean
+
+// Recupere les couleurs de boucliers uniques sur un plateau
+function getUniqueShieldColors(board: (PlacedCard | null)[], cards: Map<string, PlayCard>): Set<ShieldColor>
+```
 
 ---
 
@@ -756,17 +987,17 @@ En phase `pre_action`, les actions possibles sont :
 ```typescript
 function generateLevel1Actions(context: AIContext): GameAction[] {
   const actions: GameAction[] = [];
-  const player = context.moi;
+  const player = context.me;
 
   // 1. Utiliser une cle (si disponible et pas encore utilisee)
-  if (player.cles > 0 && !context.cleUtiliseeCeTour) {
+  if (player.keys > 0 && !context.keyUsedThisTurn) {
     // Deplacer messager
-    const autreLocation = context.messager === 'castle' ? 'village' : 'castle';
+    const otherLocation = context.board.messengerLocation === 'castle' ? 'village' : 'castle';
     actions.push({
       type: 'spend_key',
       playerId: player.id,
-      targetLocation: autreLocation,
-      subType: 'messenger'
+      targetLocation: otherLocation,
+      // Note: subType n'existe pas dans GameAction actuel, a ajouter
     });
 
     // Rafraichir village
@@ -774,7 +1005,6 @@ function generateLevel1Actions(context: AIContext): GameAction[] {
       type: 'spend_key',
       playerId: player.id,
       targetLocation: 'village',
-      subType: 'refresh'
     });
 
     // Rafraichir chateau
@@ -782,14 +1012,13 @@ function generateLevel1Actions(context: AIContext): GameAction[] {
       type: 'spend_key',
       playerId: player.id,
       targetLocation: 'castle',
-      subType: 'refresh'
     });
   }
 
   // 2. Ouvrir un cadenas (si disponible)
-  if (player.cles > 0 && !context.cadenasUtiliseCeTour) {
-    for (const [position, estFerme] of player.cadenas) {
-      if (estFerme) {
+  if (player.keys > 0 && !context.lockUsedThisTurn) {
+    for (const [position, isLocked] of player.lockedCards) {
+      if (isLocked) {
         actions.push({
           type: 'use_key_on_lock',
           playerId: player.id,
@@ -800,11 +1029,11 @@ function generateLevel1Actions(context: AIContext): GameAction[] {
   }
 
   // 3. Acheter une carte
-  for (const cardId of context.cartesDisponibles) {
-    const card = context.cartes.get(cardId);
-    const cout = calculerCout(card, player);
+  for (const cardId of context.messengerCards) {
+    const card = context.cards.get(cardId);
+    const cost = getEffectiveCost(card, player);
 
-    if (player.or >= cout) {
+    if (player.gold >= cost) {
       // Achat normal
       actions.push({
         type: 'buy_card',
@@ -813,7 +1042,7 @@ function generateLevel1Actions(context: AIContext): GameAction[] {
       });
     }
 
-    // Achat face cachee (toujours possible)
+    // Achat face cachee (toujours possible, cout 0)
     actions.push({
       type: 'buy_card_flipped',
       playerId: player.id,
@@ -913,16 +1142,24 @@ function buildActionTree(context: AIContext, maxDepth: number = 10): ActionTree 
 
 #### Par tour
 
+**Cartes achetables** :
+- 3 cartes directement accessibles (lieu du messager)
+- 3 cartes accessibles apres deplacement du messager (-1 cle)
+- Total : **6 cartes** (mais les 3 supplementaires coutent 1 cle)
+
 | Elements | Valeurs | Combinaisons |
 |----------|---------|--------------|
-| Cartes achetables | 6 | 6 |
-| + Face cachee | x2 | 12 |
-| x Positions placement | 1-9 | ~60 |
-| x Choix d'effet (parfois) | 1-3 | ~100 |
-| + Actions cle avant | ~5 | ~150 |
-| + Cadenas apres | ~2 | ~200 |
+| Cartes accessibles sans cle | 3 | 3 |
+| Cartes accessibles avec cle | +3 | 6 |
+| + Achat face cachee | x2 | 12 |
+| x Scenarios de placement | 1-4 (selon tour) | ~30 |
+| x Choix d'effet (parfois) | 1-3 | ~50 |
+| + Actions cle avant (refresh) | ~2 | ~60 |
+| + Cadenas apres | ~2 | ~80 |
 
-**Estimation : 100-300 feuilles par tour**
+**Note sur les placements** : Apres la premiere carte, le nombre de placements valides est limite par l'adjacence (max 4 positions). Au tour 8, il ne reste qu'une seule position.
+
+**Estimation : 50-150 feuilles par tour**
 
 #### Sur plusieurs tours
 
@@ -1510,24 +1747,13 @@ frontend/src/services/play/ai/
 │   ├── minimax.ts           # Minimax avec alpha-beta
 │   └── mcts.ts              # Monte Carlo Tree Search
 │
-├── personalities/
-│   ├── index.ts             # Export + liste des personnalites
-│   ├── types.ts             # Interface Personality
-│   ├── banquier.ts          # Le Banquier (bourses)
-│   ├── gardien.ts           # Le Gardien (cles)
-│   ├── arcenciel.ts         # L'Arc-en-ciel (6 couleurs)
-│   ├── specialiste.ts       # Le Specialiste (1-2 couleurs)
-│   ├── marchand.ts          # Le Marchand (reductions)
-│   ├── batisseur.ts         # Le Batisseur (positionnement)
-│   ├── collectionneur.ts    # Le Collectionneur (categories)
-│   └── serrurier.ts         # Le Serrurier (cadenas)
-│
 └── levels/
-    ├── index.ts             # Export
-    ├── perfectAI.ts         # IA Parfaite (base)
-    ├── easyAI.ts            # IA Facile (erreurs)
-    ├── normalAI.ts          # IA Normale (personnalites)
-    └── hardAI.ts            # IA Difficile (temps limite)
+    ├── index.ts             # Export + factory createAI()
+    ├── baseAI.ts            # Classe de base avec logique commune
+    ├── easyAI.ts            # IA Facile (erreurs controlees)
+    ├── normalAI.ts          # IA Normale (heuristiques)
+    ├── hardAI.ts            # IA Difficile (MCTS)
+    └── personalities.ts     # [FUTUR] Biais pour IA normale
 ```
 
 ---
@@ -1732,3 +1958,41 @@ Je propose de commencer par :
 ```
 
 Cela permet d'avoir une **IA fonctionnelle rapidement** (apres phase 6.1-6.3) et d'iterer ensuite.
+
+---
+
+## 7. Travaux Futurs
+
+### 7.1 IA Neurale (AlphaZero)
+
+Une fois les IA classiques implementees, une approche type AlphaZero pourrait etre envisagee :
+
+| Composant | Description |
+|-----------|-------------|
+| **Reseau de politique** | Predit la distribution de probabilites sur les actions |
+| **Reseau de valeur** | Estime le score final depuis un etat |
+| **MCTS guide** | Utilise le reseau pour guider l'exploration |
+| **Self-play** | Entrainement par parties contre soi-meme |
+
+**Avantages** :
+- Decouverte de strategies non-evidentes
+- Pas besoin d'heuristiques manuelles
+- Potentiellement plus fort que MCTS pur
+
+**Prerequis** :
+- Simulateur performant (necessaire pour self-play rapide)
+- Representation vectorielle de l'etat de jeu
+- Infrastructure d'entrainement (GPU)
+
+### 7.2 Personnalites Detaillees
+
+Les personnalites (section 5.3) seront implementees apres validation de l'IA de base. Chaque personnalite appliquera un **biais** sur l'evaluation des actions.
+
+### 7.3 Mode Analyse
+
+Un mode "analyse" pourrait etre ajoute pour montrer au joueur :
+- Les coups envisages par l'IA
+- L'evaluation de chaque option
+- Les raisons du choix final
+
+Utile pour l'apprentissage et le debug.

@@ -154,26 +154,59 @@ Game engine for playing against AI.
 - Real scores calculated via `/api/calculate` endpoint
 - AI players are created automatically if not existing (named "IA Facile", "IA Normale", etc.)
 
-**Files:**
+**Core Files:**
 - `gameEngine.ts` - Game initialization, action validation, execution
 - `effectExecutor.ts` - Executes card effects when placed
-- `ai/index.ts` - SafeAIRunner wrapper, fallbacks, AI factory
-- `ai/easyAI.ts` - Naive beginner behavior
-- `ai/normalAI.ts` - Heuristic-based (synergies, reductions)
-- `ai/hardAI.ts` - MCTS (500 iterations, 1s limit)
 
 **Types** (`types/play.ts`):
 - `PlayGameState` - Complete game state
 - `PlayPlayer` - Player with board, resources, reductions
 - `CentralBoard` - 2x3 cards + messenger + decks
 - `GameAction` - Union of all action types
-- `AIPlayer` - Interface for AI implementations
 - Turn phases: `pre_action | buy | place | effect | post_action | end`
 
-**AI Architecture:**
-- `AIPlayer` interface with typed methods for each action type
-- `SafeAIRunner` wrapper validates actions and provides fallbacks
-- Anti-infinite-loop protection (max 100 iterations per turn)
+**AI Speed Setting** (`ai_speed`):
+- `fast` - No delay between actions (default)
+- `normal` - 2 seconds per action
+- `slow` - 3 seconds per action
+
+Configurable in Settings > Jeu > Vitesse de l'IA.
+
+#### AI Architecture (services/play/ai/)
+
+Modular AI system with 3 difficulty levels and pluggable algorithms.
+
+**Directory Structure:**
+```
+ai/
+├── index.ts              # Exports, SafeAIRunner wrapper, AI factory
+├── types.ts              # Core type definitions
+├── levels/               # AI implementations
+│   ├── baseAI.ts         # Abstract base class (common methods, protection)
+│   ├── easyAI.ts         # Beginner AI
+│   ├── normalAI.ts       # Strategic AI
+│   └── hardAI.ts         # Expert AI (MCTS)
+├── algorithms/           # Decision algorithms
+│   ├── mcts.ts           # Monte Carlo Tree Search (UCB1)
+│   ├── greedy.ts         # Greedy selection
+│   └── minimax.ts        # Minimax algorithm
+├── evaluator/            # Scoring and evaluation
+│   ├── scoreCalculator.ts # Complete 92-card score calculation
+│   ├── scorer.ts         # State evaluation
+│   ├── deltaCalculator.ts # Impact calculation
+│   └── cache.ts          # Score caching
+├── tree/                 # Decision tree operations
+│   ├── generator.ts      # Build action trees
+│   ├── traverser.ts      # Traverse trees
+│   └── pruner.ts         # Prune trees
+├── context/              # Context building
+│   ├── builder.ts        # Constructs AIContext from game state
+│   └── helpers.ts        # Helper functions
+└── simulator/            # State simulation
+    ├── executor.ts       # Execute actions
+    ├── runner.ts         # Run simulations
+    └── clone.ts          # Deep clone states
+```
 
 **AI Interface Methods:**
 | Method | Type | Description |
@@ -189,18 +222,114 @@ Game engine for playing against AI.
 | `selectPurses` | Effect | Choose purses to fill |
 
 **AI Levels:**
-- Easy: Naive beginner (loves positioning cards, big displayed scores, avoids locks/reductions, rarely uses keys)
-- Normal: Evaluates card synergies, position quality
-- Hard: Monte Carlo Tree Search with UCB1
 
-**AI Speed Setting** (`ai_speed`):
-- `fast` - No delay between actions (default)
-- `normal` - 2 seconds per action
-- `slow` - 3 seconds per action
+| Level | Strategy | Key Characteristics |
+|-------|----------|---------------------|
+| Easy | Naive | Picks from top 5 options, 70% ignores keys, 80% ignores locks, avoids complex cards |
+| Normal | Heuristic | Synergy-aware, category/color matching, position quality evaluation |
+| Hard | MCTS | 500 iterations, 3s timeout, UCB1 exploration, lookahead with delta calculation |
 
-Configurable in Settings > Jeu > Vitesse de l'IA. Stored in user settings and loaded by `PlayContext.tsx` at mount.
+**MCTS Algorithm (Hard AI):**
+- Selection: UCB1 formula with exploration constant sqrt(2)
+- Returns action with most visits (more robust than highest average)
+- Score caching for performance
+- Pre-calculated placement positions during buy phase
 
-**Planning document:** `docs/PLAY_MODE_PLAN.md`
+**Protection Mechanisms:**
+- `MAX_ITERATIONS = 100` in BaseAI (anti-infinite-loop)
+- Hard AI: 500 iterations max + 3000ms timeout
+- `SafeAIRunner` wrapper validates all actions with fallbacks
+
+#### Simulation System (simulation/)
+
+Standalone game engine for running simulations without UI.
+
+**Files:**
+- `engine.ts` - Game creation, action execution, effect handling
+- `runner.ts` - Execute games, collect stats, load AI
+- `types.ts` - SimConfig, SimGameResult, SimStats, TrainingData
+
+**Key Types:**
+```typescript
+SimConfig {
+  players: SimPlayerConfig[]  // name, type ('human_random'|'ai'), aiLevel
+  seed?: number               // Reproducible randomness
+  verbose?: boolean           // Show turn details
+  collectTrainingData?: boolean
+}
+
+SimGameResult {
+  gameId, seed, turns, durationMs
+  players: SimPlayerResult[]  // name, type, score, gold, keys, cards, rank
+  winnerIndex
+}
+
+SimStats {
+  totalGames, winsByPlayer, avgScoreByPlayer, avgDurationMs, avgTurns
+}
+```
+
+#### CLI Scripts (scripts/)
+
+**Main Simulation CLI** (`simulate.ts`):
+```bash
+# Single game
+npx tsx scripts/simulate.ts easy normal hard
+
+# Multiple games with stats
+npx tsx scripts/simulate.ts normal hard -n 100
+
+# Verbose with reproducible seed
+npx tsx scripts/simulate.ts hard hard -v -s 12345
+
+# Collect training data
+npx tsx scripts/simulate.ts normal normal -t
+
+# JSON output
+npx tsx scripts/simulate.ts hard hard --json > results.json
+```
+
+**Player Types:**
+- `easy, e, facile` - Easy AI
+- `normal, n, moyen` - Normal AI
+- `hard, h, difficile` - Hard AI
+- `random, r, humain` - Human random player
+
+**Options:**
+- `-n, --games N` - Number of games (default: 1)
+- `-v, --verbose` - Show turn details
+- `-s, --seed N` - Reproducible randomness
+- `-t, --training` - Collect training data
+- `--json` - JSON output
+
+**Hard AI Benchmark** (`benchmark-hard-ai.ts`):
+```bash
+# Full benchmark (1000 games x 4 configs: 2P, 3P, 4P, 5P)
+npx tsx scripts/benchmark-hard-ai.ts
+
+# Smaller benchmark
+npx tsx scripts/benchmark-hard-ai.ts --games 100
+
+# Save results to JSON
+npx tsx scripts/benchmark-hard-ai.ts --output results.json
+```
+
+**Metrics Collected:**
+- Min/Max/Avg/Median score
+- Standard deviation, percentiles (P10, P25, P75, P90)
+- Score distribution (< 40, < 50, < 60, >= 70, >= 80)
+- Average duration (ms)
+
+**Compare Scoring** (`compare-scoring.ts`):
+Validates TypeScript frontend scoring matches Python backend.
+
+**Prerequisites:** Backend must be running (serves card data via `/api/cards/attributes` and `/api/cards/effects`). Verify with `curl -s http://localhost:8080/api/health`.
+
+**Performance:**
+- Single game: ~200-500ms
+- Hard AI decision: ~500-3000ms (MCTS)
+- 100 games: ~30-60 seconds
+- 1000 games (Hard vs Hard): ~5-15 minutes
 
 ### Training (training/)
 
@@ -209,6 +338,27 @@ YOLO11 training pipeline for card detection/identification.
 - `generate_dataset.py` - Synthetic dataset generator with augmentations
 - `train.py` - Training script with MPS support
 - `dataset/` - Generated training data (5000 train, 500 val images)
+
+### MCP Server (mcp/)
+
+TypeScript MCP server exposing card data for Claude Code integration.
+
+**Build:** `cd mcp && npm install && npm run build`
+
+**Tools:**
+- `get_card` - Get full card data by ID (001-092)
+- `list_cards` - List all 92 cards (id + name)
+- `search_cards` - Search by name (accent-insensitive), category, attributes
+
+**Configuration:** `.mcp.json` at project root
+
+**IMPORTANT:** Always use the `chato-combourg` MCP tools when:
+- Looking up card data (attributes, effects, cost, shields, category)
+- Searching for cards by name or characteristics
+- Needing to understand card mechanics for Play mode implementation
+- Answering questions about specific cards or card interactions
+
+Do NOT read the JSON files directly - use the MCP tools instead.
 
 ## API Endpoints
 

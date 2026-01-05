@@ -65,6 +65,7 @@ interface PlayContextType {
   // Navigation
   setStep: (step: PlayStep) => void;
   reset: () => void;
+  restart: () => Promise<void>;
 
   // Configuration
   addPlayer: (name: string, isAI: boolean, aiLevel?: AILevel) => void;
@@ -324,6 +325,17 @@ export function PlayProvider({ children }: { children: ReactNode }) {
       dispatch({ type: 'SET_LOADING', isLoading: false });
     }
   }, [state.config]);
+
+  const restart = useCallback(async () => {
+    aiLoopRef.current = false;
+    const config = state.config;
+    if (config) {
+      dispatch({ type: 'RESTART' });
+      // Small delay to ensure state is cleared before starting
+      await new Promise(resolve => setTimeout(resolve, 50));
+      await startGame(config);
+    }
+  }, [state.config, startGame]);
 
   // Appliquer les effets apres placement
   const applyCardEffects = useCallback((
@@ -1349,6 +1361,7 @@ export function PlayProvider({ children }: { children: ReactNode }) {
         // Navigation
         setStep,
         reset,
+        restart,
         // Configuration
         addPlayer,
         removePlayer,

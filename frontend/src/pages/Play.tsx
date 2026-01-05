@@ -117,6 +117,7 @@ export function Play() {
     spendKey,
     useKeyOnLock,
     reset,
+    restart,
     getCurrentPlayer,
     canAffordCard,
     isCurrentPlayerAI,
@@ -139,6 +140,7 @@ export function Play() {
   const isDev = import.meta.env.DEV;
 
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
+  const [showRestartConfirm, setShowRestartConfirm] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayPlayer | null>(null);
   const [showPurchasedCard, setShowPurchasedCard] = useState(false);
   const playerBoardRef = useRef<HTMLDivElement>(null);
@@ -165,6 +167,9 @@ export function Play() {
         break;
       case 'rules':
         setActivePanel('rules');
+        break;
+      case 'restart':
+        setShowRestartConfirm(true);
         break;
       case 'quit':
         setShowQuitConfirm(true);
@@ -811,6 +816,17 @@ export function Play() {
           )}
         </div>
       </footer>
+
+      {/* Restart confirmation */}
+      <ConfirmDialog
+        isOpen={showRestartConfirm}
+        title="Recommencer la partie ?"
+        message="La partie actuelle sera perdue."
+        confirmLabel="Recommencer"
+        cancelLabel="Continuer"
+        onConfirm={() => { setShowRestartConfirm(false); restart(); }}
+        onCancel={() => setShowRestartConfirm(false)}
+      />
 
       {/* Quit confirmation */}
       <ConfirmDialog

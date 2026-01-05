@@ -83,6 +83,7 @@ export type PlayUIAction =
   // Navigation
   | { type: 'SET_STEP'; step: PlayStep }
   | { type: 'RESET' }
+  | { type: 'RESTART' }
 
   // Configuration
   | { type: 'SET_CONFIG'; config: PlayGameConfig }
@@ -185,6 +186,13 @@ export function playReducer(
 
     case 'RESET':
       return initialPlayUIState;
+
+    case 'RESTART':
+      // Preserve config but reset everything else
+      return {
+        ...initialPlayUIState,
+        config: state.config,
+      };
 
     // Configuration
     case 'SET_CONFIG':

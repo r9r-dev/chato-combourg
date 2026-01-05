@@ -7,6 +7,7 @@
  * - Répartition des blasons
  * - Aide de jeu
  * - Règles du jeu
+ * - Recommencer la partie
  * - Quitter la partie
  */
 
@@ -17,6 +18,7 @@ import {
   ShieldDistIcon,
   HelpIcon,
   RulesIcon,
+  RestartIcon,
   QuitIcon,
 } from './Icons';
 
@@ -26,6 +28,7 @@ export type PlayMenuAction =
   | 'shields'
   | 'help'
   | 'rules'
+  | 'restart'
   | 'quit';
 
 interface PlayMenuProps {
@@ -66,6 +69,12 @@ const MENU_ITEMS: MenuItem[] = [
     action: 'rules',
     label: 'Règles du jeu',
     icon: <RulesIcon className="w-5 h-5" />,
+  },
+  {
+    action: 'restart',
+    label: 'Recommencer la partie',
+    icon: <RestartIcon className="w-5 h-5" />,
+    danger: true,
   },
   {
     action: 'quit',
