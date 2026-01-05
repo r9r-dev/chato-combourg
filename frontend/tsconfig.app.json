@@ -24,5 +24,11 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": [
+    "src/simulation/selfPlayRunner.ts",
+    "src/simulation/evaluationRunner.ts",
+    "src/simulation/trainVsHardRunner.ts",
+    "src/services/play/ai/neural"
+  ]
 }

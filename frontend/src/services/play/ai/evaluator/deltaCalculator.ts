@@ -148,37 +148,6 @@ const FILL_PURSE_EFFECT_CARDS = new Set([
   '082', // fill_purses(1)
 ]);
 
-// =============================================================================
-// CARTES À HAUT POTENTIEL DE SCALING
-// Ces cartes ont un multiplier >= 3 dans leur scoring_rule et gagnent de la
-// valeur avec le nombre de cartes posées. Bonus en early/mid game.
-// =============================================================================
-
-const HIGH_SCALING_CARDS: Record<string, number> = {
-  // Multiplier x10
-  '018': 10,  // shield_trios blue/green/orange
-  // Multiplier x7
-  '054': 7,   // shield_trios pink/red/yellow
-  '069': 7,   // category_sets village x3
-  // Multiplier x6
-  '027': 6,   // shield_sets_on_board set_size=3
-  '038': 6,   // missing_colors_on_board
-  // Multiplier x5
-  '039': 5,   // min_value_count >= 5
-  // Multiplier x4
-  '001': 4,   // shields_in_col blue
-  '005': 4,   // unique_colors row
-  '008': 4,   // shield_pairs pink/orange
-  '013': 4,   // shields_in_row blue
-  '022': 4,   // shield_pairs blue/red
-  '029': 4,   // unique_colors col
-  '032': 4,   // feature_count price_reduction
-  '068': 4,   // shield_pairs green/yellow
-  '070': 4,   // feature_count lock
-  // Multiplier x3 (cartes importantes)
-  '010': 3,   // unique_values_on_board
-  '016': 3,   // category_pairs castle/village
-};
 
 // =============================================================================
 // BILAN BOURSES GLOBAL
