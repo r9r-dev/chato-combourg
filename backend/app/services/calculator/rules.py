@@ -1,9 +1,13 @@
 """Scoring rules for each card (001-092).
 
-Ce module définit les règles de scoring pour les 92 cartes du jeu.
+Les règles sont générées dynamiquement depuis cards_data.json.
 Les règles simples utilisent les factories de rule_factories.py.
-Les règles complexes restent définies explicitement.
+Les règles complexes sont définies explicitement ci-dessous.
 """
+
+from typing import Callable
+
+from app.services.card_data import load_cards_data
 
 from .grid import Grid
 from .rule_factories import (
@@ -28,113 +32,6 @@ from .rule_factories import (
     make_min_value_rule,
     make_flipped_card_rule,
 )
-
-
-# =============================================================================
-# Règles générées par factories
-# =============================================================================
-
-# Boucliers sur colonne
-rule_001 = make_shields_in_col_rule("blue", 4)
-rule_009 = make_shields_in_col_rule("blue", 3)
-rule_033 = make_shields_in_col_rule("green", 3)
-rule_037 = make_shields_in_col_rule("pink", 3)
-rule_045 = make_shields_in_col_rule("red", 3)
-rule_055 = make_shields_in_col_rule("yellow", 3)
-
-# Boucliers sur rangée
-rule_011 = make_shields_in_row_rule("green", 3)
-rule_013 = make_shields_in_row_rule("blue", 4)
-rule_028 = make_shields_in_row_rule("blue", 3)
-rule_043 = make_shields_in_row_rule("red", 3)
-rule_048 = make_shields_in_row_rule("pink", 3)
-rule_060 = make_shields_in_row_rule("orange", 3)
-rule_067 = make_shields_in_row_rule("yellow", 3)
-rule_073 = make_shields_in_row_rule("orange", 3)
-
-# Boucliers sur rangée ET colonne
-rule_019 = make_shields_in_row_and_col_rule("blue", 2)
-rule_023 = make_shields_in_row_and_col_rule("blue", 3)
-rule_042 = make_shields_in_row_and_col_rule("green", 3)
-rule_062 = make_shields_in_row_and_col_rule("pink", 2)
-rule_065 = make_shields_in_row_and_col_rule("red", 3)
-rule_080 = make_shields_in_row_and_col_rule("orange", 2)
-rule_092 = make_shields_in_row_and_col_rule("yellow", 2)
-
-# Position
-rule_003 = make_position_rule("top_row", 8)
-rule_007 = make_position_rule("bottom_row", 5)
-rule_021 = make_position_rule("left_col", 8)
-rule_030 = make_position_rule("left_col", 6)
-rule_031 = make_position_rule("right_col", 8)
-rule_047 = make_position_rule("top_row", 5)
-rule_049 = make_position_rule("right_col", 5)
-rule_052 = make_position_rule("middle_col", 6)
-rule_063 = make_position_rule("bottom_row", 7)
-rule_071 = make_position_rule("middle_row", 5)
-
-# Paires de boucliers
-rule_008 = make_pairs_rule("pink", "orange", 4)
-rule_022 = make_pairs_rule("blue", "red", 4)
-rule_068 = make_pairs_rule("green", "yellow", 4)
-
-# Trios de boucliers
-rule_018 = make_trios_rule(["blue", "green", "orange"], 10)
-rule_054 = make_trios_rule(["pink", "red", "yellow"], 7)
-
-# Aucun bouclier d'une couleur
-rule_026 = make_no_shield_rule("yellow", 10)
-rule_044 = make_no_shield_rule("orange", 10)
-rule_064 = make_no_shield_rule("pink", 9)
-rule_072 = make_no_shield_rule("green", 10)
-rule_083 = make_no_shield_rule("red", 10)
-rule_091 = make_no_shield_rule("blue", 9)
-
-# Pièces sur carte
-rule_014 = make_coins_on_card_rule(3, 2)
-rule_025 = make_coins_on_card_rule(5, 2)
-rule_036 = make_coins_on_card_rule(8, 2)
-rule_041 = make_coins_on_card_rule(4, 2)
-rule_050 = make_coins_on_card_rule(4, 2)
-rule_051 = make_coins_on_card_rule(5, 2)
-rule_053 = make_coins_on_card_rule(9, 2)
-rule_058 = make_coins_on_card_rule(6, 2)
-rule_059 = make_coins_on_card_rule(4, 2)
-rule_061 = make_coins_on_card_rule(7, 2)
-rule_081 = make_coins_on_card_rule(5, 2)
-
-# Seuil minimum de boucliers
-rule_002 = make_threshold_rule("green", "col", 1, 5)
-rule_035 = make_threshold_rule("pink", "row", 1, 5)
-rule_075 = make_threshold_rule("red", "row", 1, 7)
-rule_088 = make_threshold_rule("blue", "col", 1, 3)
-
-# Comptage de catégories
-rule_006 = make_category_count_rule("village", 2)
-rule_046 = make_category_count_rule("castle", 2)
-rule_074 = make_category_count_rule("castle", 2)
-
-# Couleurs uniques
-rule_005 = make_unique_colors_rule("row", 4)
-rule_012 = make_unique_colors_rule("row", 2)
-rule_024 = make_unique_colors_rule("board", 2)
-rule_029 = make_unique_colors_rule("col", 4)
-rule_076 = make_unique_colors_rule("col", 2)
-
-# Caractéristiques (price_reduction, lock, coin_purse)
-rule_032 = make_feature_count_rule("price_reduction", 4)
-rule_070 = make_feature_count_rule("lock", 4)
-
-# Coût exact
-rule_040 = make_exact_value_rule(4, 3)
-rule_086 = make_exact_value_rule(0, 2)
-
-# Coût minimum
-rule_039 = make_min_value_rule(5, 5)
-
-# Cartes retournées
-rule_089 = make_flipped_card_rule()
-rule_090 = make_flipped_card_rule()
 
 
 # =============================================================================
@@ -407,103 +304,127 @@ def rule_087(grid: Grid, position: int) -> tuple[int, str]:
 
 
 # =============================================================================
-# Mapping from card ID to rule function
+# Règles custom par ID (non générables depuis JSON)
 # =============================================================================
 
-RULES: dict[str, callable] = {
-    "001": rule_001,
-    "002": rule_002,
-    "003": rule_003,
+CUSTOM_RULES = {
     "004": rule_004,
-    "005": rule_005,
-    "006": rule_006,
-    "007": rule_007,
-    "008": rule_008,
-    "009": rule_009,
     "010": rule_010,
-    "011": rule_011,
-    "012": rule_012,
-    "013": rule_013,
-    "014": rule_014,
     "015": rule_015,
     "016": rule_016,
     "017": rule_017,
-    "018": rule_018,
-    "019": rule_019,
     "020": rule_020,
-    "021": rule_021,
-    "022": rule_022,
-    "023": rule_023,
-    "024": rule_024,
-    "025": rule_025,
-    "026": rule_026,
     "027": rule_027,
-    "028": rule_028,
-    "029": rule_029,
-    "030": rule_030,
-    "031": rule_031,
-    "032": rule_032,
-    "033": rule_033,
     "034": rule_034,
-    "035": rule_035,
-    "036": rule_036,
-    "037": rule_037,
     "038": rule_038,
-    "039": rule_039,
-    "040": rule_040,
-    "041": rule_041,
-    "042": rule_042,
-    "043": rule_043,
-    "044": rule_044,
-    "045": rule_045,
-    "046": rule_046,
-    "047": rule_047,
-    "048": rule_048,
-    "049": rule_049,
-    "050": rule_050,
-    "051": rule_051,
-    "052": rule_052,
-    "053": rule_053,
-    "054": rule_054,
-    "055": rule_055,
     "056": rule_056,
     "057": rule_057,
-    "058": rule_058,
-    "059": rule_059,
-    "060": rule_060,
-    "061": rule_061,
-    "062": rule_062,
-    "063": rule_063,
-    "064": rule_064,
-    "065": rule_065,
     "066": rule_066,
-    "067": rule_067,
-    "068": rule_068,
     "069": rule_069,
-    "070": rule_070,
-    "071": rule_071,
-    "072": rule_072,
-    "073": rule_073,
-    "074": rule_074,
-    "075": rule_075,
-    "076": rule_076,
     "077": rule_077,
     "078": rule_078,
     "079": rule_079,
-    "080": rule_080,
-    "081": rule_081,
     "082": rule_082,
-    "083": rule_083,
     "084": rule_084,
     "085": rule_085,
-    "086": rule_086,
     "087": rule_087,
-    "088": rule_088,
-    "089": rule_089,
-    "090": rule_090,
-    "091": rule_091,
-    "092": rule_092,
 }
 
 # Cards that need keys parameter
 KEYS_RULES = {"017", "066"}
+
+
+# =============================================================================
+# Factory mapping pour générer les règles depuis JSON
+# =============================================================================
+
+def _create_rule_from_json(rule_data: dict) -> Callable | None:
+    """Crée une fonction de règle à partir des données JSON."""
+    rule_type = rule_data.get("type")
+
+    if rule_type == "shields_in_col":
+        return make_shields_in_col_rule(rule_data["color"], rule_data["multiplier"])
+
+    elif rule_type == "shields_in_row":
+        return make_shields_in_row_rule(rule_data["color"], rule_data["multiplier"])
+
+    elif rule_type == "shields_in_row_and_col":
+        return make_shields_in_row_and_col_rule(rule_data["color"], rule_data["multiplier"])
+
+    elif rule_type == "position":
+        return make_position_rule(rule_data["position"], rule_data["score"])
+
+    elif rule_type == "shield_pairs":
+        colors = rule_data["colors"]
+        return make_pairs_rule(colors[0], colors[1], rule_data["multiplier"])
+
+    elif rule_type == "shield_trios":
+        return make_trios_rule(rule_data["colors"], rule_data["multiplier"])
+
+    elif rule_type == "no_shield_color":
+        return make_no_shield_rule(rule_data["color"], rule_data["score"])
+
+    elif rule_type == "coins_on_card":
+        return make_coins_on_card_rule(rule_data["max_coins"], rule_data["multiplier"])
+
+    elif rule_type == "shield_threshold":
+        return make_threshold_rule(
+            rule_data["color"],
+            rule_data["scope"],
+            rule_data["threshold"],
+            rule_data["score"]
+        )
+
+    elif rule_type == "category_count":
+        return make_category_count_rule(rule_data["category"], rule_data["multiplier"])
+
+    elif rule_type == "unique_colors":
+        return make_unique_colors_rule(rule_data["scope"], rule_data["multiplier"])
+
+    elif rule_type == "feature_count":
+        return make_feature_count_rule(rule_data["feature"], rule_data["multiplier"])
+
+    elif rule_type == "exact_value_count":
+        return make_exact_value_rule(rule_data["value"], rule_data["multiplier"])
+
+    elif rule_type == "min_value_count":
+        return make_min_value_rule(rule_data["min_value"], rule_data["multiplier"])
+
+    elif rule_type == "flipped_card":
+        return make_flipped_card_rule()
+
+    # Types gérés par CUSTOM_RULES
+    return None
+
+
+def _build_rules_dict() -> dict[str, Callable]:
+    """Construit le dictionnaire RULES depuis cards_data.json."""
+    cards_data = load_cards_data()
+    rules = {}
+
+    for card_id, card in cards_data.items():
+        # D'abord vérifier si c'est une règle custom
+        if card_id in CUSTOM_RULES:
+            rules[card_id] = CUSTOM_RULES[card_id]
+            continue
+
+        # Sinon, essayer de générer depuis le JSON
+        scoring_rule = card.get("scoring_rule", {})
+        rule_func = _create_rule_from_json(scoring_rule)
+
+        if rule_func:
+            rules[card_id] = rule_func
+        else:
+            # Fallback: règle qui retourne 0
+            rule_type = scoring_rule.get("type", "unknown")
+            print(f"Warning: No rule generator for card {card_id} (type: {rule_type})")
+            rules[card_id] = lambda g, p: (0, f"Règle non implémentée")
+
+    return rules
+
+
+# =============================================================================
+# Build RULES dict at import time
+# =============================================================================
+
+RULES: dict[str, Callable] = _build_rules_dict()
