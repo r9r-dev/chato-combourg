@@ -1,5 +1,16 @@
 # Changelog
 
+## v3.10.0 (2026-01-05)
+
+### Nouveautés
+- Menu hamburger en mode Play avec accès rapide aux fonctionnalités :
+  - Rechercher une carte (parcourir toutes les cartes du jeu)
+  - Voir la défausse (cartes château et village défaussées)
+  - Répartition des blasons (distribution par joueur et couleur)
+  - Aide de jeu
+  - Règles du jeu
+  - Quitter la partie
+
 ## v3.9.1 (2026-01-05)
 
 ### Améliorations
