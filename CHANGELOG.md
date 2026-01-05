@@ -1,5 +1,22 @@
 # Changelog
 
+## v3.10.1 (2026-01-05)
+
+### Améliorations IA
+- Support des placements externes avec shift automatique (l'IA peut maintenant décaler le plateau)
+- Stratégie early game améliorée : bonus pour les cartes avec réduction de prix aux tours 1-4
+- Malus pour l'achat de cartes chères (5+ or) sans réduction en début de partie
+- Détection de stratégies et calcul de potentiel pour les cartes à haut multiplicateur
+
+### Corrections
+- Fix du deep clone dans MCTS évitant les mutations d'état entre branches
+
+### Technique
+- Serveur MCP pour accès aux données des cartes (get_card, list_cards, search_cards)
+- Moteur de simulation headless pour tests et benchmarks
+- Scripts CLI pour simulation et benchmark de l'IA Hard
+- Unification des fichiers JSON de cartes en cards_data.json unique
+
 ## v3.10.0 (2026-01-05)
 
 ### Nouveautés
