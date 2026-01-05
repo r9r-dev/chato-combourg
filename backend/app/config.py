@@ -15,7 +15,6 @@ class Settings(BaseSettings):
     # Paths
     base_dir: Path = Path(__file__).parent.parent
     cards_dir: Path = base_dir / "cards"
-    cards_json: Path = cards_dir / "cards.json"
 
     # YOLO settings
     yolo_confidence_threshold: float = 0.3

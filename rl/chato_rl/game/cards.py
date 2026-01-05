@@ -23,7 +23,7 @@ class CardDatabase:
         return cls._instance
 
     def _load_cards(self) -> None:
-        """Load card data from JSON files."""
+        """Load card data from unified JSON file."""
         # Find the backend cards directory
         # Use resolve() to handle symlinks in editable installs
         current_dir = Path(__file__).resolve().parent
@@ -41,22 +41,24 @@ class CardDatabase:
                     break
                 search_dir = search_dir.parent
 
-        attributes_path = cards_dir / "card_attributes.json"
-        effects_path = cards_dir / "card_effects.json"
+        cards_data_path = cards_dir / "cards_data.json"
 
-        if not attributes_path.exists():
-            raise FileNotFoundError(f"Card attributes not found at {attributes_path}")
+        if not cards_data_path.exists():
+            raise FileNotFoundError(f"Card data not found at {cards_data_path}")
 
-        with open(attributes_path) as f:
-            attributes_data: dict[str, Any] = json.load(f)
+        with open(cards_data_path) as f:
+            cards_data: dict[str, Any] = json.load(f)
 
-        # Load effects if available
-        if effects_path.exists():
-            with open(effects_path) as f:
-                self._effects = json.load(f)
+        # Build effects dict from unified data
+        for card_id, card in cards_data.items():
+            self._effects[card_id] = {
+                "has_messenger": card.get("has_messenger", False),
+                "effects": card.get("effects", []),
+                "lock_effect": card.get("lock_effect"),
+            }
 
         # Parse each card
-        for card_id, attrs in attributes_data.items():
+        for card_id, attrs in cards_data.items():
             shields = []
             for shield_data in attrs.get("shields", []):
                 shields.append(

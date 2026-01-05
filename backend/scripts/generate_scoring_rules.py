@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Generate card_scoring.json from rules.py factories and functions.
+"""Update scoring_rule field in cards_data.json from rules.py factories.
 
-This script analyzes rules.py and generates a JSON file with structured
-scoring rules for each card (001-092).
+This script analyzes rules.py and updates the unified cards_data.json file
+with structured scoring rules for each card (001-092).
 """
 
 import json
@@ -281,7 +281,7 @@ def parse_factory_call(line: str) -> tuple[str, dict[str, Any]] | None:
 
 
 def main():
-    """Generate card_scoring.json from rules.py."""
+    """Update scoring_rule field in cards_data.json from rules.py."""
 
     # Read rules.py
     rules_path = Path(__file__).parent.parent / "app" / "services" / "calculator" / "rules.py"
@@ -314,13 +314,24 @@ def main():
     if missing:
         print(f"Warning: Missing rules for cards: {missing}")
 
-    # Write output
-    output_path = Path(__file__).parent.parent / "cards" / "card_scoring.json"
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(scoring_rules, f, indent=2, ensure_ascii=False)
+    # Load and update cards_data.json
+    cards_data_path = Path(__file__).parent.parent / "cards" / "cards_data.json"
+    with open(cards_data_path, "r", encoding="utf-8") as f:
+        cards_data = json.load(f)
 
-    print(f"Generated {output_path}")
-    print(f"Total rules: {len(scoring_rules)}")
+    # Update scoring_rule for each card
+    updated = 0
+    for card_id, rule_data in scoring_rules.items():
+        if card_id in cards_data:
+            cards_data[card_id]["scoring_rule"] = rule_data
+            updated += 1
+
+    # Write back
+    with open(cards_data_path, "w", encoding="utf-8") as f:
+        json.dump(cards_data, f, indent=2, ensure_ascii=False)
+
+    print(f"Updated {cards_data_path}")
+    print(f"Total rules updated: {updated}")
 
     # Print rule type statistics
     type_counts: dict[str, int] = {}

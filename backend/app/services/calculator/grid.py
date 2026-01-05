@@ -1,13 +1,11 @@
 """Grid helper functions for score calculation."""
 
-import json
-from pathlib import Path
 from typing import TypedDict
 
-# Load card attributes
-CARDS_DIR = Path(__file__).parent.parent.parent.parent / "cards"
-with open(CARDS_DIR / "card_attributes.json") as f:
-    CARD_ATTRIBUTES: dict = json.load(f)
+from app.services.card_data import get_all_attributes
+
+# Load card attributes (cached by lru_cache in card_data module)
+CARD_ATTRIBUTES: dict = get_all_attributes()
 
 
 class Shield(TypedDict):

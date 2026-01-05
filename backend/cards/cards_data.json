@@ -1,0 +1,2935 @@
+{
+  "001": {
+    "id": "001",
+    "name": "Son Altesse",
+    "file_name": "carte_001.png",
+    "value": 6,
+    "shields": [
+      {
+        "count": 1,
+        "color": "blue"
+      },
+      {
+        "count": 1,
+        "color": "pink"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "all_opponents_gain_gold",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shields_in_col",
+      "color": "blue",
+      "multiplier": 4
+    }
+  },
+  "002": {
+    "id": "002",
+    "name": "Imprimeuse",
+    "file_name": "carte_002.png",
+    "value": 0,
+    "shields": [
+      {
+        "count": 1,
+        "color": "orange"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": true,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [],
+    "lock_effect": {
+      "type": "replace_location_gain_keys_per_feature",
+      "feature": "price_reduction",
+      "keys_per_card": 3
+    },
+    "scoring_rule": {
+      "type": "shield_threshold",
+      "color": "green",
+      "scope": "col",
+      "threshold": 1,
+      "score": 5
+    }
+  },
+  "003": {
+    "id": "003",
+    "name": "Duchesse",
+    "file_name": "carte_003.png",
+    "value": 5,
+    "shields": [
+      {
+        "count": 2,
+        "color": "blue"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_keys",
+        "amount": 2
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "position",
+      "position": "top_row",
+      "score": 8
+    }
+  },
+  "004": {
+    "id": "004",
+    "name": "Conspirateur",
+    "file_name": "carte_004.png",
+    "value": 1,
+    "shields": [
+      {
+        "count": 1,
+        "color": "pink"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": true,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [],
+    "lock_effect": {
+      "type": "gain_gold_per_shield",
+      "color": "red",
+      "amount": 2
+    },
+    "scoring_rule": {
+      "type": "no_feature_on_board",
+      "feature": "price_reduction",
+      "score": 8
+    }
+  },
+  "005": {
+    "id": "005",
+    "name": "Pélerin",
+    "file_name": "carte_005.png",
+    "value": 6,
+    "shields": [
+      {
+        "count": 1,
+        "color": "pink"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": true,
+    "has_price_reduction": true,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "reduction_village"
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "unique_colors",
+      "scope": "row",
+      "multiplier": 4
+    }
+  },
+  "006": {
+    "id": "006",
+    "name": "Aumônier",
+    "file_name": "carte_006.png",
+    "value": 5,
+    "shields": [
+      {
+        "count": 1,
+        "color": "pink"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold_per_card_with_shields",
+        "shield_count": 1,
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "category_count",
+      "category": "village",
+      "multiplier": 2
+    }
+  },
+  "007": {
+    "id": "007",
+    "name": "Maître de guilde",
+    "file_name": "carte_007.png",
+    "value": 5,
+    "shields": [
+      {
+        "count": 2,
+        "color": "orange"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "discard_village_gain_keys"
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "position",
+      "position": "bottom_row",
+      "score": 5
+    }
+  },
+  "008": {
+    "id": "008",
+    "name": "Souffleur de verre",
+    "file_name": "carte_008.png",
+    "value": 5,
+    "shields": [
+      {
+        "count": 1,
+        "color": "orange"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold_per_shield",
+        "color": "pink",
+        "amount": 1
+      },
+      {
+        "type": "gain_gold_per_shield",
+        "color": "orange",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shield_pairs",
+      "colors": [
+        "pink",
+        "orange"
+      ],
+      "multiplier": 4
+    }
+  },
+  "009": {
+    "id": "009",
+    "name": "Garde royal",
+    "file_name": "carte_009.png",
+    "value": 4,
+    "shields": [
+      {
+        "count": 1,
+        "color": "blue"
+      },
+      {
+        "count": 1,
+        "color": "red"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "all_players_gain_keys",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shields_in_col",
+      "color": "blue",
+      "multiplier": 3
+    }
+  },
+  "010": {
+    "id": "010",
+    "name": "Dame au masque de fer",
+    "file_name": "carte_010.png",
+    "value": 8,
+    "shields": [
+      {
+        "count": 1,
+        "color": "blue"
+      },
+      {
+        "count": 1,
+        "color": "pink"
+      },
+      {
+        "count": 1,
+        "color": "green"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": true,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [],
+    "lock_effect": {
+      "type": "replace_location_gain_keys_per_shield",
+      "color": "orange",
+      "keys_per_card": 2
+    },
+    "scoring_rule": {
+      "type": "unique_values_on_board",
+      "multiplier": 3
+    }
+  },
+  "011": {
+    "id": "011",
+    "name": "Professeur",
+    "file_name": "carte_011.png",
+    "value": 4,
+    "shields": [
+      {
+        "count": 1,
+        "color": "green"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold_per_unique_shield",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shields_in_row",
+      "color": "green",
+      "multiplier": 3
+    }
+  },
+  "012": {
+    "id": "012",
+    "name": "Châtelaine",
+    "file_name": "carte_012.png",
+    "value": 2,
+    "shields": [
+      {
+        "count": 1,
+        "color": "blue"
+      },
+      {
+        "count": 1,
+        "color": "orange"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": false,
+    "has_price_reduction": true,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "reduction_castle"
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "unique_colors",
+      "scope": "row",
+      "multiplier": 2
+    }
+  },
+  "013": {
+    "id": "013",
+    "name": "Prince",
+    "file_name": "carte_013.png",
+    "value": 6,
+    "shields": [
+      {
+        "count": 1,
+        "color": "blue"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold_per_shield",
+        "color": "blue",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shields_in_row",
+      "color": "blue",
+      "multiplier": 4
+    }
+  },
+  "014": {
+    "id": "014",
+    "name": "Intendant",
+    "file_name": "carte_014.png",
+    "value": 0,
+    "shields": [
+      {
+        "count": 1,
+        "color": "blue"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": true,
+    "max_coins": 3,
+    "effects": [
+      {
+        "type": "fill_purses_select",
+        "max_cards": 2
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "coins_on_card",
+      "max_coins": 3,
+      "multiplier": 2
+    }
+  },
+  "015": {
+    "id": "015",
+    "name": "Dramaturge",
+    "file_name": "carte_015.png",
+    "value": 3,
+    "shields": [
+      {
+        "count": 1,
+        "color": "green"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": true,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [],
+    "lock_effect": {
+      "type": "gain_gold_per_castle",
+      "amount": 1
+    },
+    "scoring_rule": {
+      "type": "cards_with_shield_count",
+      "shield_count": 1,
+      "multiplier": 2
+    }
+  },
+  "016": {
+    "id": "016",
+    "name": "Juge",
+    "file_name": "carte_016.png",
+    "value": 4,
+    "shields": [
+      {
+        "count": 1,
+        "color": "green"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_keys",
+        "amount": 2
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "category_pairs",
+      "categories": [
+        "castle",
+        "village"
+      ],
+      "multiplier": 3
+    }
+  },
+  "017": {
+    "id": "017",
+    "name": "Templier",
+    "file_name": "carte_017.png",
+    "value": 5,
+    "shields": [
+      {
+        "count": 1,
+        "color": "pink"
+      },
+      {
+        "count": 1,
+        "color": "red"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold_per_shield_neighbor",
+        "color": "pink",
+        "amount": 1
+      },
+      {
+        "type": "gain_keys_per_shield",
+        "color": "red",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "keys_owned",
+      "multiplier": 1
+    }
+  },
+  "018": {
+    "id": "018",
+    "name": "Sa Majesté la reine",
+    "file_name": "carte_018.png",
+    "value": 7,
+    "shields": [
+      {
+        "count": 1,
+        "color": "blue"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_keys_per_shield",
+        "color": "blue",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shield_trios",
+      "colors": [
+        "blue",
+        "green",
+        "orange"
+      ],
+      "multiplier": 10
+    }
+  },
+  "019": {
+    "id": "019",
+    "name": "Bouffon",
+    "file_name": "carte_019.png",
+    "value": 3,
+    "shields": [
+      {
+        "count": 1,
+        "color": "blue"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold_per_shield",
+        "color": "blue",
+        "amount": 2
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shields_in_row_and_col",
+      "color": "blue",
+      "multiplier": 2
+    }
+  },
+  "020": {
+    "id": "020",
+    "name": "Banquière",
+    "file_name": "carte_020.png",
+    "value": 7,
+    "shields": [
+      {
+        "count": 1,
+        "color": "orange"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "choice",
+        "options": [
+          {
+            "type": "fill_purses",
+            "amount": 2
+          },
+          {
+            "type": "gain_keys",
+            "amount": 3
+          }
+        ]
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "total_coins_on_cards",
+      "multiplier": 1
+    }
+  },
+  "021": {
+    "id": "021",
+    "name": "Astronome",
+    "file_name": "carte_021.png",
+    "value": 5,
+    "shields": [
+      {
+        "count": 2,
+        "color": "green"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": false,
+    "has_price_reduction": true,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "reduction_castle"
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "position",
+      "position": "left_col",
+      "score": 8
+    }
+  },
+  "022": {
+    "id": "022",
+    "name": "Officier",
+    "file_name": "carte_022.png",
+    "value": 5,
+    "shields": [
+      {
+        "count": 1,
+        "color": "red"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold_per_shield",
+        "color": "blue",
+        "amount": 1
+      },
+      {
+        "type": "gain_gold_per_shield",
+        "color": "red",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shield_pairs",
+      "colors": [
+        "blue",
+        "red"
+      ],
+      "multiplier": 4
+    }
+  },
+  "023": {
+    "id": "023",
+    "name": "Chevaleresse",
+    "file_name": "carte_023.png",
+    "value": 5,
+    "shields": [
+      {
+        "count": 1,
+        "color": "red"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold_per_castle",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shields_in_row_and_col",
+      "color": "blue",
+      "multiplier": 3
+    }
+  },
+  "024": {
+    "id": "024",
+    "name": "Architecte",
+    "file_name": "carte_024.png",
+    "value": 4,
+    "shields": [
+      {
+        "count": 1,
+        "color": "green"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": true,
+    "has_price_reduction": true,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "reduction_village"
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "unique_colors",
+      "scope": "board",
+      "multiplier": 2
+    }
+  },
+  "025": {
+    "id": "025",
+    "name": "Doyenne",
+    "file_name": "carte_025.png",
+    "value": 3,
+    "shields": [
+      {
+        "count": 2,
+        "color": "blue"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": true,
+    "max_coins": 5,
+    "effects": [
+      {
+        "type": "fill_purses",
+        "amount": 2
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "coins_on_card",
+      "max_coins": 5,
+      "multiplier": 2
+    }
+  },
+  "026": {
+    "id": "026",
+    "name": "Baron",
+    "file_name": "carte_026.png",
+    "value": 3,
+    "shields": [
+      {
+        "count": 1,
+        "color": "blue"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": false,
+    "has_price_reduction": true,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "reduction_both"
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "no_shield_color",
+      "color": "yellow",
+      "score": 10
+    }
+  },
+  "027": {
+    "id": "027",
+    "name": "Générale",
+    "file_name": "carte_027.png",
+    "value": 7,
+    "shields": [
+      {
+        "count": 1,
+        "color": "red"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_keys_per_unique_shield",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shield_sets_on_board",
+      "set_size": 3,
+      "any_color": true,
+      "multiplier": 6
+    }
+  },
+  "028": {
+    "id": "028",
+    "name": "Princesse",
+    "file_name": "carte_028.png",
+    "value": 3,
+    "shields": [
+      {
+        "count": 1,
+        "color": "blue"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": true,
+    "has_price_reduction": true,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "reduction_castle"
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shields_in_row",
+      "color": "blue",
+      "multiplier": 3
+    }
+  },
+  "029": {
+    "id": "029",
+    "name": "Veilleur",
+    "file_name": "carte_029.png",
+    "value": 6,
+    "shields": [
+      {
+        "count": 1,
+        "color": "red"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_keys_per_shield",
+        "color": "red",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "unique_colors",
+      "scope": "col",
+      "multiplier": 4
+    }
+  },
+  "030": {
+    "id": "030",
+    "name": "Orfèvre",
+    "file_name": "carte_030.png",
+    "value": 4,
+    "shields": [
+      {
+        "count": 1,
+        "color": "green"
+      },
+      {
+        "count": 1,
+        "color": "orange"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_keys_per_card_with_shields",
+        "shield_count": 2,
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "position",
+      "position": "left_col",
+      "score": 6
+    }
+  },
+  "031": {
+    "id": "031",
+    "name": "Capitaine",
+    "file_name": "carte_031.png",
+    "value": 5,
+    "shields": [
+      {
+        "count": 2,
+        "color": "red"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": true,
+    "has_price_reduction": true,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "reduction_village"
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "position",
+      "position": "right_col",
+      "score": 8
+    }
+  },
+  "032": {
+    "id": "032",
+    "name": "Alchimiste",
+    "file_name": "carte_032.png",
+    "value": 6,
+    "shields": [
+      {
+        "count": 1,
+        "color": "green"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": false,
+    "has_price_reduction": true,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "reduction_both"
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "feature_count",
+      "feature": "price_reduction",
+      "multiplier": 4
+    }
+  },
+  "033": {
+    "id": "033",
+    "name": "Apothicaire",
+    "file_name": "carte_033.png",
+    "value": 3,
+    "shields": [
+      {
+        "count": 1,
+        "color": "green"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": true,
+    "has_price_reduction": true,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "reduction_castle"
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shields_in_col",
+      "color": "green",
+      "multiplier": 3
+    }
+  },
+  "034": {
+    "id": "034",
+    "name": "Flagorneur",
+    "file_name": "carte_034.png",
+    "value": 7,
+    "shields": [
+      {
+        "count": 1,
+        "color": "blue"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": true,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [],
+    "lock_effect": {
+      "type": "replace_location"
+    },
+    "scoring_rule": {
+      "type": "sum_costs_in_row"
+    }
+  },
+  "035": {
+    "id": "035",
+    "name": "La main du Cardinal",
+    "file_name": "carte_035.png",
+    "value": 0,
+    "shields": [
+      {
+        "count": 1,
+        "color": "red"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": true,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [],
+    "lock_effect": {
+      "type": "gain_gold_per_shield",
+      "color": "pink",
+      "amount": 2
+    },
+    "scoring_rule": {
+      "type": "shield_threshold",
+      "color": "pink",
+      "scope": "row",
+      "threshold": 1,
+      "score": 5
+    }
+  },
+  "036": {
+    "id": "036",
+    "name": "Fossoyeur",
+    "file_name": "carte_036.png",
+    "value": 3,
+    "shields": [
+      {
+        "count": 1,
+        "color": "pink"
+      },
+      {
+        "count": 1,
+        "color": "green"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": true,
+    "max_coins": 8,
+    "effects": [
+      {
+        "type": "discard_village_gain_gold"
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "coins_on_card",
+      "max_coins": 8,
+      "multiplier": 2
+    }
+  },
+  "037": {
+    "id": "037",
+    "name": "Nonne",
+    "file_name": "carte_037.png",
+    "value": 3,
+    "shields": [
+      {
+        "count": 1,
+        "color": "pink"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold_per_castle",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shields_in_col",
+      "color": "pink",
+      "multiplier": 3
+    }
+  },
+  "038": {
+    "id": "038",
+    "name": "Sa Sainteté",
+    "file_name": "carte_038.png",
+    "value": 7,
+    "shields": [
+      {
+        "count": 1,
+        "color": "pink"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_keys",
+        "amount": 3
+      },
+      {
+        "type": "all_opponents_gain_keys",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "missing_colors_on_board",
+      "multiplier": 6
+    }
+  },
+  "039": {
+    "id": "039",
+    "name": "Mécène",
+    "file_name": "carte_039.png",
+    "value": 7,
+    "shields": [
+      {
+        "count": 1,
+        "color": "green"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "all_opponents_gain_gold",
+        "amount": 2
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "min_value_count",
+      "min_value": 5,
+      "multiplier": 5
+    }
+  },
+  "040": {
+    "id": "040",
+    "name": "Prêteur sur gages",
+    "file_name": "carte_040.png",
+    "value": 4,
+    "shields": [
+      {
+        "count": 1,
+        "color": "orange"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold_per_card_with_value",
+        "value": 4,
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "exact_value_count",
+      "value": 4,
+      "multiplier": 3
+    }
+  },
+  "041": {
+    "id": "041",
+    "name": "Maître d'armes",
+    "file_name": "carte_041.png",
+    "value": 2,
+    "shields": [
+      {
+        "count": 2,
+        "color": "red"
+      }
+    ],
+    "category": "village",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": true,
+    "max_coins": 4,
+    "effects": [
+      {
+        "type": "gain_gold_per_shield",
+        "color": "red",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "coins_on_card",
+      "max_coins": 4,
+      "multiplier": 2
+    }
+  },
+  "042": {
+    "id": "042",
+    "name": "Scribe",
+    "file_name": "carte_042.png",
+    "value": 4,
+    "shields": [
+      {
+        "count": 1,
+        "color": "pink"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold_per_shield",
+        "color": "pink",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shields_in_row_and_col",
+      "color": "green",
+      "multiplier": 3
+    }
+  },
+  "043": {
+    "id": "043",
+    "name": "Milicien",
+    "file_name": "carte_043.png",
+    "value": 2,
+    "shields": [
+      {
+        "count": 1,
+        "color": "red"
+      }
+    ],
+    "category": "village",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "choice",
+        "options": [
+          {
+            "type": "gain_gold_per_shield_neighbor",
+            "color": "yellow",
+            "amount": 1
+          },
+          {
+            "type": "gain_keys",
+            "amount": 2
+          }
+        ]
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shields_in_row",
+      "color": "red",
+      "multiplier": 3
+    }
+  },
+  "044": {
+    "id": "044",
+    "name": "Dévot",
+    "file_name": "carte_044.png",
+    "value": 4,
+    "shields": [
+      {
+        "count": 1,
+        "color": "pink"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold_per_empty_slot",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "no_shield_color",
+      "color": "orange",
+      "score": 10
+    }
+  },
+  "045": {
+    "id": "045",
+    "name": "Artificier",
+    "file_name": "carte_045.png",
+    "value": 2,
+    "shields": [
+      {
+        "count": 1,
+        "color": "red"
+      }
+    ],
+    "category": "village",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "choice",
+        "options": [
+          {
+            "type": "gain_gold_per_shield_neighbor",
+            "color": "orange",
+            "amount": 1
+          },
+          {
+            "type": "gain_keys",
+            "amount": 2
+          }
+        ]
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shields_in_col",
+      "color": "red",
+      "multiplier": 3
+    }
+  },
+  "046": {
+    "id": "046",
+    "name": "Chancelière",
+    "file_name": "carte_046.png",
+    "value": 6,
+    "shields": [
+      {
+        "count": 1,
+        "color": "blue"
+      },
+      {
+        "count": 1,
+        "color": "green"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_keys_per_shield",
+        "color": "green",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "category_count",
+      "category": "castle",
+      "multiplier": 2
+    }
+  },
+  "047": {
+    "id": "047",
+    "name": "Mère supérieure",
+    "file_name": "carte_047.png",
+    "value": 5,
+    "shields": [
+      {
+        "count": 2,
+        "color": "pink"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_keys",
+        "amount": 4
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "position",
+      "position": "top_row",
+      "score": 5
+    }
+  },
+  "048": {
+    "id": "048",
+    "name": "Cardinale",
+    "file_name": "carte_048.png",
+    "value": 4,
+    "shields": [
+      {
+        "count": 1,
+        "color": "pink"
+      }
+    ],
+    "category": "castle",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_keys_per_castle",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shields_in_row",
+      "color": "pink",
+      "multiplier": 3
+    }
+  },
+  "049": {
+    "id": "049",
+    "name": "Bûcheron",
+    "file_name": "carte_049.png",
+    "value": 0,
+    "shields": [
+      {
+        "count": 1,
+        "color": "yellow"
+      }
+    ],
+    "category": "village",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold_per_card",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "position",
+      "position": "right_col",
+      "score": 5
+    }
+  },
+  "050": {
+    "id": "050",
+    "name": "Miraculée",
+    "file_name": "carte_050.png",
+    "value": 2,
+    "shields": [
+      {
+        "count": 2,
+        "color": "pink"
+      }
+    ],
+    "category": "village",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": true,
+    "max_coins": 4,
+    "effects": [
+      {
+        "type": "gain_keys_per_card_with_purse",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "coins_on_card",
+      "max_coins": 4,
+      "multiplier": 2
+    }
+  },
+  "051": {
+    "id": "051",
+    "name": "Curé",
+    "file_name": "carte_051.png",
+    "value": 0,
+    "shields": [
+      {
+        "count": 1,
+        "color": "pink"
+      }
+    ],
+    "category": "village",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": true,
+    "max_coins": 5,
+    "effects": [
+      {
+        "type": "gain_gold_per_village",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "coins_on_card",
+      "max_coins": 5,
+      "multiplier": 2
+    }
+  },
+  "052": {
+    "id": "052",
+    "name": "Espion",
+    "file_name": "carte_052.png",
+    "value": 4,
+    "shields": [
+      {
+        "count": 1,
+        "color": "green"
+      },
+      {
+        "count": 1,
+        "color": "red"
+      }
+    ],
+    "category": "village",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold_per_shield",
+        "color": "green",
+        "amount": 1
+      },
+      {
+        "type": "gain_keys_per_shield_neighbor",
+        "color": "red",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "position",
+      "position": "middle_col",
+      "score": 6
+    }
+  },
+  "053": {
+    "id": "053",
+    "name": "Apiculteur",
+    "file_name": "carte_053.png",
+    "value": 2,
+    "shields": [
+      {
+        "count": 1,
+        "color": "yellow"
+      }
+    ],
+    "category": "village",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": true,
+    "max_coins": 9,
+    "effects": [
+      {
+        "type": "fill_purses",
+        "amount": 2
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "coins_on_card",
+      "max_coins": 9,
+      "multiplier": 2
+    }
+  },
+  "054": {
+    "id": "054",
+    "name": "Mercenaire",
+    "file_name": "carte_054.png",
+    "value": 6,
+    "shields": [
+      {
+        "count": 1,
+        "color": "red"
+      },
+      {
+        "count": 1,
+        "color": "yellow"
+      }
+    ],
+    "category": "village",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold_per_unique_shield",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shield_trios",
+      "colors": [
+        "pink",
+        "red",
+        "yellow"
+      ],
+      "multiplier": 7
+    }
+  },
+  "055": {
+    "id": "055",
+    "name": "Bâtard",
+    "file_name": "carte_055.png",
+    "value": 4,
+    "shields": [
+      {
+        "count": 1,
+        "color": "blue"
+      },
+      {
+        "count": 1,
+        "color": "yellow"
+      }
+    ],
+    "category": "village",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_keys_per_shield",
+        "color": "blue",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shields_in_col",
+      "color": "yellow",
+      "multiplier": 3
+    }
+  },
+  "056": {
+    "id": "056",
+    "name": "Roi des gueux",
+    "file_name": "carte_056.png",
+    "value": 5,
+    "shields": [
+      {
+        "count": 1,
+        "color": "red"
+      },
+      {
+        "count": 1,
+        "color": "orange"
+      },
+      {
+        "count": 1,
+        "color": "yellow"
+      }
+    ],
+    "category": "village",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": true,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [],
+    "lock_effect": {
+      "type": "replace_location_gain_keys_per_shield",
+      "color": "green",
+      "keys_per_card": 2
+    },
+    "scoring_rule": {
+      "type": "no_flipped_cards",
+      "score": 12
+    }
+  },
+  "057": {
+    "id": "057",
+    "name": "Forgeronne",
+    "file_name": "carte_057.png",
+    "value": 5,
+    "shields": [
+      {
+        "count": 1,
+        "color": "red"
+      },
+      {
+        "count": 1,
+        "color": "orange"
+      }
+    ],
+    "category": "village",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "choice",
+        "options": [
+          {
+            "type": "gain_gold_per_shield_neighbor",
+            "color": "blue",
+            "amount": 1
+          },
+          {
+            "type": "gain_keys",
+            "amount": 2
+          }
+        ]
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "cards_with_shield_count",
+      "shield_count": 2,
+      "multiplier": 2
+    }
+  },
+  "058": {
+    "id": "058",
+    "name": "Aubergiste",
+    "file_name": "carte_058.png",
+    "value": 0,
+    "shields": [
+      {
+        "count": 1,
+        "color": "orange"
+      }
+    ],
+    "category": "village",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": true,
+    "max_coins": 6,
+    "effects": [
+      {
+        "type": "fill_purses",
+        "amount": 2
+      },
+      {
+        "type": "all_opponents_gain_gold",
+        "amount": 2
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "coins_on_card",
+      "max_coins": 6,
+      "multiplier": 2
+    }
+  },
+  "059": {
+    "id": "059",
+    "name": "Potier",
+    "file_name": "carte_059.png",
+    "value": 2,
+    "shields": [
+      {
+        "count": 2,
+        "color": "orange"
+      }
+    ],
+    "category": "village",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": true,
+    "max_coins": 4,
+    "effects": [
+      {
+        "type": "fill_purses",
+        "amount": 2
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "coins_on_card",
+      "max_coins": 4,
+      "multiplier": 2
+    }
+  },
+  "060": {
+    "id": "060",
+    "name": "Horlogère",
+    "file_name": "carte_060.png",
+    "value": 3,
+    "shields": [
+      {
+        "count": 1,
+        "color": "orange"
+      }
+    ],
+    "category": "village",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold_per_shield",
+        "color": "orange",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shields_in_row",
+      "color": "orange",
+      "multiplier": 3
+    }
+  },
+  "061": {
+    "id": "061",
+    "name": "Sculptrice",
+    "file_name": "carte_061.png",
+    "value": 3,
+    "shields": [
+      {
+        "count": 1,
+        "color": "pink"
+      },
+      {
+        "count": 1,
+        "color": "orange"
+      }
+    ],
+    "category": "village",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": true,
+    "max_coins": 7,
+    "effects": [
+      {
+        "type": "gain_keys_per_shield",
+        "color": "pink",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "coins_on_card",
+      "max_coins": 7,
+      "multiplier": 2
+    }
+  },
+  "062": {
+    "id": "062",
+    "name": "Mendiante",
+    "file_name": "carte_062.png",
+    "value": 0,
+    "shields": [
+      {
+        "count": 1,
+        "color": "yellow"
+      }
+    ],
+    "category": "village",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold_per_card",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shields_in_row_and_col",
+      "color": "pink",
+      "multiplier": 2
+    }
+  },
+  "063": {
+    "id": "063",
+    "name": "Agricultrice",
+    "file_name": "carte_063.png",
+    "value": 5,
+    "shields": [
+      {
+        "count": 2,
+        "color": "yellow"
+      }
+    ],
+    "category": "village",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_keys_per_shield",
+        "color": "yellow",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "position",
+      "position": "bottom_row",
+      "score": 7
+    }
+  },
+  "064": {
+    "id": "064",
+    "name": "Sorcière",
+    "file_name": "carte_064.png",
+    "value": 4,
+    "shields": [
+      {
+        "count": 1,
+        "color": "yellow"
+      }
+    ],
+    "category": "village",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold_per_shield",
+        "color": "yellow",
+        "amount": 1
+      },
+      {
+        "type": "gain_keys_per_shield_neighbor",
+        "color": "pink",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "no_shield_color",
+      "color": "pink",
+      "score": 9
+    }
+  },
+  "065": {
+    "id": "065",
+    "name": "Armurière",
+    "file_name": "carte_065.png",
+    "value": 3,
+    "shields": [
+      {
+        "count": 1,
+        "color": "orange"
+      }
+    ],
+    "category": "village",
+    "has_messenger": false,
+    "has_price_reduction": true,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "reduction_both"
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shields_in_row_and_col",
+      "color": "red",
+      "multiplier": 3
+    }
+  },
+  "066": {
+    "id": "066",
+    "name": "Serrurier",
+    "file_name": "carte_066.png",
+    "value": 4,
+    "shields": [
+      {
+        "count": 1,
+        "color": "orange"
+      },
+      {
+        "count": 1,
+        "color": "yellow"
+      }
+    ],
+    "category": "village",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_keys_per_shield",
+        "color": "orange",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "keys_owned",
+      "multiplier": 1
+    }
+  },
+  "067": {
+    "id": "067",
+    "name": "Bergère",
+    "file_name": "carte_067.png",
+    "value": 5,
+    "shields": [
+      {
+        "count": 1,
+        "color": "yellow"
+      }
+    ],
+    "category": "village",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold_per_empty_slot",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shields_in_row",
+      "color": "yellow",
+      "multiplier": 3
+    }
+  },
+  "068": {
+    "id": "068",
+    "name": "Médecin",
+    "file_name": "carte_068.png",
+    "value": 5,
+    "shields": [
+      {
+        "count": 1,
+        "color": "green"
+      }
+    ],
+    "category": "village",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold_per_shield",
+        "color": "green",
+        "amount": 1
+      },
+      {
+        "type": "gain_gold_per_shield",
+        "color": "yellow",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shield_pairs",
+      "colors": [
+        "green",
+        "yellow"
+      ],
+      "multiplier": 4
+    }
+  },
+  "069": {
+    "id": "069",
+    "name": "Brigand",
+    "file_name": "carte_069.png",
+    "value": 7,
+    "shields": [
+      {
+        "count": 1,
+        "color": "yellow"
+      }
+    ],
+    "category": "village",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_keys_per_castle_neighbor",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "category_sets",
+      "category": "village",
+      "set_size": 3,
+      "multiplier": 7
+    }
+  },
+  "070": {
+    "id": "070",
+    "name": "Prince des voleurs",
+    "file_name": "carte_070.png",
+    "value": 4,
+    "shields": [
+      {
+        "count": 1,
+        "color": "yellow"
+      }
+    ],
+    "category": "village",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": true,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [],
+    "lock_effect": {
+      "type": "gain_gold_per_castle_neighbor",
+      "amount": 1
+    },
+    "scoring_rule": {
+      "type": "feature_count",
+      "feature": "lock",
+      "multiplier": 4
+    }
+  },
+  "071": {
+    "id": "071",
+    "name": "Épicière",
+    "file_name": "carte_071.png",
+    "value": 0,
+    "shields": [
+      {
+        "count": 1,
+        "color": "orange"
+      }
+    ],
+    "category": "village",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold_per_shield",
+        "color": "orange",
+        "amount": 2
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "position",
+      "position": "middle_row",
+      "score": 5
+    }
+  },
+  "072": {
+    "id": "072",
+    "name": "Barbare",
+    "file_name": "carte_072.png",
+    "value": 2,
+    "shields": [
+      {
+        "count": 1,
+        "color": "red"
+      }
+    ],
+    "category": "village",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "choice",
+        "options": [
+          {
+            "type": "gain_gold_per_shield_neighbor",
+            "color": "green",
+            "amount": 1
+          },
+          {
+            "type": "gain_keys",
+            "amount": 2
+          }
+        ]
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "no_shield_color",
+      "color": "green",
+      "score": 10
+    }
+  },
+  "073": {
+    "id": "073",
+    "name": "Tailleuse de pierre",
+    "file_name": "carte_073.png",
+    "value": 3,
+    "shields": [
+      {
+        "count": 1,
+        "color": "orange"
+      }
+    ],
+    "category": "village",
+    "has_messenger": true,
+    "has_price_reduction": true,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "reduction_village"
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shields_in_row",
+      "color": "orange",
+      "multiplier": 3
+    }
+  },
+  "074": {
+    "id": "074",
+    "name": "Usurpateur",
+    "file_name": "carte_074.png",
+    "value": 5,
+    "shields": [
+      {
+        "count": 1,
+        "color": "yellow"
+      }
+    ],
+    "category": "village",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_keys_per_card_with_shields",
+        "shield_count": 1,
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "category_count",
+      "category": "castle",
+      "multiplier": 2
+    }
+  },
+  "075": {
+    "id": "075",
+    "name": "Faussaire",
+    "file_name": "carte_075.png",
+    "value": 4,
+    "shields": [
+      {
+        "count": 1,
+        "color": "green"
+      }
+    ],
+    "category": "village",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": true,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [],
+    "lock_effect": {
+      "type": "activate_adjacent"
+    },
+    "scoring_rule": {
+      "type": "shield_threshold",
+      "color": "red",
+      "scope": "row",
+      "threshold": 1,
+      "score": 7
+    }
+  },
+  "076": {
+    "id": "076",
+    "name": "Vigneron",
+    "file_name": "carte_076.png",
+    "value": 2,
+    "shields": [
+      {
+        "count": 1,
+        "color": "green"
+      },
+      {
+        "count": 1,
+        "color": "yellow"
+      }
+    ],
+    "category": "village",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold_per_village",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "unique_colors",
+      "scope": "col",
+      "multiplier": 2
+    }
+  },
+  "077": {
+    "id": "077",
+    "name": "Colporteur",
+    "file_name": "carte_077.png",
+    "value": 7,
+    "shields": [
+      {
+        "count": 1,
+        "color": "orange"
+      }
+    ],
+    "category": "village",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": true,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [],
+    "lock_effect": {
+      "type": "replace_location"
+    },
+    "scoring_rule": {
+      "type": "sum_costs_in_col"
+    }
+  },
+  "078": {
+    "id": "078",
+    "name": "Inventeur",
+    "file_name": "carte_078.png",
+    "value": 2,
+    "shields": [
+      {
+        "count": 2,
+        "color": "green"
+      }
+    ],
+    "category": "village",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold_per_shield",
+        "color": "green",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "category_count",
+      "category": "village",
+      "multiplier": 1
+    }
+  },
+  "079": {
+    "id": "079",
+    "name": "Tire-laine",
+    "file_name": "carte_079.png",
+    "value": 3,
+    "shields": [
+      {
+        "count": 1,
+        "color": "red"
+      }
+    ],
+    "category": "village",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": true,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [],
+    "lock_effect": {
+      "type": "replace_location_gain_keys_per_feature",
+      "feature": "coin_purse",
+      "keys_per_card": 3
+    },
+    "scoring_rule": {
+      "type": "no_feature_on_board",
+      "feature": "coin_purse",
+      "score": 10
+    }
+  },
+  "080": {
+    "id": "080",
+    "name": "Écuyer",
+    "file_name": "carte_080.png",
+    "value": 0,
+    "shields": [
+      {
+        "count": 1,
+        "color": "red"
+      }
+    ],
+    "category": "village",
+    "has_messenger": false,
+    "has_price_reduction": true,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "reduction_both"
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shields_in_row_and_col",
+      "color": "orange",
+      "multiplier": 2
+    }
+  },
+  "081": {
+    "id": "081",
+    "name": "Fermière",
+    "file_name": "carte_081.png",
+    "value": 0,
+    "shields": [
+      {
+        "count": 1,
+        "color": "yellow"
+      }
+    ],
+    "category": "village",
+    "has_messenger": true,
+    "has_price_reduction": true,
+    "has_lock": false,
+    "has_coin_purse": true,
+    "max_coins": 5,
+    "effects": [
+      {
+        "type": "reduction_village"
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "coins_on_card",
+      "max_coins": 5,
+      "multiplier": 2
+    }
+  },
+  "082": {
+    "id": "082",
+    "name": "Charpentier",
+    "file_name": "carte_082.png",
+    "value": 0,
+    "shields": [
+      {
+        "count": 1,
+        "color": "orange"
+      }
+    ],
+    "category": "village",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_keys_per_missing_shield",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "has_flipped_cards",
+      "score": 8
+    }
+  },
+  "083": {
+    "id": "083",
+    "name": "Philosophe",
+    "file_name": "carte_083.png",
+    "value": 2,
+    "shields": [
+      {
+        "count": 1,
+        "color": "green"
+      }
+    ],
+    "category": "village",
+    "has_messenger": false,
+    "has_price_reduction": true,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "reduction_castle"
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "no_shield_color",
+      "color": "red",
+      "score": 10
+    }
+  },
+  "084": {
+    "id": "084",
+    "name": "Bourreau",
+    "file_name": "carte_084.png",
+    "value": 0,
+    "shields": [
+      {
+        "count": 1,
+        "color": "red"
+      }
+    ],
+    "category": "village",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "discard_castle_gain_gold"
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "category_count",
+      "category": "castle",
+      "multiplier": 1
+    }
+  },
+  "085": {
+    "id": "085",
+    "name": "Boulangère",
+    "file_name": "carte_085.png",
+    "value": 0,
+    "shields": [
+      {
+        "count": 1,
+        "color": "yellow"
+      }
+    ],
+    "category": "village",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold_per_shield",
+        "color": "yellow",
+        "amount": 1
+      },
+      {
+        "type": "gain_keys_per_village",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "position",
+      "position": "border",
+      "score": 3
+    }
+  },
+  "086": {
+    "id": "086",
+    "name": "Voyageuse",
+    "file_name": "carte_086.png",
+    "value": 0,
+    "shields": [
+      {
+        "count": 1,
+        "color": "yellow"
+      }
+    ],
+    "category": "village",
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold_per_card_with_value",
+        "value": 0,
+        "amount": 3
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "exact_value_count",
+      "value": 0,
+      "multiplier": 2
+    }
+  },
+  "087": {
+    "id": "087",
+    "name": "Pêcheur",
+    "file_name": "carte_087.png",
+    "value": 2,
+    "shields": [
+      {
+        "count": 2,
+        "color": "yellow"
+      }
+    ],
+    "category": "village",
+    "has_messenger": false,
+    "has_price_reduction": true,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "reduction_castle"
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "position",
+      "position": "corner",
+      "score": 4
+    }
+  },
+  "088": {
+    "id": "088",
+    "name": "Voyante",
+    "file_name": "carte_088.png",
+    "value": 1,
+    "shields": [
+      {
+        "count": 2,
+        "color": "yellow"
+      }
+    ],
+    "category": "village",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": true,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [],
+    "lock_effect": {
+      "type": "activate_adjacent"
+    },
+    "scoring_rule": {
+      "type": "shield_threshold",
+      "color": "blue",
+      "scope": "col",
+      "threshold": 1,
+      "score": 3
+    }
+  },
+  "089": {
+    "id": "089",
+    "name": "Village",
+    "file_name": "carte_089.png",
+    "value": 0,
+    "shields": [],
+    "category": null,
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold",
+        "amount": 6
+      },
+      {
+        "type": "gain_keys",
+        "amount": 2
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "flipped_card",
+      "score": 0
+    },
+    "is_flipped": true,
+    "flipped_from": "village"
+  },
+  "090": {
+    "id": "090",
+    "name": "Château",
+    "file_name": "carte_090.png",
+    "value": 0,
+    "shields": [],
+    "category": null,
+    "has_messenger": false,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_gold",
+        "amount": 6
+      },
+      {
+        "type": "gain_keys",
+        "amount": 2
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "flipped_card",
+      "score": 0
+    },
+    "is_flipped": true,
+    "flipped_from": "castle"
+  },
+  "091": {
+    "id": "091",
+    "name": "Révolutionnaire",
+    "file_name": "carte_091.png",
+    "value": 4,
+    "shields": [
+      {
+        "count": 1,
+        "color": "yellow"
+      }
+    ],
+    "category": "village",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_keys_per_village",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "no_shield_color",
+      "color": "blue",
+      "score": 9
+    }
+  },
+  "092": {
+    "id": "092",
+    "name": "Moine",
+    "file_name": "carte_092.png",
+    "value": 4,
+    "shields": [
+      {
+        "count": 1,
+        "color": "pink"
+      },
+      {
+        "count": 1,
+        "color": "yellow"
+      }
+    ],
+    "category": "village",
+    "has_messenger": true,
+    "has_price_reduction": false,
+    "has_lock": false,
+    "has_coin_purse": false,
+    "max_coins": 0,
+    "effects": [
+      {
+        "type": "gain_keys_per_shield",
+        "color": "pink",
+        "amount": 1
+      }
+    ],
+    "lock_effect": null,
+    "scoring_rule": {
+      "type": "shields_in_row_and_col",
+      "color": "yellow",
+      "multiplier": 2
+    }
+  }
+}

@@ -10,18 +10,25 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Types
-interface CardBase {
-  id: string;
-  "file-name": string;
-  name: string;
-}
-
 interface Shield {
   count: number;
   color: string;
 }
 
-interface CardAttributes {
+interface Effect {
+  type: string;
+  [key: string]: unknown;
+}
+
+interface ScoringRule {
+  type: string;
+  [key: string]: unknown;
+}
+
+interface Card {
+  id: string;
+  name: string;
+  file_name: string;
   value: number;
   shields: Shield[];
   category: "castle" | "village" | null;
@@ -30,63 +37,25 @@ interface CardAttributes {
   has_lock: boolean;
   has_coin_purse: boolean;
   max_coins: number;
-}
-
-interface Effect {
-  type: string;
-  [key: string]: unknown;
-}
-
-interface CardEffects {
-  has_messenger: boolean;
-  effects: Effect[];
-  lock_effect: Effect | null;
-}
-
-interface ScoringRule {
-  type: string;
-  [key: string]: unknown;
-}
-
-interface Card extends CardBase, CardAttributes {
   effects: Effect[];
   lock_effect: Effect | null;
   scoring_rule: ScoringRule;
+  is_flipped?: boolean;
+  flipped_from?: string;
 }
 
-// Load and merge card data
+// Load card data from unified JSON
 function loadCardData(): Map<string, Card> {
   const cardsPath = join(__dirname, "../../backend/cards");
 
-  const cardsJson: CardBase[] = JSON.parse(
-    readFileSync(join(cardsPath, "cards.json"), "utf-8")
-  );
-  const attributesJson: Record<string, CardAttributes> = JSON.parse(
-    readFileSync(join(cardsPath, "card_attributes.json"), "utf-8")
-  );
-  const effectsJson: Record<string, CardEffects> = JSON.parse(
-    readFileSync(join(cardsPath, "card_effects.json"), "utf-8")
-  );
-  const scoringJson: Record<string, ScoringRule> = JSON.parse(
-    readFileSync(join(cardsPath, "card_scoring.json"), "utf-8")
+  const cardsData: Record<string, Card> = JSON.parse(
+    readFileSync(join(cardsPath, "cards_data.json"), "utf-8")
   );
 
   const cards = new Map<string, Card>();
 
-  for (const card of cardsJson) {
-    const attributes = attributesJson[card.id];
-    const effects = effectsJson[card.id];
-    const scoring = scoringJson[card.id];
-
-    if (attributes && effects && scoring) {
-      cards.set(card.id, {
-        ...card,
-        ...attributes,
-        effects: effects.effects,
-        lock_effect: effects.lock_effect,
-        scoring_rule: scoring,
-      });
-    }
+  for (const [cardId, card] of Object.entries(cardsData)) {
+    cards.set(cardId, card);
   }
 
   return cards;

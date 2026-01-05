@@ -90,18 +90,20 @@ Single-pass detection and identification using YOLO11 with 92 classes (one per c
 - `queries.py` - Database query helpers with automatic 404 handling
 - `services/game_service.py` - Game creation and rank calculation logic
 
-#### Card Attributes (backend/cards/card_attributes.json)
+#### Card Data (backend/cards/cards_data.json)
+Unified JSON file containing all 92 cards with complete data:
+- `id` - Card ID ("001"-"092")
+- `name` - Card name (French)
+- `file_name` - Image filename
 - `value` - Card cost (0-8)
 - `shields` - Array of {count, color}
 - `category` - "village" | "castle" | null
-- `has_messenger` - Boolean (moves messenger on purchase)
-- `has_price_reduction`, `has_lock`, `has_coin_purse`, `max_coins`
+- `has_messenger`, `has_price_reduction`, `has_lock`, `has_coin_purse`, `max_coins`
+- `effects` - Array of effect objects (Play mode)
+- `lock_effect` - Effect when using a key on the card's lock
+- `scoring_rule` - Structured scoring rule for end-game calculation
 
-#### Card Effects (backend/cards/card_effects.json)
-Card effects for Play mode (triggered when placing a card):
-- `has_messenger` - Boolean
-- `effects` - Array of effect objects (gain_gold, gain_keys, reduction, etc.)
-- `lock_effect` - Effect triggered when using a key on the card's lock
+**Centralized loader**: `app/services/card_data.py` provides cached access to all card data.
 
 #### Card Images
 - **PNG originals** (`backend/cards/`) - 630x880px, used for YOLO training

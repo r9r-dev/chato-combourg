@@ -1,9 +1,9 @@
-import json
 from pathlib import Path
 from dataclasses import dataclass
 from PIL import Image
 
 from app.config import settings
+from app.services.card_data import load_cards_data
 
 
 @dataclass
@@ -22,27 +22,24 @@ class Card:
 class CardDatabase:
     """Manages the reference card database."""
 
-    def __init__(self, cards_dir: Path = None, cards_json: Path = None):
+    def __init__(self, cards_dir: Path = None):
         self.cards_dir = cards_dir or settings.cards_dir
-        self.cards_json = cards_json or settings.cards_json
         self._cards: dict[str, Card] = {}
         self._loaded = False
 
     def load(self) -> None:
-        """Load cards from JSON file."""
+        """Load cards from unified JSON file."""
         if self._loaded:
             return
 
-        with open(self.cards_json, "r", encoding="utf-8") as f:
-            cards_data = json.load(f)
+        cards_data = load_cards_data()
 
-        for card_data in cards_data:
-            card_id = card_data["id"]
+        for card_id, card_info in cards_data.items():
             self._cards[card_id] = Card(
                 id=card_id,
-                file_name=card_data["file-name"],
-                name=card_data.get("name", ""),
-                image_path=self.cards_dir / card_data["file-name"],
+                file_name=card_info["file_name"],
+                name=card_info.get("name", ""),
+                image_path=self.cards_dir / card_info["file_name"],
             )
 
         self._loaded = True

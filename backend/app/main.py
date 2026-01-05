@@ -96,10 +96,10 @@ def check_required_files():
         else:
             logger.info(f"Found {card_count} card images")
 
-    # Check card attributes JSON
-    card_attrs = CARDS_DIR / "card_attributes.json"
-    if not card_attrs.exists():
-        issues.append(f"Card attributes not found: {card_attrs}")
+    # Check unified card data JSON
+    card_data = CARDS_DIR / "cards_data.json"
+    if not card_data.exists():
+        issues.append(f"Card data not found: {card_data}")
 
     return issues
 

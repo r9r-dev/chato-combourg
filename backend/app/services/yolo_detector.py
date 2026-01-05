@@ -26,8 +26,8 @@ _local_models = Path(__file__).parent.parent.parent.parent / "models"
 MODELS_DIR = _docker_models if _docker_models.exists() else _local_models
 CARDS_DIR = Path(__file__).parent.parent.parent / "cards"
 
-# Load card attributes for similarity matching
-_card_attributes: dict | None = None
+# Card data is loaded from the centralized module
+from app.services.card_data import get_all_attributes
 
 # Worker health-check state
 _worker_health_cache: dict = {
@@ -117,16 +117,6 @@ def _mark_worker_unhealthy():
         _worker_health_cache["is_healthy"] = False
 
 
-def _load_card_attributes() -> dict:
-    """Load card attributes from JSON file (cached)."""
-    global _card_attributes
-    if _card_attributes is None:
-        attrs_path = CARDS_DIR / "card_attributes.json"
-        with open(attrs_path) as f:
-            _card_attributes = json.load(f)
-    return _card_attributes
-
-
 def _get_shield_signature(shields: list[dict]) -> tuple:
     """Get a comparable signature for shields (total count, sorted colors)."""
     total_count = sum(s.get("count", 0) for s in shields)
@@ -151,7 +141,7 @@ def find_similar_cards(card_id: str, limit: int = 2) -> list[dict]:
     Returns:
         List of similar card IDs with similarity scores
     """
-    attrs = _load_card_attributes()
+    attrs = get_all_attributes()
 
     if card_id not in attrs:
         return []
