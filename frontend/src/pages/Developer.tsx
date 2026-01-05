@@ -1,4 +1,12 @@
+import { useState } from 'react';
 import { useGame } from '../context/GameContext';
+import {
+  TokenDisplay,
+  useTokenAnimation,
+  type GainAnimation,
+  type LossAnimation,
+  type AnimationSpeed,
+} from '../components/play/TokenAnimation';
 import type {
   SelectedPlayer,
   GameCard,
@@ -212,6 +220,164 @@ function generateMockGamesData() {
   return { games, gameDetails, players, statistics };
 }
 
+// Section de test des animations de tokens
+function TokenAnimationTest() {
+  const [gainAnim, setGainAnim] = useState<GainAnimation>('pop-in');
+  const [lossAnim, setLossAnim] = useState<LossAnimation>('burn');
+  const [speed, setSpeed] = useState<AnimationSpeed>('medium');
+  const [amount, setAmount] = useState(3);
+
+  const { tokens, triggerAnimation } = useTokenAnimation({
+    gainAnimation: gainAnim,
+    lossAnimation: lossAnim,
+    speed,
+  });
+
+  const gainAnimations: { value: GainAnimation; label: string }[] = [
+    { value: 'pop-in', label: 'Pop-in (rebond)' },
+    { value: 'slide-down', label: 'Slide (glissement)' },
+    { value: 'fade-in', label: 'Fade (fondu)' },
+  ];
+
+  const lossAnimations: { value: LossAnimation; label: string }[] = [
+    { value: 'burn', label: 'Burn (brulure)' },
+    { value: 'fall', label: 'Fall (chute)' },
+    { value: 'shrink', label: 'Shrink (retrecir)' },
+    { value: 'shred', label: 'Shred (confettis)' },
+  ];
+
+  const speeds: { value: AnimationSpeed; label: string }[] = [
+    { value: 'slow', label: 'Lent (2.5s)' },
+    { value: 'medium', label: 'Moyen (1.8s)' },
+    { value: 'fast', label: 'Rapide (0.8s)' },
+  ];
+
+  return (
+    <>
+      <TokenDisplay tokens={tokens} />
+
+      <div className="bg-dark-lighter rounded-xl p-4 border border-blue-900/30">
+        <h2 className="text-white font-semibold mb-4">Test Animations Jetons</h2>
+
+        {/* Controles */}
+        <div className="space-y-4 mb-4">
+          {/* Animation gain */}
+          <div>
+            <label className="text-white/60 text-sm mb-1 block">Animation gain</label>
+            <div className="flex gap-2 flex-wrap">
+              {gainAnimations.map((anim) => (
+                <button
+                  key={anim.value}
+                  onClick={() => setGainAnim(anim.value)}
+                  className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                    gainAnim === anim.value
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-white/10 text-white/60 hover:bg-white/20'
+                  }`}
+                >
+                  {anim.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Animation perte */}
+          <div>
+            <label className="text-white/60 text-sm mb-1 block">Animation perte</label>
+            <div className="flex gap-2 flex-wrap">
+              {lossAnimations.map((anim) => (
+                <button
+                  key={anim.value}
+                  onClick={() => setLossAnim(anim.value)}
+                  className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                    lossAnim === anim.value
+                      ? 'bg-red-600 text-white'
+                      : 'bg-white/10 text-white/60 hover:bg-white/20'
+                  }`}
+                >
+                  {anim.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Vitesse */}
+          <div>
+            <label className="text-white/60 text-sm mb-1 block">Vitesse</label>
+            <div className="flex gap-2">
+              {speeds.map((s) => (
+                <button
+                  key={s.value}
+                  onClick={() => setSpeed(s.value)}
+                  className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                    speed === s.value
+                      ? 'bg-gold text-dark'
+                      : 'bg-white/10 text-white/60 hover:bg-white/20'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Quantite */}
+          <div>
+            <label className="text-white/60 text-sm mb-1 block">Quantite: {amount}</label>
+            <input
+              type="range"
+              min="1"
+              max="10"
+              value={amount}
+              onChange={(e) => setAmount(Number(e.target.value))}
+              className="w-full accent-gold"
+            />
+          </div>
+        </div>
+
+        {/* Boutons de test */}
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => triggerAnimation('gold', amount)}
+            className="py-3 px-4 bg-emerald-700/50 text-white rounded-lg
+                       hover:bg-emerald-600/50 transition-colors border border-emerald-600/50"
+          >
+            <div className="font-medium">+ {amount} Pieces</div>
+            <div className="text-xs text-white/50">Bas gauche</div>
+          </button>
+
+          <button
+            onClick={() => triggerAnimation('keys', amount)}
+            className="py-3 px-4 bg-emerald-700/50 text-white rounded-lg
+                       hover:bg-emerald-600/50 transition-colors border border-emerald-600/50"
+          >
+            <div className="font-medium">+ {amount} Cles</div>
+            <div className="text-xs text-white/50">Bas droite</div>
+          </button>
+
+          <button
+            onClick={() => triggerAnimation('gold', -amount)}
+            className="py-3 px-4 bg-red-700/50 text-white rounded-lg
+                       hover:bg-red-600/50 transition-colors border border-red-600/50"
+          >
+            <div className="font-medium">- {amount} Pieces</div>
+            <div className="text-xs text-white/50">Bas gauche</div>
+          </button>
+
+          <button
+            onClick={() => triggerAnimation('keys', -amount)}
+            className="py-3 px-4 bg-red-700/50 text-white rounded-lg
+                       hover:bg-red-600/50 transition-colors border border-red-600/50"
+          >
+            <div className="font-medium">- {amount} Cles</div>
+            <div className="text-xs text-white/50">Bas droite</div>
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export function Developer() {
   const { setStep, state } = useGame();
 
@@ -276,6 +442,9 @@ export function Developer() {
               </div>
             </button>
           </div>
+
+          {/* Section: Token Animations Test */}
+          <TokenAnimationTest />
 
           {/* Debug info */}
           <div className="bg-dark-lighter rounded-xl p-4 border border-white/10">

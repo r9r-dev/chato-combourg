@@ -145,3 +145,225 @@ body {
 .animate-notification {
   animation: notification-slide-up 2s ease-out forwards;
 }
+
+/* ==========================================
+   Token Animations - Gains
+   ========================================== */
+
+/* Pop-in: apparition avec rebond */
+@keyframes token-pop-in {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+  }
+  30% {
+    transform: translate(-50%, -50%) scale(1.3);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 1;
+  }
+  70% {
+    transform: translate(-50%, -50%) scale(1.1);
+    opacity: 1;
+  }
+  85% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+}
+
+.animate-token-pop-in {
+  animation: token-pop-in ease-out forwards;
+}
+
+/* Slide-up: glissement depuis le bas avec disparition progressive */
+@keyframes token-slide-up {
+  0% {
+    transform: translate(-50%, 150%);
+    opacity: 0;
+  }
+  15% {
+    transform: translate(-50%, -50%);
+    opacity: 1;
+  }
+  25% {
+    transform: translate(-50%, -60%);
+  }
+  35% {
+    transform: translate(-50%, -50%);
+  }
+  60% {
+    transform: translate(-50%, -50%);
+    opacity: 1;
+  }
+  80% {
+    transform: translate(-50%, -55%);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate(-50%, -70%);
+    opacity: 0;
+  }
+}
+
+.animate-token-slide-up {
+  animation: token-slide-up ease-out forwards;
+}
+
+/* Legacy alias */
+.animate-token-slide-down {
+  animation: token-slide-up ease-out forwards;
+}
+
+/* Fade-in: fondu entrée avec léger grossissement */
+@keyframes token-fade-in {
+  0% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0;
+  }
+  25% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  85% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+}
+
+.animate-token-fade-in {
+  animation: token-fade-in ease-out forwards;
+}
+
+/* ==========================================
+   Token Animations - Pertes
+   ========================================== */
+
+/* Burn: effet de brûlure/désintégration */
+@keyframes token-burn {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    filter: brightness(1) saturate(1);
+  }
+  20% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    filter: brightness(1.2) saturate(1.2);
+  }
+  40% {
+    transform: translate(-50%, -50%) scale(1.05);
+    opacity: 1;
+    filter: brightness(1.5) saturate(0.8) sepia(0.5);
+  }
+  60% {
+    transform: translate(-50%, -50%) scale(1.1);
+    opacity: 0.8;
+    filter: brightness(2) saturate(0.5) sepia(1) hue-rotate(-10deg);
+  }
+  80% {
+    transform: translate(-50%, -50%) scale(1.15);
+    opacity: 0.4;
+    filter: brightness(3) saturate(0) sepia(1) hue-rotate(-20deg) blur(2px);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0;
+    filter: brightness(4) saturate(0) blur(8px);
+  }
+}
+
+.animate-token-burn {
+  animation: token-burn ease-in forwards;
+}
+
+/* Fall: chute simple avec fondu */
+@keyframes token-fall {
+  0% {
+    transform: translate(-50%, -50%);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, 350%);
+    opacity: 0;
+  }
+}
+
+.animate-token-fall {
+  animation: token-fall cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+/* Shrink: rétrécissement progressif */
+@keyframes token-shrink {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  20% {
+    transform: translate(-50%, -50%) scale(1.1);
+    opacity: 1;
+  }
+  40% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0.9;
+  }
+  60% {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0.7;
+  }
+  80% {
+    transform: translate(-50%, -50%) scale(0.2);
+    opacity: 0.4;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+  }
+}
+
+.animate-token-shrink {
+  animation: token-shrink ease-in forwards;
+}
+
+/* Shred: effet broyeur/confettis - chute puis désintégration */
+@keyframes token-shred {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  /* Phase 1: chute normale (comme fall) */
+  30% {
+    transform: translate(-50%, 50%) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  /* Phase 2: début de la désintégration */
+  50% {
+    transform: translate(
+      calc(-50% + var(--tx, 0px) * 0.3),
+      calc(50% + var(--ty, 0px) * 0.3)
+    ) rotate(calc(var(--rot, 0deg) * 0.3)) scale(0.9);
+    opacity: 0.9;
+  }
+  /* Phase 3: dispersion complète */
+  100% {
+    transform: translate(
+      calc(-50% + var(--tx, 0px)),
+      calc(50% + var(--ty, 0px))
+    ) rotate(var(--rot, 0deg)) scale(0.4);
+    opacity: 0;
+  }
+}
+
+.animate-token-shred {
+  animation: token-shred ease-in forwards;
+}

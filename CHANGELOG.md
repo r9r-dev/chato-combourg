@@ -1,5 +1,15 @@
 # Changelog
 
+## v3.9.1 (2026-01-05)
+
+### Améliorations
+- Nouvelles animations de jetons pour les changements de ressources : images de pièces et clés animées
+- Animation slide-up pour les gains (depuis le bas de l'écran)
+- Animation fall pour les pertes (chute avec fondu)
+- Apparition séquentielle des jetons avec délais échelonnés
+- Positionnement distinct : pièces en bas à gauche, clés en bas à droite
+- Page Développeur : section de test pour prévisualiser les animations
+
 ## v3.9.0 (2026-01-04)
 
 ### Améliorations
