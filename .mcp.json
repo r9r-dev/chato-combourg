@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "chato-combourg": {
+      "command": "node",
+      "args": ["mcp/dist/index.js"],
+      "description": "Chateau Combo card data server"
+    }
+  }
+}
