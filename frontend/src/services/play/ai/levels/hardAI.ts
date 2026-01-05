@@ -1,8 +1,8 @@
 /**
  * IA Difficile
  *
- * Utilise MCTS pour explorer l'arbre de decisions.
- * Considere les reponses des adversaires.
+ * Utilise l'evaluation de delta pour prendre des decisions optimales.
+ * Considere les anti-synergies et la valeur future des ressources.
  */
 
 import type {
@@ -18,18 +18,21 @@ import type {
   PurseSelectionChoice,
 } from '../../../../types/play';
 import { BaseAI } from './baseAI';
-import { buildContext } from '../context/builder';
-import { buildActionTree } from '../tree/generator';
-import { mctsSelect } from '../algorithms/mcts';
 import type { HardAIConfig } from '../types';
-import { evaluateBestMoveWithLookahead, evaluatePlaceOptions } from '../evaluator/deltaCalculator';
+import {
+  evaluateBestMoveWithLookahead,
+  evaluatePlaceOptions,
+  evaluateAvailableCards,
+  compareLevels,
+} from '../evaluator/deltaCalculator';
 import { logAIDecisions, type DecisionLogContext } from '../debug/decisionLogger';
 
-const DEFAULT_CONFIG: HardAIConfig = {
-  maxIterations: 500,
-  maxTimeMs: 3000,
-  explorationConstant: Math.sqrt(2),
-};
+// Note: Config MCTS non utilisée actuellement - MCTS désactivé
+// const DEFAULT_CONFIG: HardAIConfig = {
+//   maxIterations: 500,
+//   maxTimeMs: 3000,
+//   explorationConstant: Math.sqrt(2),
+// };
 
 /**
  * IA Difficile - MCTS
@@ -37,13 +40,14 @@ const DEFAULT_CONFIG: HardAIConfig = {
 export class HardAI extends BaseAI {
   level: AILevel = 'hard';
   name = 'Expert';
-  private config: HardAIConfig;
+  // Note: config MCTS (maxIterations, maxTimeMs) non utilisé actuellement
+  // car MCTS est désactivé au profit du calcul de delta
   private debug: boolean = false;
   private verbose: boolean = false;
 
-  constructor(config: Partial<HardAIConfig> = {}, debug: boolean = false, verbose: boolean = false) {
+  constructor(_config: Partial<HardAIConfig> = {}, debug: boolean = false, verbose: boolean = false) {
     super();
-    this.config = { ...DEFAULT_CONFIG, ...config };
+    // Config ignorée - MCTS désactivé (voir commentaire ci-dessus)
     this.debug = debug;
     this.verbose = verbose;
   }
@@ -91,8 +95,9 @@ export class HardAI extends BaseAI {
     }
 
     if (bestMove) {
-      // Sauvegarder la position optimale pour selectPlaceAction
+      // Sauvegarder la position et le shift optimaux pour selectPlaceAction
       this.lastBestPosition = bestMove.placeOption.position;
+      this.lastBestShift = bestMove.placeOption.shiftDirection ?? null;
 
       return {
         cardId: bestMove.buyOption.cardId,
@@ -100,26 +105,8 @@ export class HardAI extends BaseAI {
       };
     }
 
-    // Fallback: utiliser MCTS si le calculateur de delta échoue
-    const context = buildContext(state, player.id, cards);
-    const tree = buildActionTree(context, 5);
-    const selectedAction = mctsSelect(tree, cards, this.config);
-
-    if (selectedAction?.type === 'buy_card') {
-      return {
-        cardId: selectedAction.cardId!,
-        flipped: false,
-      };
-    }
-
-    if (selectedAction?.type === 'buy_card_flipped') {
-      return {
-        cardId: selectedAction.cardId!,
-        flipped: true,
-      };
-    }
-
-    // Dernier recours: premier achat possible
+    // Fallback simple: premier achat possible
+    // Note: MCTS désactivé car buildActionTree(depth=5) crée un arbre exponentiel
     const affordableCards = this.getAffordableCards(state, availableCards);
     if (affordableCards.length > 0) {
       return {
@@ -134,8 +121,9 @@ export class HardAI extends BaseAI {
     };
   }
 
-  // Position optimale calculée lors de selectBuyAction
+  // Position et shift optimaux calculés lors de selectBuyAction
   private lastBestPosition: number | null = null;
+  private lastBestShift: string | null = null;
 
   /**
    * Choisit une position de placement
@@ -143,22 +131,31 @@ export class HardAI extends BaseAI {
    * Utilise la position optimale calculée lors de selectBuyAction si disponible.
    */
   selectPlaceAction(state: PlayGameState, cardId: string, validPositions: number[]): number {
+    // Utiliser la position pré-calculée si disponible
+    // Pour les zones externes (avec shift), la position peut ne pas être dans validPositions
+    if (this.lastBestPosition !== null) {
+      const position = this.lastBestPosition;
+      const hasShift = this.lastBestShift !== null;
+
+      // Position valide si: interne ET dans validPositions, OU externe avec shift
+      const isValid = validPositions.includes(position) || hasShift;
+
+      if (isValid) {
+        this.lastBestPosition = null; // Reset pour le prochain tour
+        // Note: lastBestShift est conservé pour être récupéré via getLastShiftDirection()
+        if (this.debug) {
+          console.log(`[HardAI] Using pre-calculated position: ${position}${hasShift ? ` (shift: ${this.lastBestShift})` : ''}`);
+        }
+        return position;
+      }
+    }
+
     if (validPositions.length === 0) {
       throw new Error('[HardAI] No valid positions');
     }
 
     if (validPositions.length === 1) {
       return validPositions[0];
-    }
-
-    // Utiliser la position pré-calculée si disponible et valide
-    if (this.lastBestPosition !== null && validPositions.includes(this.lastBestPosition)) {
-      const position = this.lastBestPosition;
-      this.lastBestPosition = null; // Reset pour le prochain tour
-      if (this.debug) {
-        console.log(`[HardAI] Using pre-calculated position: ${position}`);
-      }
-      return position;
     }
 
     // Sinon, recalculer avec le delta calculator
@@ -181,21 +178,45 @@ export class HardAI extends BaseAI {
     );
 
     if (placeOptions.length > 0) {
-      const bestPosition = placeOptions[0].position;
-      if (validPositions.includes(bestPosition)) {
+      const bestOption = placeOptions[0];
+      const bestPosition = bestOption.position;
+      const hasShift = !!bestOption.shiftDirection;
+
+      // Position valide si: interne ET dans validPositions, OU externe avec shift
+      if (validPositions.includes(bestPosition) || hasShift) {
+        // Sauvegarder le shift pour récupération ultérieure
+        if (hasShift) {
+          this.lastBestShift = bestOption.shiftDirection ?? null;
+        }
         if (this.debug) {
-          console.log(`[HardAI] Delta calc position: ${bestPosition} (delta: ${placeOptions[0].deltaScore})`);
+          console.log(`[HardAI] Delta calc position: ${bestPosition} (delta: ${bestOption.deltaScore})${hasShift ? ` (shift: ${bestOption.shiftDirection})` : ''}`);
         }
         return bestPosition;
       }
     }
 
-    // Fallback: evaluer chaque position manuellement
+    // Fallback: evaluer chaque position manuellement (positions internes seulement)
     return this.evaluateBestPosition(state, cardId, validPositions);
   }
 
   /**
-   * Decide si utiliser une cle avec MCTS
+   * Récupère la direction du shift pour le dernier placement calculé
+   * Appelé après selectPlaceAction pour obtenir le shift à utiliser
+   */
+  getLastShiftDirection(): string | null {
+    const shift = this.lastBestShift;
+    this.lastBestShift = null; // Reset après récupération
+    return shift;
+  }
+
+  /**
+   * Décide si utiliser une clé avec logique déterministe
+   *
+   * Stratégie:
+   * 1. Évaluer les cartes disponibles au lieu actuel
+   * 2. Si toutes ont des anti-synergies ou sont mauvaises, considérer un refresh
+   * 3. Comparer avec l'autre lieu pour voir si un déplacement vaut mieux
+   * 4. Garder la clé si les cartes sont acceptables
    */
   selectKeyAction(state: PlayGameState): AIKeyAction | null {
     const player = this.getCurrentPlayer(state);
@@ -205,30 +226,83 @@ export class HardAI extends BaseAI {
     }
 
     const cards = this.getCards();
-    const context = buildContext(state, player.id, cards);
+    const placedCount = player.board.filter(p => p !== null).length;
+    const turnsRemaining = 9 - placedCount;
 
-    // Construire l'arbre pour evaluer les options de cle
-    const tree = buildActionTree(context, 3);
+    // Comparer les deux lieux
+    const comparison = compareLevels(
+      player,
+      state.board.castleCards,
+      state.board.villageCards,
+      state.board.messengerLocation,
+      cards
+    );
 
-    const selectedAction = mctsSelect(tree, cards, {
-      ...this.config,
-      maxIterations: 100, // Rapide pour cette decision
-    });
+    if (this.debug) {
+      console.log(`[HardAI] Key decision analysis:`);
+      console.log(`  - Current location: ${state.board.messengerLocation}`);
+      console.log(`  - Current best value: ${comparison.currentAnalysis.bestCard?.estimatedValue?.toFixed(1) ?? 'N/A'}`);
+      console.log(`  - Other best value: ${comparison.otherAnalysis.bestCard?.estimatedValue?.toFixed(1) ?? 'N/A'}`);
+      console.log(`  - Should move: ${comparison.shouldMove} (${comparison.moveReason})`);
+      console.log(`  - Should refresh current: ${comparison.currentAnalysis.shouldRefresh} (${comparison.currentAnalysis.refreshReason})`);
+    }
 
-    if (selectedAction?.type === 'spend_key' && selectedAction.targetLocation) {
-      // Determiner si c'est un deplacement ou un refresh
-      const isMove = selectedAction.targetLocation !== state.board.messengerLocation;
+    // Priorité 1: Déplacer le messager si l'autre lieu est significativement meilleur
+    if (comparison.shouldMove) {
+      const targetLocation = state.board.messengerLocation === 'castle' ? 'village' : 'castle';
+      if (this.debug) {
+        console.log(`[HardAI] Moving messenger to ${targetLocation}: ${comparison.moveReason}`);
+      }
       return {
-        type: isMove ? 'move_messenger' : 'refresh',
-        targetLocation: selectedAction.targetLocation,
+        type: 'move_messenger',
+        targetLocation,
       };
     }
 
+    // Priorité 2: Rafraîchir si les cartes actuelles sont mauvaises
+    // MAIS: Ne pas gaspiller une clé si on est en fin de partie et que les clés valent des points
+    const hasKeyScoreCards = player.board.some(
+      p => p?.cardId === '017' || p?.cardId === '066'
+    );
+    const keyValue = hasKeyScoreCards ? 2 : 0; // Chaque clé vaut 2 pts si on a ces cartes
+
+    if (comparison.currentAnalysis.shouldRefresh) {
+      // Estimer la valeur du refresh vs garder la clé
+      // Le refresh coûte 1 clé mais peut potentiellement améliorer le delta de ~10 pts
+      const estimatedRefreshBenefit = 8; // Estimation conservatrice
+
+      // Si les clés valent des points, être plus prudent
+      if (keyValue > 0 && turnsRemaining <= 3) {
+        // En fin de partie avec cartes à clés, garder les clés
+        if (this.debug) {
+          console.log(`[HardAI] Keeping key (worth ${keyValue} pts) despite bad cards`);
+        }
+        return null;
+      }
+
+      if (estimatedRefreshBenefit > keyValue) {
+        if (this.debug) {
+          console.log(`[HardAI] Refreshing: ${comparison.currentAnalysis.refreshReason}`);
+        }
+        return {
+          type: 'refresh',
+          targetLocation: state.board.messengerLocation,
+        };
+      }
+    }
+
+    // Priorité 3: Ne pas utiliser de clé si les cartes sont acceptables
     return null;
   }
 
   /**
-   * Decide si ouvrir un cadenas
+   * Décide si ouvrir un cadenas
+   *
+   * Stratégie améliorée:
+   * 1. Évaluer la valeur réelle de chaque effet de cadenas
+   * 2. Considérer si replace_location pourrait donner de meilleures cartes
+   * 3. Tenir compte de la valeur des clés (cartes 017/066)
+   * 4. Ne pas ouvrir si la clé vaut plus que l'effet
    */
   selectLockAction(state: PlayGameState, availableLocks: number[]): number | null {
     const player = this.getCurrentPlayer(state);
@@ -237,10 +311,28 @@ export class HardAI extends BaseAI {
       return null;
     }
 
-    // Evaluer chaque cadenas
     const cards = this.getCards();
+    const placedCount = player.board.filter(p => p !== null).length;
+    const turnsRemaining = 9 - placedCount;
+
+    // Calculer la valeur des clés
+    const hasKeyScoreCards = player.board.some(
+      p => p?.cardId === '017' || p?.cardId === '066'
+    );
+    const keyPointValue = hasKeyScoreCards ? 2 : 0;
+
+    // Évaluer les cartes disponibles pour savoir si replace_location vaut le coup
+    const currentAnalysis = evaluateAvailableCards(
+      player,
+      state.board.messengerLocation === 'castle'
+        ? state.board.castleCards
+        : state.board.villageCards,
+      state.board.messengerLocation,
+      cards
+    );
+
     let bestLock: number | null = null;
-    let bestScore = 0;
+    let bestScore = keyPointValue; // Seuil = valeur de la clé
 
     for (const position of availableLocks) {
       const placedCard = player.board[position];
@@ -249,12 +341,26 @@ export class HardAI extends BaseAI {
       const card = cards.get(placedCard.cardId);
       if (!card?.lock_effect) continue;
 
-      // Estimer la valeur de l'effet cadenas
-      let score = this.estimateLockEffectValue(card.lock_effect, state);
+      // Estimer la valeur de l'effet cadenas avec contexte amélioré
+      let score = this.estimateLockEffectValue(card.lock_effect, state, currentAnalysis);
 
-      // Garder une cle si on est tot dans la partie
-      if (player.keys <= 1 && state.turnNumber < 6) {
-        score -= 2;
+      // Bonus si on a besoin d'or et que l'effet en donne
+      if (card.lock_effect.type === 'gain_gold' && player.gold < 3) {
+        score += 2;
+      }
+
+      // Bonus si on a besoin de clés et que l'effet en donne
+      if (card.lock_effect.type === 'gain_keys' && player.keys <= 1) {
+        score += 1;
+      }
+
+      // Pénalité si on est en fin de partie et que les clés valent des points
+      if (hasKeyScoreCards && turnsRemaining <= 2) {
+        score -= keyPointValue;
+      }
+
+      if (this.debug) {
+        console.log(`[HardAI] Lock at position ${position}: effect=${card.lock_effect.type}, score=${score.toFixed(1)}`);
       }
 
       if (score > bestScore) {
@@ -263,7 +369,11 @@ export class HardAI extends BaseAI {
       }
     }
 
-    return bestScore > 0 ? bestLock : null;
+    if (this.debug && bestLock !== null) {
+      console.log(`[HardAI] Opening lock at position ${bestLock} (score: ${bestScore.toFixed(1)})`);
+    }
+
+    return bestLock;
   }
 
   /**
@@ -503,7 +613,11 @@ export class HardAI extends BaseAI {
     return synergies;
   }
 
-  private estimateLockEffectValue(effect: any, state: PlayGameState): number {
+  private estimateLockEffectValue(
+    effect: any,
+    state: PlayGameState,
+    currentAnalysis?: { shouldRefresh: boolean; allHaveAntiSynergies: boolean; bestCard: { estimatedValue: number } | null }
+  ): number {
     const type = effect.type;
     const player = this.getCurrentPlayer(state);
     const placedCount = player.board.filter(p => p !== null).length;
@@ -515,31 +629,68 @@ export class HardAI extends BaseAI {
       case 'gain_keys':
         return (effect.amount ?? 0) * 2;
       case 'fill_purses':
-        return 2;
+        // Vérifier si on a des bourses à remplir
+        {
+          const emptyPurseSlots = player.board.reduce((count, placed) => {
+            if (!placed) return count;
+            const card = this.getCards().get(placed.cardId);
+            if (card?.has_coin_purse) {
+              return count + (card.max_coins - placed.coinsOnCard);
+            }
+            return count;
+          }, 0);
+          // Chaque slot rempli = 2 pts
+          return Math.min(emptyPurseSlots, effect.amount ?? 2) * 2;
+        }
       case 'fill_purses_select':
-        return (effect.amount ?? 2) * 1.5;
+        {
+          const emptySlots = player.board.reduce((count, placed) => {
+            if (!placed) return count;
+            const card = this.getCards().get(placed.cardId);
+            if (card?.has_coin_purse) {
+              return count + (card.max_coins - placed.coinsOnCard);
+            }
+            return count;
+          }, 0);
+          return Math.min(emptySlots, effect.amount ?? 2) * 2;
+        }
       case 'replace_location':
-        // ATTENTION: remplacer le lieu après l'achat = on ne peut pas profiter des nouvelles cartes
-        // Ce n'est utile que si on a beaucoup de tours restants ET qu'on veut remplacer de mauvaises cartes
-        // Mais généralement c'est une mauvaise idée de l'utiliser en fin de tour
-        return turnsRemaining > 3 ? 1 : -5; // Pénaliser fortement en fin de partie
+        // Utiliser l'analyse des cartes disponibles si fournie
+        if (currentAnalysis) {
+          // Si les cartes actuelles sont mauvaises, replace_location est TRÈS utile
+          if (currentAnalysis.allHaveAntiSynergies) {
+            return turnsRemaining > 1 ? 8 : 2; // Très utile si il reste des tours
+          }
+          if (currentAnalysis.shouldRefresh) {
+            return turnsRemaining > 1 ? 5 : 1;
+          }
+          // Les cartes actuelles sont OK, pas besoin de remplacer
+          return turnsRemaining > 3 ? 1 : -3;
+        }
+        // Sans analyse, être conservateur
+        return turnsRemaining > 3 ? 1 : -5;
       case 'replace_location_gain_keys_per_shield':
       case 'replace_location_gain_keys_per_feature':
         // Ces effets remplacent ET donnent des clés
-        // Les clés sont précieuses mais on perd l'opportunité d'acheter les nouvelles cartes
-        // Seulement utile si les clés valent beaucoup (cartes 017/066 sur le plateau)
         {
           const keyCardCount = player.board.filter(
             p => p?.cardId === '017' || p?.cardId === '066'
           ).length;
 
+          // Bonus si les cartes actuelles sont mauvaises
+          let replaceBonus = 0;
+          if (currentAnalysis?.allHaveAntiSynergies) {
+            replaceBonus = 5;
+          } else if (currentAnalysis?.shouldRefresh) {
+            replaceBonus = 3;
+          }
+
           if (keyCardCount > 0) {
             // Chaque clé vaut potentiellement 2 pts (017/066)
-            // Mais on perd l'achat du tour
-            const estimatedKeys = (effect.keys_per_card ?? 2) * 2; // Estimation
-            return estimatedKeys * keyCardCount - 3; // -3 pour compenser la perte d'achat
+            const estimatedKeys = (effect.keys_per_card ?? 2) * 2;
+            return estimatedKeys * keyCardCount + replaceBonus - 2;
           }
-          return turnsRemaining > 3 ? 0 : -5;
+          return replaceBonus + (turnsRemaining > 3 ? 0 : -3);
         }
 
       // =========================================================================
@@ -562,7 +713,7 @@ export class HardAI extends BaseAI {
    * des effets permanents qui s'appliquent à l'achat de la carte, PAS des effets
    * qui peuvent être déclenchés par activate_adjacent.
    */
-  private evaluateActivateAdjacentValue(effect: any, state: PlayGameState): number {
+  private evaluateActivateAdjacentValue(_effect: any, state: PlayGameState): number {
     const player = this.getCurrentPlayer(state);
     const cards = this.getCards();
 

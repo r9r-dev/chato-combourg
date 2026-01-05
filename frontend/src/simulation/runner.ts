@@ -24,6 +24,8 @@ import { resetGameLogs, getGameLogs, type DecisionLogEntry } from '../services/p
 type AIInstance = {
   selectBuyAction: (state: PlayGameState, availableCards: string[]) => { cardId: string; flipped: boolean };
   selectPlaceAction: (state: PlayGameState, cardId: string, validPositions: number[]) => number;
+  selectKeyAction?: (state: PlayGameState) => { type: 'move_messenger' | 'refresh'; targetLocation: 'castle' | 'village' } | null;
+  selectLockAction?: (state: PlayGameState, availableLocks: number[]) => number | null;
 };
 
 // Cache des instances IA (cle = level + verbose)
@@ -55,9 +57,11 @@ async function getAI(level: AILevel, cards: Map<string, PlayCard>, verbose: bool
     // Augmenter les paramètres pour de meilleures décisions (lent mais précis)
     // DEBUG: activer le mode debug pour voir les décisions
     // VERBOSE: afficher les possibilites evaluees
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const isDebug = typeof globalThis !== 'undefined' && (globalThis as any).process?.env?.AI_DEBUG === '1';
     ai = new HardAI(
       { maxIterations: 500, maxTimeMs: 3000 },
-      process.env.AI_DEBUG === '1',
+      isDebug,
       verbose
     );
   }
@@ -102,6 +106,24 @@ export async function runGame(
     const player = state.players[state.currentPlayerIndex];
     const playerConfig = config.players[state.currentPlayerIndex];
 
+    // Phase pré-achat: vérifier si l'IA veut utiliser une clé (refresh ou move messenger)
+    if (state.turnPhase === 'pre_action') {
+      if (playerConfig.type === 'ai' && playerConfig.aiLevel && player.keys > 0 && !state.keyUsedThisTurn) {
+        const ai = await getAI(playerConfig.aiLevel, cards, verbose);
+        const keyAction = ai.selectKeyAction?.(state);
+
+        if (keyAction) {
+          const action: GameAction = {
+            type: 'spend_key',
+            playerId: player.id,
+            targetLocation: keyAction.targetLocation,
+          };
+          state = executeAction(state, action, cards);
+          continue;
+        }
+      }
+    }
+
     // Phase d'achat
     if (state.turnPhase === 'pre_action' || state.turnPhase === 'buy') {
       let buyAction: GameAction;
@@ -142,11 +164,19 @@ export async function runGame(
         const ai = await getAI(playerConfig.aiLevel, cards, verbose);
         const validPositions = getValidPlacements(player.board);
         const position = ai.selectPlaceAction(state, state.purchasedCard!, validPositions);
+
+        // Récupérer le shift si disponible (HardAI uniquement)
+        let shiftDirection: string | undefined;
+        if ('getLastShiftDirection' in ai) {
+          shiftDirection = (ai as any).getLastShiftDirection() ?? undefined;
+        }
+
         placeAction = {
           type: 'place_card',
           playerId: player.id,
           cardId: state.purchasedCard!,
           position,
+          shiftDirection: shiftDirection as any,
         };
       } else {
         placeAction = randomPlaceDecision(state);
@@ -165,6 +195,25 @@ export async function runGame(
       }
 
       state = executeAction(state, placeAction, cards);
+    }
+
+    // Phase post-placement: vérifier si l'IA veut ouvrir un cadenas
+    if (state.turnPhase === 'post_action') {
+      if (playerConfig.type === 'ai' && playerConfig.aiLevel && player.keys > 0 && !state.lockUsedThisTurn) {
+        const ai = await getAI(playerConfig.aiLevel, cards, verbose);
+        const availableLocks: number[] = [];
+        for (const [position, hasLock] of player.lockedCards) {
+          if (hasLock) availableLocks.push(position);
+        }
+        if (availableLocks.length > 0) {
+          const lockPosition = ai.selectLockAction?.(state, availableLocks);
+          if (lockPosition !== null && lockPosition !== undefined) {
+            const action: GameAction = { type: 'use_key_on_lock', playerId: player.id, lockPosition };
+            state = executeAction(state, action, cards);
+            continue;
+          }
+        }
+      }
     }
 
     // Fin de tour

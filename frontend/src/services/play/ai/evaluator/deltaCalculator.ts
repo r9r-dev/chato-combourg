@@ -8,9 +8,10 @@
  * elle utilise le score exact plutôt qu'une estimation.
  */
 
-import type { PlayPlayer, PlayCard } from '../../../../types/play';
-import { getValidPlacements, getEffectiveCost } from '../../../../types/play';
+import type { PlayPlayer, PlayCard, ShiftDirection } from '../../../../types/play';
+import { getValidPlacements, getExternalZones, shiftBoard, getEffectiveCost } from '../../../../types/play';
 import { calculateScore, Grid, RULES, KEYS_RULES } from './scoreCalculator';
+import { detectStrategy, calculatePotentialBonus } from './strategyDetector';
 
 // =============================================================================
 // Contraintes "aucun bouclier X" - ces cartes scorent 0 si un bouclier X existe
@@ -51,6 +52,56 @@ const PRICE_REDUCTION_CARDS = new Set([
 ]);
 
 // =============================================================================
+// Cartes dont le scoring DÉPEND d'avoir des boucliers d'une couleur spécifique
+// Format: { cardId: { color: couleur_requise, score: points_max_perdus } }
+// =============================================================================
+
+// Cartes qui nécessitent PLUSIEURS couleurs (trios, paires)
+const CARDS_NEED_MULTIPLE_COLORS: Record<string, { colors: string[]; score: number; type: 'trio' | 'pair' }> = {
+  '018': { colors: ['blue', 'green', 'orange'], score: 10, type: 'trio' },
+  '054': { colors: ['pink', 'red', 'yellow'], score: 7, type: 'trio' },
+  '008': { colors: ['pink', 'orange'], score: 8, type: 'pair' },
+  '022': { colors: ['blue', 'red'], score: 8, type: 'pair' },
+  '068': { colors: ['green', 'yellow'], score: 8, type: 'pair' },
+};
+
+const CARDS_NEED_SHIELD_COLOR: Record<string, { color: string; score: number }> = {
+  // Boucliers verts requis
+  '002': { color: 'green', score: 5 },   // threshold green in col
+  '011': { color: 'green', score: 12 },  // shields in row green × 3
+  '033': { color: 'green', score: 12 },  // shields in col green × 3
+  '042': { color: 'green', score: 12 },  // shields in row AND col green × 3
+
+  // Boucliers roses requis
+  '035': { color: 'pink', score: 5 },    // threshold pink in row
+  '037': { color: 'pink', score: 12 },   // shields in col pink × 3
+  '062': { color: 'pink', score: 8 },    // shields in row AND col pink × 2
+  '086': { color: 'pink', score: 12 },   // shields in row pink × 3
+
+  // Boucliers bleus requis
+  '001': { color: 'blue', score: 16 },   // shields in col blue × 4
+  '009': { color: 'blue', score: 12 },   // shields in col blue × 3
+  '013': { color: 'blue', score: 16 },   // shields in row blue × 4
+  '019': { color: 'blue', score: 8 },    // shields in row AND col blue × 2
+  '023': { color: 'blue', score: 12 },   // shields in row AND col blue × 3
+  '028': { color: 'blue', score: 12 },   // shields in row blue × 3
+
+  // Boucliers rouges requis
+  '045': { color: 'red', score: 12 },    // shields in col red × 3
+  '065': { color: 'red', score: 12 },    // shields in row AND col red × 3
+  '075': { color: 'red', score: 7 },     // threshold red in row
+
+  // Boucliers oranges requis
+  '010': { color: 'orange', score: 12 }, // shields in col orange × 3
+  '027': { color: 'orange', score: 12 }, // shields in row orange × 3
+
+  // Boucliers jaunes requis
+  '034': { color: 'yellow', score: 12 }, // shields in col yellow × 3
+  '046': { color: 'yellow', score: 8 },  // shields in row AND col yellow × 2
+  '057': { color: 'yellow', score: 12 }, // shields in row yellow × 3
+};
+
+// =============================================================================
 // Cartes conditionnelles qui ont besoin d'un contexte spécifique pour scorer
 // Si le contexte n'est pas rempli, la carte a un mauvais ratio coût/valeur
 // =============================================================================
@@ -71,7 +122,7 @@ const CONDITIONAL_CARDS: ConditionalCardRequirement[] = [
     baseScore: 0,
     maxScore: 30, // Théorique avec plein de bourses remplies
     requirement: 'pièces sur bourses',
-    checkFunction: (player, cards) => {
+    checkFunction: (player, _cards) => {
       // Compte le total des pièces sur les bourses existantes
       let total = 0;
       for (const placed of player.board) {
@@ -95,11 +146,6 @@ const FILL_PURSE_EFFECT_CARDS = new Set([
   '020', // choice: fill_purses(2) ou gain_gold_per_village
   '059', // fill_purses(2)
   '082', // fill_purses(1)
-]);
-
-// Cartes avec effet fill_purses dans le lock
-const FILL_PURSE_LOCK_CARDS = new Set([
-  '049', // lock: fill_purses_select(2)
 ]);
 
 // =============================================================================
@@ -276,10 +322,11 @@ function calculateAntiSynergyPenalty(
         return card?.shields.some(s => s.color === constraint.color);
       });
 
-      // Si la contrainte était respectée, la casser = pénalité
+      // Si la contrainte était respectée, la casser = pénalité FORTE (1.5x le score)
       if (!boardHasColor) {
-        penalty += constraint.score;
-        reasons.push(`Détruit ${placed.cardId} (${constraint.score} pts): bouclier ${constraint.color}`);
+        const penaltyAmount = Math.ceil(constraint.score * 1.5);
+        penalty += penaltyAmount;
+        reasons.push(`Détruit ${placed.cardId} (${penaltyAmount} pts): bouclier ${constraint.color}`);
       }
     }
   }
@@ -322,7 +369,9 @@ function calculateAntiSynergyPenalty(
 
     if (boardHasColor) {
       // La contrainte est DÉJÀ violée, cette carte ne scorera que 0
-      penalty += newCardConstraint.score;
+      // Pénalité forte (1.5x) car c'est une erreur majeure
+      const penaltyAmount = Math.ceil(newCardConstraint.score * 1.5);
+      penalty += penaltyAmount;
       reasons.push(`${newCardId} ne scorera pas: bouclier ${newCardConstraint.color} déjà présent`);
     }
   }
@@ -352,8 +401,166 @@ function calculateAntiSynergyPenalty(
   if (newCardId === '056') {
     const hasFlippedCard = player.board.some(p => p?.cardId === '089' || p?.cardId === '090');
     if (hasFlippedCard) {
-      penalty += 12;
+      // Pénalité très forte (1.5x 12 = 18) car c'est une erreur catastrophique
+      penalty += 18;
       reasons.push(`056 ne scorera pas: carte retournée déjà présente`);
+    }
+    // Conflit avec 082 qui NÉCESSITE des cartes retournées
+    const has082 = player.board.some(p => p?.cardId === '082');
+    if (has082) {
+      penalty += 8; // 082 perdra ses 8 pts
+      reasons.push(`056 + 082 conflit: 082 nécessite des retournées`);
+    }
+  }
+
+  // ==========================================================================
+  // 5a. Carte 082 ("Charpentier"): 8 pts si AU MOINS UNE carte retournée
+  //     Ne pas acheter 082 si on a 056 (conflit) ou si on évite les retournées
+  // ==========================================================================
+  if (newCardId === '082') {
+    const has056 = player.board.some(p => p?.cardId === '056');
+    const hasFlippedCard = player.board.some(p => p?.cardId === '089' || p?.cardId === '090');
+    const placedCount = player.board.filter(p => p !== null).length;
+    const turnsRemaining = 9 - placedCount;
+
+    if (has056) {
+      // Conflit direct: 056 interdit les retournées, 082 les nécessite
+      penalty += 12; // 082 perdra 8 pts ET on compromet 056
+      reasons.push(`082 + 056 conflit: impossible de scorer les deux`);
+    } else if (!hasFlippedCard && turnsRemaining <= 2) {
+      // Fin de partie sans carte retournée = 082 ne scorera pas
+      penalty += 8;
+      reasons.push(`082 ne scorera pas: pas de carte retournée en fin de partie`);
+    } else if (!hasFlippedCard) {
+      // Pas de retournée mais il reste du temps - risque modéré
+      penalty += 3;
+      reasons.push(`082 risque de ne pas scorer sans retournée`);
+    }
+  }
+
+  // ==========================================================================
+  // 5b. CONFLIT no_shield_color vs cards_need_shield_color
+  //     Ex: 072 (no green) + 042 (needs green) = CATASTROPHE
+  // ==========================================================================
+
+  // D'abord, collecter les couleurs INTERDITES par les cartes "no_shield" sur le plateau
+  const forbiddenColors = new Map<string, number>(); // color -> points perdus si on ajoute cette couleur
+  for (const placed of player.board) {
+    if (!placed) continue;
+    const constraint = NO_SHIELD_CONSTRAINTS[placed.cardId];
+    if (constraint) {
+      // Vérifier si la contrainte est ENCORE respectée (pas déjà violée)
+      const boardHasColor = player.board.some(p => {
+        if (!p) return false;
+        const card = cards.get(p.cardId);
+        return card?.shields.some(s => s.color === constraint.color);
+      });
+      if (!boardHasColor) {
+        // Contrainte active: cette couleur est interdite
+        const existing = forbiddenColors.get(constraint.color) ?? 0;
+        forbiddenColors.set(constraint.color, existing + constraint.score);
+      }
+    }
+  }
+
+  // Si la nouvelle carte NÉCESSITE une couleur interdite, pénalité
+  const needsColor = CARDS_NEED_SHIELD_COLOR[newCardId];
+  if (needsColor && forbiddenColors.has(needsColor.color)) {
+    // Cette carte ne pourra JAMAIS scorer car on ne peut pas ajouter sa couleur
+    penalty += needsColor.score;
+    reasons.push(`${newCardId} ne scorera pas: ${needsColor.color} interdit par carte no_shield`);
+  }
+
+  // ==========================================================================
+  // 5c. Si la carte nécessite une couleur ABSENTE du plateau, pénalité
+  //     (même sans contrainte "no_shield", si la couleur n'existe pas c'est risqué)
+  // ==========================================================================
+  if (needsColor) {
+    // Compter les boucliers de cette couleur sur le plateau
+    let colorCount = 0;
+    for (const placed of player.board) {
+      if (!placed) continue;
+      const card = cards.get(placed.cardId);
+      if (card) {
+        for (const shield of card.shields) {
+          if (shield.color === needsColor.color) {
+            colorCount += shield.count;
+          }
+        }
+      }
+    }
+
+    const placedCount = player.board.filter(p => p !== null).length;
+    const turnsRemaining = 9 - placedCount;
+
+    // Si aucun bouclier de cette couleur et peu de tours restants
+    if (colorCount === 0) {
+      if (turnsRemaining <= 2) {
+        // Peu de chances d'ajouter la couleur
+        penalty += Math.ceil(needsColor.score * 0.8);
+        reasons.push(`${newCardId} risque fort: aucun ${needsColor.color} et fin de partie`);
+      } else if (turnsRemaining <= 4) {
+        // Risque modéré
+        penalty += Math.ceil(needsColor.score * 0.4);
+        reasons.push(`${newCardId} risque: aucun ${needsColor.color} sur le plateau`);
+      }
+    } else if (colorCount === 1 && turnsRemaining <= 3) {
+      // Un seul bouclier, difficile de scorer beaucoup
+      penalty += Math.ceil(needsColor.score * 0.2);
+      reasons.push(`${newCardId} risque: seulement 1 ${needsColor.color}`);
+    }
+  }
+
+  // ==========================================================================
+  // 5d. Cartes qui nécessitent PLUSIEURS couleurs (trios, paires)
+  // ==========================================================================
+  const multiColorCard = CARDS_NEED_MULTIPLE_COLORS[newCardId];
+  if (multiColorCard) {
+    // Compter les couleurs présentes sur le plateau
+    const colorsOnBoard = new Set<string>();
+    for (const placed of player.board) {
+      if (!placed) continue;
+      const card = cards.get(placed.cardId);
+      if (card) {
+        for (const shield of card.shields) {
+          colorsOnBoard.add(shield.color);
+        }
+      }
+    }
+
+    // Compter combien des couleurs requises sont absentes
+    const missingColors = multiColorCard.colors.filter(c => !colorsOnBoard.has(c));
+    const placedCount = player.board.filter(p => p !== null).length;
+    const turnsRemaining = 9 - placedCount;
+
+    if (missingColors.length >= 2 && turnsRemaining <= 3) {
+      // Il manque 2+ couleurs et peu de tours → impossible de scorer
+      penalty += multiColorCard.score;
+      reasons.push(`${newCardId} ne scorera pas: manque ${missingColors.join(', ')}`);
+    } else if (missingColors.length >= 2) {
+      // Risque élevé
+      penalty += Math.ceil(multiColorCard.score * 0.6);
+      reasons.push(`${newCardId} risque: manque ${missingColors.join(', ')}`);
+    } else if (missingColors.length === 1 && turnsRemaining <= 2) {
+      // Manque 1 couleur en fin de partie
+      penalty += Math.ceil(multiColorCard.score * 0.4);
+      reasons.push(`${newCardId} risque: manque ${missingColors[0]} en fin de partie`);
+    }
+  }
+
+  // Inversement: si la nouvelle carte est "no_shield X", vérifier si on a des cartes
+  // qui NÉCESSITENT la couleur X
+  const newCardConstraint2 = NO_SHIELD_CONSTRAINTS[newCardId];
+  if (newCardConstraint2) {
+    for (const placed of player.board) {
+      if (!placed) continue;
+      const needsThisColor = CARDS_NEED_SHIELD_COLOR[placed.cardId];
+      if (needsThisColor && needsThisColor.color === newCardConstraint2.color) {
+        // On a une carte qui a BESOIN de cette couleur, mais on achète une carte
+        // qui INTERDIT cette couleur → les deux cartes vont mal scorer
+        penalty += needsThisColor.score;
+        reasons.push(`${placed.cardId} ne scorera plus: ${newCardId} interdit ${needsThisColor.color}`);
+      }
     }
   }
 
@@ -420,17 +627,6 @@ function calculateAntiSynergyPenalty(
 }
 
 /**
- * Version simplifiée pour compatibilité (retourne juste le nombre)
- */
-function calculateConstraintPenalty(
-  player: PlayPlayer,
-  newCardId: string,
-  cards: Map<string, PlayCard>
-): number {
-  return calculateAntiSynergyPenalty(player, newCardId, cards).penalty;
-}
-
-/**
  * Vérifie si le joueur possède une carte avec contrainte "no shield"
  * et retourne les couleurs à éviter avec leur pénalité
  */
@@ -477,6 +673,7 @@ export interface PlaceOption {
   position: number;
   deltaScore: number; // Changement de score net
   newScore: number; // Score après placement
+  shiftDirection?: ShiftDirection; // Direction du shift (pour zones externes)
 }
 
 export interface MoveEvaluation {
@@ -492,7 +689,7 @@ export interface MoveEvaluation {
 export function evaluateBuyOptions(
   player: PlayPlayer,
   availableCards: string[],
-  messengerLocation: 'castle' | 'village',
+  _messengerLocation: 'castle' | 'village',
   cards: Map<string, PlayCard>
 ): BuyOption[] {
   const options: BuyOption[] = [];
@@ -508,10 +705,6 @@ export function evaluateBuyOptions(
       player.reductionCastle,
       player.reductionVillage
     );
-
-    // Coût en clés si le messager doit bouger
-    const cardLocation = card.category;
-    const keysCost = card.has_messenger ? 0 : 0; // Le messager est gratuit sur achat
 
     // Option achat normal (si assez d'or)
     if (player.gold >= cost) {
@@ -631,7 +824,9 @@ export function evaluatePlaceOptions(
     let positionBonus = 0;
     if (deltaScore >= 0) {
       // Bonus pour le centre (plus de synergies possibles)
-      if (position === 4) positionBonus += 1;
+      // MAIS seulement si on a déjà plusieurs cartes (le centre n'existe pas au tour 1)
+      const placedCount = currentCards.filter(c => c !== '').length;
+      if (position === 4 && placedCount >= 4) positionBonus += 1;
 
       // Bonus pour compléter ligne/colonne
       const row = Math.floor(position / 3);
@@ -653,50 +848,53 @@ export function evaluatePlaceOptions(
     });
   }
 
+  // Évaluer les zones externes (placement avec shift)
+  const externalZones = getExternalZones(player.board);
+  for (const zone of externalZones) {
+    // Simuler le shift d'abord
+    const shiftedBoard = shiftBoard(player.board, zone.shiftDirection);
+    const shiftedCards = shiftedBoard.map(p => p?.cardId ?? '');
+
+    // Placer la carte à la position (maintenant vide après shift)
+    const newCards = [...shiftedCards];
+    newCards[zone.position] = cardId;
+
+    // Calculer le score APRÈS shift + placement
+    const newScore = calculateRulesScore(newCards, keys, coinsOnCards, cards);
+
+    // Delta = différence réelle de score
+    const deltaScore = newScore - currentScore;
+
+    // Bonus pour positions stratégiques après shift
+    let positionBonus = 0;
+    if (deltaScore >= 0) {
+      const placedCount = shiftedCards.filter(c => c !== '').length;
+      if (zone.position === 4 && placedCount >= 4) positionBonus += 1;
+
+      const row = Math.floor(zone.position / 3);
+      const col = zone.position % 3;
+      const rowPositions = [row * 3, row * 3 + 1, row * 3 + 2].filter(p => p !== zone.position);
+      const colPositions = [col, col + 3, col + 6].filter(p => p !== zone.position);
+
+      const rowOccupied = rowPositions.filter(p => shiftedCards[p] !== '').length;
+      const colOccupied = colPositions.filter(p => shiftedCards[p] !== '').length;
+
+      if (rowOccupied === 2) positionBonus += 2;
+      if (colOccupied === 2) positionBonus += 2;
+    }
+
+    options.push({
+      position: zone.position,
+      deltaScore: deltaScore + positionBonus,
+      newScore: newScore + positionBonus,
+      shiftDirection: zone.shiftDirection,
+    });
+  }
+
   // Trier par delta décroissant
   options.sort((a, b) => b.deltaScore - a.deltaScore);
 
   return options;
-}
-
-/**
- * Calcule le score actuel d'un plateau (complet ou partiel)
- */
-function calculateCurrentScore(
-  cardIds: string[],
-  keys: number,
-  coinsOnCards: Map<string, number>,
-  cards: Map<string, PlayCard>
-): number {
-  // Vérifier si le plateau est complet
-  const placedCount = cardIds.filter(c => c !== '').length;
-
-  if (placedCount === 9) {
-    // Plateau complet : score exact
-    const result = calculateScore(cardIds, keys, coinsOnCards, cards);
-    return result.totalScore;
-  }
-
-  // Plateau partiel : utiliser une estimation simple basée sur les cartes placées
-  // On ne peut pas calculer les règles exactes sans plateau complet
-  let score = 0;
-
-  for (const cardId of cardIds) {
-    if (!cardId) continue;
-    const card = cards.get(cardId);
-    if (card) {
-      // Score approximatif basé sur la valeur
-      score += card.value;
-    }
-  }
-
-  // Ajouter les clés et pièces
-  score += keys;
-  for (const coins of coinsOnCards.values()) {
-    score += coins;
-  }
-
-  return score;
 }
 
 /**
@@ -706,7 +904,8 @@ export function evaluateBestMove(
   player: PlayPlayer,
   availableCards: string[],
   messengerLocation: 'castle' | 'village',
-  cards: Map<string, PlayCard>
+  cards: Map<string, PlayCard>,
+  turnNumber: number = 1
 ): MoveEvaluation | null {
   const buyOptions = evaluateBuyOptions(player, availableCards, messengerLocation, cards);
 
@@ -722,6 +921,9 @@ export function evaluateBestMove(
       coinsOnCards.set(placed.cardId, placed.coinsOnCard);
     }
   }
+
+  // Détecter la stratégie en cours
+  const detectedStrategy = detectStrategy(player, cards);
 
   for (const buyOption of buyOptions) {
     // Déterminer l'ID de la carte réellement placée
@@ -773,11 +975,13 @@ export function evaluateBestMove(
       const alreadyHasFlipped = player.board.some(p => p?.cardId === '089' || p?.cardId === '090');
 
       if (has056 && !alreadyHasFlipped) {
-        // On a 056 et pas encore de carte retournée → retourner = -12 points !
-        economyBonus -= 12;
+        // On a 056 et pas encore de carte retournée → retourner = -18 points !
+        // (1.5x la valeur de 056 pour être très dissuasif)
+        economyBonus -= 18;
       } else if (!has056 && turnsRemaining > 3) {
-        // On pourrait encore acheter 056 plus tard → malus préventif
-        economyBonus -= 4;
+        // On pourrait encore acheter 056 plus tard → malus préventif FORT
+        // Une carte retournée empêche d'acheter 056 (12 pts perdus)
+        economyBonus -= 10;
       } else {
         // Déjà une carte retournée ou fin de partie sans 056
         // Pas de malus supplémentaire, juste le coût d'opportunité
@@ -799,6 +1003,27 @@ export function evaluateBestMove(
       const goldAfterBuy = player.gold - buyOption.cost;
       if (goldAfterBuy < 4 && turnsRemaining > 4) {
         economyBonus -= 1;
+      }
+
+      // =======================================================================
+      // PROTECTION 056: Ne JAMAIS tomber à 0 or si on a 056 !
+      // Sinon on sera FORCÉ de retourner une carte et perdre 12 pts
+      // =======================================================================
+      const has056 = player.board.some(p => p?.cardId === '056');
+      const alreadyHasFlipped = player.board.some(p => p?.cardId === '089' || p?.cardId === '090');
+
+      if (has056 && !alreadyHasFlipped && turnsRemaining > 0) {
+        // Vérifier si on va tomber à risque de banqueroute
+        if (goldAfterBuy <= 0) {
+          // CATASTROPHE: on sera forcé de retourner une carte au prochain tour
+          economyBonus -= 20;
+        } else if (goldAfterBuy < 3 && turnsRemaining > 2) {
+          // RISQUE: on a très peu d'or, danger de devoir retourner
+          economyBonus -= 8;
+        } else if (goldAfterBuy < 5 && turnsRemaining > 3) {
+          // PRÉCAUTION: garder une marge de sécurité
+          economyBonus -= 3;
+        }
       }
 
       // =========================================================================
@@ -895,18 +1120,46 @@ export function evaluateBestMove(
       }
     }
 
-    // Delta total = delta réel du score + bonus économique - pénalité anti-synergie
-    const totalDelta = bestPlace.deltaScore + economyBonus - antiSynergyPenalty;
+    // =========================================================================
+    // BONUS DE POTENTIEL (build-around + stratégie)
+    // Calculer le bonus pour les cartes à haut potentiel et celles qui
+    // renforcent la stratégie détectée
+    // =========================================================================
+    let potentialBonus = 0;
+    let potentialReason = '';
 
-    if (totalDelta > bestDelta) {
-      bestDelta = totalDelta;
+    if (!buyOption.flipped) {
+      const potential = calculatePotentialBonus(
+        buyOption.cardId,
+        player,
+        turnNumber,
+        detectedStrategy,
+        cards
+      );
+      potentialBonus = potential.bonus;
+      if (potential.reasons.length > 0) {
+        potentialReason = ` [POT: ${potential.reasons.join(', ')}]`;
+      }
+    }
+
+    // Delta total = delta réel + économie - anti-synergie + potentiel
+    const totalDelta = bestPlace.deltaScore + economyBonus - antiSynergyPenalty + potentialBonus;
+
+    // Ajouter un bonus d'exploration aléatoire pour introduire de la variance
+    // Ce bonus permet de parfois choisir des options proches du meilleur choix
+    // Variance uniforme entre 0 et 3 points
+    const explorationBonus = Math.random() * 3;
+    const totalDeltaWithExploration = totalDelta + explorationBonus;
+
+    if (totalDeltaWithExploration > bestDelta) {
+      bestDelta = totalDeltaWithExploration;
       bestMove = {
         buyOption,
         placeOption: bestPlace,
-        totalDelta,
+        totalDelta, // On garde le delta réel (sans exploration) pour le reporting
         reasoning: buyOption.flipped
           ? `Retourner pour +${buyOption.goldGained} or, +${buyOption.keysGained} clés (bonus éco: ${economyBonus.toFixed(1)})`
-          : `Acheter ${buyOption.cardId} (coût: ${buyOption.cost}), pos ${bestPlace.position} (delta: ${bestPlace.deltaScore}, éco: ${economyBonus.toFixed(1)}, anti: -${antiSynergyPenalty})${antiSynergyReason}`,
+          : `Acheter ${buyOption.cardId} (coût: ${buyOption.cost}), pos ${bestPlace.position} (delta: ${bestPlace.deltaScore}, éco: ${economyBonus.toFixed(1)}, anti: -${antiSynergyPenalty}, pot: +${potentialBonus})${antiSynergyReason}${potentialReason}`,
       };
     }
   }
@@ -924,7 +1177,8 @@ export function evaluateBestMoveWithLookahead(
   cards: Map<string, PlayCard>,
   turnNumber: number
 ): MoveEvaluation | null {
-  const basicBest = evaluateBestMove(player, availableCards, messengerLocation, cards);
+  // Passer turnNumber à evaluateBestMove pour le calcul du bonus de potentiel
+  const basicBest = evaluateBestMove(player, availableCards, messengerLocation, cards, turnNumber);
 
   if (!basicBest) return null;
 
@@ -1059,4 +1313,194 @@ export function evaluateBestMoveWithLookahead(
   }
 
   return basicBest;
+}
+
+// =============================================================================
+// ÉVALUATION DES CARTES DISPONIBLES (pour décider si refresh)
+// =============================================================================
+
+export interface CardEvaluation {
+  cardId: string;
+  affordable: boolean;
+  antiSynergyPenalty: number;
+  antiSynergyReasons: string[];
+  estimatedValue: number; // Delta estimé si on achète cette carte
+}
+
+export interface AvailableCardsAnalysis {
+  evaluations: CardEvaluation[];
+  bestCard: CardEvaluation | null;
+  allHaveAntiSynergies: boolean;
+  avgAntiSynergyPenalty: number;
+  shouldRefresh: boolean;
+  refreshReason: string;
+}
+
+/**
+ * Évalue les cartes disponibles pour déterminer si un refresh serait bénéfique.
+ *
+ * Retourne une analyse complète incluant:
+ * - L'évaluation de chaque carte (anti-synergies, valeur estimée)
+ * - Si toutes les cartes ont des anti-synergies
+ * - Si un refresh est recommandé
+ */
+export function evaluateAvailableCards(
+  player: PlayPlayer,
+  availableCards: string[],
+  _messengerLocation: 'castle' | 'village',
+  cards: Map<string, PlayCard>
+): AvailableCardsAnalysis {
+  const evaluations: CardEvaluation[] = [];
+
+  // Calculer les pièces sur cartes une seule fois
+  const coinsOnCards = new Map<string, number>();
+  for (const placed of player.board) {
+    if (placed && placed.coinsOnCard > 0) {
+      coinsOnCards.set(placed.cardId, placed.coinsOnCard);
+    }
+  }
+
+  for (const cardId of availableCards) {
+    const card = cards.get(cardId);
+    if (!card) continue;
+
+    // Vérifier si le joueur peut acheter cette carte
+    const cost = getEffectiveCost(
+      card.value,
+      card.category,
+      player.reductionCastle,
+      player.reductionVillage
+    );
+    const affordable = player.gold >= cost;
+
+    // Calculer les anti-synergies
+    const antiSynergy = calculateAntiSynergyPenalty(player, cardId, cards);
+
+    // Estimer la valeur de la carte (delta score si on l'achète)
+    let estimatedValue = 0;
+    if (affordable) {
+      const placeOptions = evaluatePlaceOptions(
+        player,
+        cardId,
+        player.keys,
+        coinsOnCards,
+        cards
+      );
+      if (placeOptions.length > 0) {
+        estimatedValue = placeOptions[0].deltaScore - antiSynergy.penalty;
+      }
+    }
+
+    evaluations.push({
+      cardId,
+      affordable,
+      antiSynergyPenalty: antiSynergy.penalty,
+      antiSynergyReasons: antiSynergy.reasons,
+      estimatedValue,
+    });
+  }
+
+  // Trouver la meilleure carte
+  const affordableCards = evaluations.filter(e => e.affordable);
+  const bestCard = affordableCards.length > 0
+    ? affordableCards.reduce((best, curr) =>
+        curr.estimatedValue > best.estimatedValue ? curr : best
+      )
+    : null;
+
+  // Analyser les anti-synergies
+  const cardsWithAntiSynergies = evaluations.filter(e => e.antiSynergyPenalty > 0);
+  const allHaveAntiSynergies = affordableCards.length > 0 &&
+    affordableCards.every(e => e.antiSynergyPenalty > 0);
+
+  const totalPenalty = cardsWithAntiSynergies.reduce((sum, e) => sum + e.antiSynergyPenalty, 0);
+  const avgAntiSynergyPenalty = cardsWithAntiSynergies.length > 0
+    ? totalPenalty / cardsWithAntiSynergies.length
+    : 0;
+
+  // Décider si un refresh est recommandé
+  // Conditions plus relaxées pour utiliser les clés plus souvent
+  let shouldRefresh = false;
+  let refreshReason = '';
+
+  if (allHaveAntiSynergies && affordableCards.length > 0) {
+    shouldRefresh = true;
+    refreshReason = 'Toutes les cartes achetables ont des anti-synergies';
+  } else if (bestCard && bestCard.estimatedValue < 2) {
+    // Relaxé: delta < 2 (était < -5)
+    shouldRefresh = true;
+    refreshReason = `Meilleure carte a un faible delta (${bestCard.estimatedValue.toFixed(1)})`;
+  } else if (avgAntiSynergyPenalty > 5 && cardsWithAntiSynergies.length >= 2) {
+    // Relaxé: seuil de 5 (était 8)
+    shouldRefresh = true;
+    refreshReason = `Pénalité moyenne d'anti-synergie (${avgAntiSynergyPenalty.toFixed(1)})`;
+  } else if (affordableCards.length === 0) {
+    // Aucune carte achetable = refresh fortement conseillé
+    shouldRefresh = true;
+    refreshReason = 'Aucune carte achetable';
+  }
+
+  return {
+    evaluations,
+    bestCard,
+    allHaveAntiSynergies,
+    avgAntiSynergyPenalty,
+    shouldRefresh,
+    refreshReason,
+  };
+}
+
+/**
+ * Compare deux lieux (château vs village) pour déterminer lequel a les meilleures cartes.
+ *
+ * Retourne le lieu recommandé pour le messager et si un déplacement vaut le coup.
+ */
+export function compareLevels(
+  player: PlayPlayer,
+  castleCards: string[],
+  villageCards: string[],
+  currentLocation: 'castle' | 'village',
+  cards: Map<string, PlayCard>
+): {
+  recommendedLocation: 'castle' | 'village';
+  shouldMove: boolean;
+  currentAnalysis: AvailableCardsAnalysis;
+  otherAnalysis: AvailableCardsAnalysis;
+  moveReason: string;
+} {
+  const currentCards = currentLocation === 'castle' ? castleCards : villageCards;
+  const otherCards = currentLocation === 'castle' ? villageCards : castleCards;
+  const otherLocation = currentLocation === 'castle' ? 'village' : 'castle';
+
+  const currentAnalysis = evaluateAvailableCards(player, currentCards, currentLocation, cards);
+  const otherAnalysis = evaluateAvailableCards(player, otherCards, otherLocation, cards);
+
+  // Comparer les meilleures cartes de chaque lieu
+  const currentBestValue = currentAnalysis.bestCard?.estimatedValue ?? -Infinity;
+  const otherBestValue = otherAnalysis.bestCard?.estimatedValue ?? -Infinity;
+
+  // Seuil pour justifier un déplacement (la différence doit être significative)
+  const MOVE_THRESHOLD = 5;
+
+  let shouldMove = false;
+  let moveReason = '';
+
+  if (otherBestValue > currentBestValue + MOVE_THRESHOLD) {
+    shouldMove = true;
+    moveReason = `L'autre lieu a une meilleure carte (${otherBestValue.toFixed(1)} vs ${currentBestValue.toFixed(1)})`;
+  } else if (currentAnalysis.allHaveAntiSynergies && !otherAnalysis.allHaveAntiSynergies) {
+    shouldMove = true;
+    moveReason = 'Le lieu actuel n\'a que des anti-synergies, l\'autre lieu est meilleur';
+  } else if (currentAnalysis.shouldRefresh && !otherAnalysis.shouldRefresh) {
+    shouldMove = true;
+    moveReason = 'Le lieu actuel nécessite un refresh, mais l\'autre lieu est OK';
+  }
+
+  return {
+    recommendedLocation: shouldMove ? otherLocation : currentLocation,
+    shouldMove,
+    currentAnalysis,
+    otherAnalysis,
+    moveReason,
+  };
 }
