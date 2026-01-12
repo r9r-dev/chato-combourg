@@ -16,8 +16,8 @@ DEV_MODE=true python -m uvicorn app.main:app --reload --port 8080
 
 # Frontend development
 cd frontend
-npm run dev          # Dev server on port 5173
-npm run build        # Build to dist/
+bun run dev          # Dev server on port 5173
+bun run build        # Build to dist/
 
 # Run all tests
 cd backend && pytest tests/
@@ -345,7 +345,7 @@ YOLO11 training pipeline for card detection/identification.
 
 TypeScript MCP server exposing card data for Claude Code integration.
 
-**Build:** `cd mcp && npm install && npm run build`
+**Build:** `cd mcp && bun install && bun run build`
 
 **Tools:**
 - `get_card` - Get full card data by ID (001-092)
