@@ -9,6 +9,8 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.request
+import urllib.error
 from pathlib import Path
 
 # Hide Dock icon - must be called before any GUI initialization
@@ -36,6 +38,8 @@ class ChatoWorkerApp(rumps.App):
         self.server_process = None
         self.server_thread = None
         self.is_running = False
+        self.health_failures = 0
+        self.startup_grace_period = 0  # Skip health checks after startup
 
         # Build menu
         self.menu = [
@@ -90,6 +94,8 @@ class ChatoWorkerApp(rumps.App):
             )
 
             self.update_status(True)
+            self.health_failures = 0
+            self.startup_grace_period = 6  # Skip 6 checks (60s) for model loading
             rumps.notification(
                 title="Chato Worker",
                 subtitle="Server Started",
@@ -136,15 +142,47 @@ class ChatoWorkerApp(rumps.App):
         subprocess.run(["open", "-a", "Console"])
 
     def check_status(self, timer):
-        """Periodically check if server is still running."""
+        """Periodically check if server is still running and responding."""
         if self.server_process is not None:
             poll = self.server_process.poll()
             if poll is not None:
                 # Process has terminated
                 self.server_process = None
                 self.update_status(False)
+                # Auto-restart
+                self.start_server()
+            else:
+                # Skip health checks during startup grace period
+                if self.startup_grace_period > 0:
+                    self.startup_grace_period -= 1
+                    return
+
+                # Process is running, check if it responds to health check
+                if self._health_check():
+                    self.health_failures = 0
+                else:
+                    self.health_failures += 1
+                    # Restart after 3 consecutive failures (30s)
+                    if self.health_failures >= 3:
+                        rumps.notification(
+                            title="Chato Worker",
+                            subtitle="Worker bloque",
+                            message="Redemarrage automatique...",
+                        )
+                        self.stop_server()
+                        self.start_server()
         else:
             self.update_status(False)
+
+    def _health_check(self) -> bool:
+        """Check if worker responds to HTTP health endpoint."""
+        try:
+            url = f"http://127.0.0.1:{WORKER_PORT}/health"
+            req = urllib.request.Request(url, method="GET")
+            with urllib.request.urlopen(req, timeout=5) as response:
+                return response.status == 200
+        except (urllib.error.URLError, TimeoutError, OSError):
+            return False
 
     @rumps.clicked("Quit")
     def quit_app(self, sender):
