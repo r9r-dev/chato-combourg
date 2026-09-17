@@ -59,7 +59,8 @@ L'icone **W** dans la barre de menu permet de :
 Sur le serveur Docker, ajouter dans `.env` :
 
 ```env
-PYTORCH_WORKER_URL=http://192.168.x.x:50100
+PYTORCH_WORKER_URL=http://10.0.0.186:1337/api/v1/chato
+PYTORCH_WORKER_TOKEN=<jeton chato de macdaemon, secret/macdaemon/tokens>
 PYTORCH_WORKER_TIMEOUT=10.0
 ```
 

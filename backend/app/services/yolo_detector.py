@@ -42,6 +42,15 @@ _worker_health_stop = threading.Event()
 WORKER_HEALTH_CHECK_INTERVAL = 300.0
 
 
+def _worker_headers() -> dict[str, str]:
+    """En-têtes d'authentification du worker distant (jeton bearer de macdaemon)."""
+    from app.config import settings
+
+    if settings.pytorch_worker_token:
+        return {"Authorization": f"Bearer {settings.pytorch_worker_token}"}
+    return {}
+
+
 def _worker_health_check_loop():
     """Background thread that checks worker health every 5 minutes."""
     from app.config import settings
@@ -51,7 +60,7 @@ def _worker_health_check_loop():
     while not _worker_health_stop.is_set():
         if settings.pytorch_worker_url:
             try:
-                with httpx.Client(timeout=5.0) as client:
+                with httpx.Client(timeout=5.0, headers=_worker_headers()) as client:
                     response = client.get(f"{settings.pytorch_worker_url}/health")
 
                 is_healthy = response.status_code == 200
@@ -468,7 +477,7 @@ class YOLOCardDetector:
             img_buffer.seek(0)
 
             # Send to worker
-            with httpx.Client(timeout=settings.pytorch_worker_timeout) as client:
+            with httpx.Client(timeout=settings.pytorch_worker_timeout, headers=_worker_headers()) as client:
                 response = client.post(
                     f"{settings.pytorch_worker_url}/infer",
                     files={"image": ("image.jpg", img_buffer, "image/jpeg")},

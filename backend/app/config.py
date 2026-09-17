@@ -37,10 +37,11 @@ class Settings(BaseSettings):
     # Analysis captures - saves images and reports to data/captures/
     captures_dir: Path = database_dir / "captures"
 
-    # PyTorch Worker (Mac M4)
-    # Set PYTORCH_WORKER_URL to enable remote inference on Mac
-    # Example: http://192.168.1.10:8081
+    # Worker d'inférence distant (macdaemon sur le Mac mini)
+    # PYTORCH_WORKER_URL=http://10.0.0.186:1337/api/v1/chato active l'inférence distante ;
+    # PYTORCH_WORKER_TOKEN porte le jeton « chato » (Authorization: Bearer).
     pytorch_worker_url: str = ""
+    pytorch_worker_token: str = ""
     pytorch_worker_timeout: float = 10.0  # seconds
 
 
